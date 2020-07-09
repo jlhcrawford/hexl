@@ -20,6 +20,8 @@ cmake_minimum_required(VERSION 3.12)
 # Global project name
 project(ntt_avx LANGUAGES C CXX)
 
+include(CheckCXXSourceCompiles)
+
 # set directory where the custom finders live
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 message(STATUS "CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
