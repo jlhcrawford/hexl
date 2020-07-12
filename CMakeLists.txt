@@ -45,7 +45,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
 endif()
 
-
 set(CMAKE_CXX_STANDARD 17) # TODO(fboemer): use C++14 or 11?
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -53,14 +52,35 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_INSTALL_MESSAGE LAZY)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+if (NOT ${CMAKE_INSTALL_PREFIX})
+  set(${CMAKE_INSTALL_PREFIX} ./)
+endif()
+
 # Create compilation database compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 check_cxx_source_compiles("#include <immintrin.h>\nint main() { return 0;}" NTT_USE_AVX)
 
 if (NOT ${NTT_USE_AVX})
-message(
-    FATAL_ERROR
-      "AVX support required"
-    )
+  message( FATAL_ERROR "AVX support required" )
 endif()
+
+message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+
+#------------------------------------------------------------------------------
+# Third-party code...
+#------------------------------------------------------------------------------
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+include(cmake/gtest.cmake)
+include(cmake/gbenchmark.cmake)
+include(cmake/easylogging.cmake)
+include(cmake/gflags.cmake)
+
+#------------------------------------------------------------------------------
+# Subfolders...
+#------------------------------------------------------------------------------
+add_subdirectory(src)
+add_subdirectory(test)
