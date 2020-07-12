@@ -16,13 +16,17 @@ make -j
 
 # Test
 ```bash
-./test/unit-test
+make test
+```
+
+# Benchmarking
+```bash
+make bench
 ```
 
 # Contributing
-Before contributing, please run the pre-commit, i.e.
+Before contributing, please run
 ```bash
-pre-commit install
-pre-commit run --all-files
+make check
 ```
-and make sure all unit-tests pass.
+and make sure all unit-test pass and the pre-commit checks pass.

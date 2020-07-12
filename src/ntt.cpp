@@ -39,7 +39,6 @@ void NTT::ComputeRootOfUnityPowers() {
         MultiplyUIntMod(m_rootOfUnityPowers[prev_idx].Operand(), m_w, m_p),
         m_p);
     prev_idx = idx;
-    // PowMod(m_w, i, m_p);
   }
 }
 

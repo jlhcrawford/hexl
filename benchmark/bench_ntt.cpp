@@ -39,7 +39,7 @@ static void BM_NTT1024(benchmark::State& state) {  //  NOLINT
   }
 }
 
-BENCHMARK(BM_NTT1024)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_NTT1024)->Unit(benchmark::kMicrosecond)->MinTime(5.0);
 
 //=================================================================
 static void BM_NTT4096(benchmark::State& state) {  //  NOLINT
@@ -54,7 +54,7 @@ static void BM_NTT4096(benchmark::State& state) {  //  NOLINT
   }
 }
 
-BENCHMARK(BM_NTT4096)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_NTT4096)->Unit(benchmark::kMicrosecond)->MinTime(5.0);
 
 }  // namespace ntt
 }  // namespace intel

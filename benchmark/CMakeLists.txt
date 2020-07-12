@@ -16,9 +16,9 @@
 
 set(SRC main.cpp bench_ntt.cpp)
 
-add_executable(bench ${SRC})
+add_executable(bench_ntt ${SRC})
 
-target_include_directories(bench PRIVATE ".")
-target_link_libraries(bench PRIVATE libntt)
-target_link_libraries(bench PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
-target_link_libraries(bench PRIVATE logging)
+target_include_directories(bench_ntt PRIVATE ".")
+target_link_libraries(bench_ntt PRIVATE libntt)
+target_link_libraries(bench_ntt PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
+target_link_libraries(bench_ntt PRIVATE logging)
