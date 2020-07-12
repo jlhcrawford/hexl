@@ -14,11 +14,11 @@
 # the License.
 # *****************************************************************************
 
-set(SRC main.cpp test_number_theory.cpp test_ntt.cpp)
+set(SRC main.cpp bench_ntt.cpp)
 
-add_executable(unit-test ${SRC})
+add_executable(bench ${SRC})
 
-target_include_directories(unit-test PRIVATE ".")
-target_link_libraries(unit-test PRIVATE libgtest libntt)
-target_link_libraries(unit-test PRIVATE Threads::Threads)
-target_link_libraries(unit-test PRIVATE logging)
+target_include_directories(bench PRIVATE ".")
+target_link_libraries(bench PRIVATE libntt)
+target_link_libraries(bench PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
+target_link_libraries(bench PRIVATE logging)

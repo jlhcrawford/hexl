@@ -65,8 +65,15 @@ if (NOT ${NTT_USE_AVX})
   message( FATAL_ERROR "AVX support required" )
 endif()
 
-message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+#------------------------------------------------------------------------------
+# Compiler options...
+#------------------------------------------------------------------------------
+
+option(NTT_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
+
+message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message(STATUS "NTT_DEBUG:          ${NTT_DEBUG}")
 
 #------------------------------------------------------------------------------
 # Third-party code...
@@ -83,4 +90,5 @@ include(cmake/gflags.cmake)
 # Subfolders...
 #------------------------------------------------------------------------------
 add_subdirectory(src)
+add_subdirectory(benchmark)
 add_subdirectory(test)

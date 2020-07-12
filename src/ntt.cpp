@@ -30,13 +30,14 @@ void NTT::ComputeRootOfUnityPowers() {
   m_rootOfUnityPowers.clear();
   m_rootOfUnityPowers.resize(m_degree);
 
-  m_rootOfUnityPowers[0] = 1;
+  m_rootOfUnityPowers[0] = MultiplyFactor(1, m_p);
   int idx = 0;
   int prev_idx = idx;
   for (size_t i = 1; i < m_degree; i++) {
     idx = ReverseBitsUInt(i, m_degree_bits);
-    m_rootOfUnityPowers[idx] =
-        MultiplyUIntMod(m_rootOfUnityPowers[prev_idx], m_w, m_p);
+    m_rootOfUnityPowers[idx] = MultiplyFactor(
+        MultiplyUIntMod(m_rootOfUnityPowers[prev_idx].Operand(), m_w, m_p),
+        m_p);
     prev_idx = idx;
     // PowMod(m_w, i, m_p);
   }
@@ -61,18 +62,17 @@ void NTT::ForwardTransformToBitReverse(std::vector<IntType>* elements) {
     size_t j1 = 0;
     for (size_t i = 0; i < m; i++) {
       size_t j2 = j1 + t;
-      const uint64_t W = m_rootOfUnityPowers[m + i];
+      const MultiplyFactor W = m_rootOfUnityPowers[m + i];
 
       uint64_t* X = input + j1;
       uint64_t* Y = X + t;
       uint64_t tx;
       uint64_t Q;
-      // TODO(fboemer): unroll
+#pragma unroll 4
       for (size_t j = j1; j < j2; j++) {
         // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
         // [0, 4p).
         // X', Y' = X + WY, X - WY (mod p).
-
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
         Q = MultiplyUIntModLazy(*Y, W, mod);

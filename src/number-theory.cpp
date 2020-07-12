@@ -148,6 +148,7 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus) {
   }
   NTT_CHECK(false, "no primitive root found for degree "
                        << degree << " modulus " << modulus);
+  return 0;
 }
 
 // Returns true whether root is a degree-th root of unity
