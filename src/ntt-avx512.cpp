@@ -47,7 +47,7 @@ void NTT::ComputeInverseRootOfUnityPowers() {
 
 // based on
 // https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
-void NTT::ForwardTransformToBitReverse(std::vector<IntType>* elements) {
+void NTT::ForwardTransformToBitReverse(IntType* elements) {
   uint64_t mod = m_p;
   uint64_t twice_mod = mod << 1;
 
@@ -57,7 +57,7 @@ void NTT::ForwardTransformToBitReverse(std::vector<IntType>* elements) {
   size_t n = m_degree;
   size_t t = (n >> 1);
 
-  uint64_t* input = &(*elements)[0];
+  uint64_t* input = elements;
 
   for (size_t m = 1; m < n; m <<= 1) {
     size_t j1 = 0;
@@ -127,12 +127,13 @@ void NTT::ForwardTransformToBitReverse(std::vector<IntType>* elements) {
     t >>= 1;
   }
 
+  // TODO(fboemer) AVX512
   for (size_t i = 0; i < n; ++i) {
-    if ((*elements)[i] >= twice_mod) {
-      (*elements)[i] -= twice_mod;
+    if (input[i] >= twice_mod) {
+      input[i] -= twice_mod;
     }
-    if ((*elements)[i] >= mod) {
-      (*elements)[i] -= mod;
+    if (input[i] >= mod) {
+      input[i] -= mod;
     }
   }
 }
