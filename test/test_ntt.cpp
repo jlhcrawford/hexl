@@ -66,7 +66,7 @@ TEST(NTT, 2a) {
   std::vector<uint64_t> exp_output{0, 0};
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -78,7 +78,7 @@ TEST(NTT, 2b) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -91,7 +91,7 @@ TEST(NTT, 2c) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -103,7 +103,7 @@ TEST(NTT, 4a) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -116,7 +116,7 @@ TEST(NTT, 4b) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -128,7 +128,7 @@ TEST(NTT, 4c) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }
@@ -145,7 +145,7 @@ TEST(NTT, 32a) {
 
   size_t N = input.size();
   NTT ntt(prime, N);
-  ntt.ForwardTransformToBitReverse(&input);
+  ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
 }

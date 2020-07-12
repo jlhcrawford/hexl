@@ -35,7 +35,7 @@ static void BM_NTT1024(benchmark::State& state) {  //  NOLINT
   NTT ntt(prime, N);
 
   for (auto _ : state) {
-    ntt.ForwardTransformToBitReverse(&input);
+    ntt.ForwardTransformToBitReverse(input.data());
   }
 }
 
@@ -50,7 +50,7 @@ static void BM_NTT4096(benchmark::State& state) {  //  NOLINT
   NTT ntt(prime, N);
 
   for (auto _ : state) {
-    ntt.ForwardTransformToBitReverse(&input);
+    ntt.ForwardTransformToBitReverse(input.data());
   }
 }
 

@@ -52,9 +52,10 @@ class NTT {
     return m_rootOfUnityPowers[i];
   }
 
-  void ForwardTransformToBitReverse(std::vector<IntType>* elements);
-  void ForwardTransformToBitReverse2(std::vector<IntType>* elements);
-  void ReverseTransformFromBitReverse(std::vector<IntType>* elements);
+  void ForwardTransformToBitReverse(IntType* elements);
+
+  // TODO(sejun) implement
+  void ReverseTransformFromBitReverse(IntType* elements);
 
  private:
   // Computed bit-scrambled vector of first m_degree powers
