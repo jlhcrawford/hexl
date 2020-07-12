@@ -38,22 +38,6 @@ uint64_t ReverseBitsUInt(uint64_t x, uint64_t bits);
 // Returns a^{-1} mod modulus
 uint64_t InverseUIntMod(uint64_t a, uint64_t modulus);
 
-inline uint64_t Compute64BitConstRatio(uint64_t /*modulus*/) {
-  throw std::runtime_error("Unimplemented");
-  // uint128_t tmp = 1 << (2 * 30 + 3);
-  // return uint64_t(tmp / static_cast<uint128_t>(modulus));
-}
-
-inline uint64_t AddUInt64NoCarry(uint64_t x, uint64_t y) { return x + y; }
-
-// Reduces input using base 2^64 Barrett reduction
-// input allocation size must be 128 bits
-// modulus <= 63 bits
-uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus);
-
-inline uint64_t Hi64Bits(uint128_t x) { return (uint64_t)(x >> 64); }
-inline uint64_t Low64Bits(uint128_t x) { return (uint64_t)(x); }
-
 // Return x * y as 128-bit integer
 inline uint128_t MultiplyUInt64(uint64_t x, uint64_t y) {
   return static_cast<uint128_t>(x) * y;
@@ -122,14 +106,11 @@ inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y,
 
 // Computes (x * y) mod modulus
 // @param modulus_precon Pre-computed Barrett reduction factor
-inline uint64_t MultiplyUIntModLazy(uint64_t x, MultiplyFactor y,
+inline uint64_t MultiplyUIntModLazy(uint64_t x, const MultiplyFactor& y,
                                     const uint64_t modulus) {
   NTT_CHECK(y.Operand() <= modulus,
             "y.Operand() " << y.Operand() << " must be less than modulus "
                            << modulus);
-
-  // const uint64_t y_quotient =
-  // (uint128_t(y.Operand()) << 64) / modulus;  // TODO(fboemer): precompute
 
   uint64_t tmp1 = MultiplyUInt64Hi(x, y.BarrettFactor());
 

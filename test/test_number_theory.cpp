@@ -41,37 +41,6 @@ TEST(NumberTheory, Log2) {
   ASSERT_EQ(13, Log2(8192));
 }
 
-TEST(NumberTheory, BarrettReduce128) {
-  uint128_t input = 0;
-
-  uint64_t mod(2);
-  ASSERT_EQ(0ULL, BarrettReduce128(input, mod));
-  input = 1;
-  ASSERT_EQ(1ULL, BarrettReduce128(input, mod));
-  input = (uint128_t(0xFFFFFFFFFFFFFFFFULL) << 64) + 0xFFFFFFFFFFFFFFFFULL;
-  ASSERT_EQ(1ULL, BarrettReduce128(input, mod));
-
-  mod = 3;
-  input = 0;
-  ASSERT_EQ(0ULL, BarrettReduce128(input, mod));
-  input = 1;
-  ASSERT_EQ(1ULL, BarrettReduce128(input, mod));
-  input = (uint128_t(456) << 64) + 123;
-  ASSERT_EQ(0ULL, BarrettReduce128(input, mod));
-  input = (uint128_t(0xFFFFFFFFFFFFFFFFULL) << 64) + 0xFFFFFFFFFFFFFFFFULL;
-  ASSERT_EQ(0ULL, BarrettReduce128(input, mod));
-
-  mod = 13131313131313ULL;
-  input = 0;
-  ASSERT_EQ(0ULL, BarrettReduce128(input, mod));
-  input = 1;
-  ASSERT_EQ(1ULL, BarrettReduce128(input, mod));
-  input = (uint128_t(456) << 64) + 123;
-  ASSERT_EQ(8722750765283ULL, BarrettReduce128(input, mod));
-  input = (uint128_t(79797979797979) << 64) + 24242424242424;
-  ASSERT_EQ(1010101010101ULL, BarrettReduce128(input, mod));
-}
-
 TEST(NumberTheory, MultiplyUIntMod) {
   uint64_t mod(2);
   ASSERT_EQ(0ULL, MultiplyUIntMod(0, 0, mod));

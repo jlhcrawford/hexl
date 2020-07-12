@@ -92,3 +92,8 @@ include(cmake/gflags.cmake)
 add_subdirectory(src)
 add_subdirectory(benchmark)
 add_subdirectory(test)
+
+add_custom_target( test COMMAND ./test/unit-test DEPENDS unit-test)
+add_custom_target( bench COMMAND ./benchmark/bench_ntt DEPENDS bench_ntt)
+
+add_custom_target( check COMMAND pre-commit install && pre-commit run --all-files DEPENDS test)
