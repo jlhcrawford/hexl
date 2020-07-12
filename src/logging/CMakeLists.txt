@@ -20,7 +20,5 @@ add_library(logging ${SRC})
 
 set_target_properties(logging PROPERTIES LINKER_LANGUAGE CXX)
 
-message("SRC_ROOT_DIR ${SRC_ROOT_DIR}")
-
 target_include_directories(logging PUBLIC ${SRC_ROOT_DIR})
 target_link_libraries(logging PUBLIC easylogging libgflags)

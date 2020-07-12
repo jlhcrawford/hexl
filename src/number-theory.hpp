@@ -38,8 +38,8 @@ uint64_t ReverseBitsUInt(uint64_t x, uint64_t bits);
 // Returns a^{-1} mod modulus
 uint64_t InverseUIntMod(uint64_t a, uint64_t modulus);
 
-inline uint64_t Compute64BitConstRatio(uint64_t modulus) {
-  NTT_CHECK(false, "TODO");
+inline uint64_t Compute64BitConstRatio(uint64_t /*modulus*/) {
+  throw std::runtime_error("Unimplemented");
   // uint128_t tmp = 1 << (2 * 30 + 3);
   // return uint64_t(tmp / static_cast<uint128_t>(modulus));
 }
@@ -82,18 +82,58 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus);
 // degree must be a power of two.
 uint64_t MinimalPrimitiveRoot(uint64_t degree, uint64_t modulus);
 
+inline uint64_t ComputeBarrett(const uint64_t modulus) {
+  return static_cast<uint64_t>((uint128_t(modulus) << 64) / modulus);
+}
+
+class MultiplyFactor {
+ public:
+  MultiplyFactor() = default;
+  MultiplyFactor(uint64_t operand, uint64_t modulus) : m_operand(operand) {
+    NTT_CHECK(operand <= modulus, "operand " << operand
+                                             << " must be less than modulus "
+                                             << modulus);
+
+    m_barrett_factor =
+        static_cast<uint64_t>((uint128_t(operand) << 64) / modulus);
+  }
+
+  inline uint64_t BarrettFactor() const { return m_barrett_factor; }
+  inline uint64_t Operand() const { return m_operand; }
+
+ private:
+  uint64_t m_operand;
+  uint64_t m_barrett_factor;
+};
+
 inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y,
                                     const uint64_t modulus) {
   NTT_CHECK(y <= modulus,
             "y " << y << " must be less than modulus " << modulus);
 
+  MultiplyFactor mult_factor(y, modulus);
+
   const uint64_t y_quotient =
       (uint128_t(y) << 64) / modulus;  // TODO(fboemer): precompute
 
-  const uint64_t p = modulus;
   uint64_t tmp1 = MultiplyUInt64Hi(x, y_quotient);
+  return y * x - tmp1 * modulus;
+}
 
-  return y * x - tmp1 * p;
+// Computes (x * y) mod modulus
+// @param modulus_precon Pre-computed Barrett reduction factor
+inline uint64_t MultiplyUIntModLazy(uint64_t x, MultiplyFactor y,
+                                    const uint64_t modulus) {
+  NTT_CHECK(y.Operand() <= modulus,
+            "y.Operand() " << y.Operand() << " must be less than modulus "
+                           << modulus);
+
+  // const uint64_t y_quotient =
+  // (uint128_t(y.Operand()) << 64) / modulus;  // TODO(fboemer): precompute
+
+  uint64_t tmp1 = MultiplyUInt64Hi(x, y.BarrettFactor());
+
+  return y.Operand() * x - tmp1 * modulus;
 }
 
 }  // namespace ntt

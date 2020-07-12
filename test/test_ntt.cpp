@@ -45,18 +45,18 @@ TEST(NTT, Powers) {
     uint64_t N = 2;
     NTT ntt(modulus, N);
 
-    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0));
-    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1));
+    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0).Operand());
+    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1).Operand());
   }
 
   {
     uint64_t N = 4;
     NTT ntt(modulus, 4);
 
-    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0));
-    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1));
-    ASSERT_EQ(178930308976060547ULL, ntt.GetRootOfUnityPower(2));
-    ASSERT_EQ(748001537669050592ULL, ntt.GetRootOfUnityPower(3));
+    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0).Operand());
+    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1).Operand());
+    ASSERT_EQ(178930308976060547ULL, ntt.GetRootOfUnityPower(2).Operand());
+    ASSERT_EQ(748001537669050592ULL, ntt.GetRootOfUnityPower(3).Operand());
   }
 }
 

@@ -176,20 +176,22 @@ TEST(NumberTheory, InverseUIntMod) {
   input = 1, modulus = 2;
   ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
 
+#ifndef NTT_CHECK
   input = 2, modulus = 2;
   EXPECT_ANY_THROW(InverseUIntMod(input, modulus));
-
-  input = 3, modulus = 2;
-  ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
-
-  input = 0xFFFFFF, modulus = 2;
-  ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
 
   input = 0xFFFFFE, modulus = 2;
   EXPECT_ANY_THROW(InverseUIntMod(input, modulus));
 
   input = 12345, modulus = 3;
   EXPECT_ANY_THROW(InverseUIntMod(input, modulus));
+#endif
+
+  input = 3, modulus = 2;
+  ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
+
+  input = 0xFFFFFF, modulus = 2;
+  ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
 
   input = 5, modulus = 19;
   ASSERT_EQ(4ULL, InverseUIntMod(input, modulus));

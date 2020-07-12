@@ -48,7 +48,9 @@ class NTT {
 
   IntType GetMinimalRootOfUnity() const { return m_w; }
 
-  IntType GetRootOfUnityPower(size_t i) { return m_rootOfUnityPowers[i]; }
+  MultiplyFactor GetRootOfUnityPower(size_t i) {
+    return m_rootOfUnityPowers[i];
+  }
 
   void ForwardTransformToBitReverse(std::vector<IntType>* elements);
   void ForwardTransformToBitReverse2(std::vector<IntType>* elements);
@@ -70,9 +72,10 @@ class NTT {
   // w^{2^{MaxRoot -j}}, where w is a primitive root of unity for p in
   // bit-reverse order
   // TODO(fboemer)
-  std::vector<IntType> m_rootOfUnityPowers;
 
-  // TODO(fboemer)
+  std::vector<MultiplyFactor> m_rootOfUnityPowers;
+
+  // TODO(sejun)
   std::vector<IntType> m_inverseRootOfUnityPowers;
 };
 

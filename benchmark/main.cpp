@@ -14,23 +14,13 @@
 // limitations under the License.
 //*****************************************************************************
 
-#pragma once
+#include <benchmark/benchmark.h>
 
 #include "logging/logging.hpp"
 
-__extension__ typedef __int128 int128_t;
-__extension__ typedef unsigned __int128 uint128_t;
+INITIALIZE_EASYLOGGINGPP
 
-// TODO(fboemer): better error logging. It should not evaluate expr if in debug
-// mode
-
-#ifdef NTT_DEBUG
-#define NTT_CHECK(cond, expr)                            \
-  if (!(cond)) {                                         \
-    LOG(ERROR) << expr;                                  \
-    throw std::runtime_error("Error. Check log output"); \
-  }
-#else
-#define NTT_CHECK(cond, expr) \
-  {}
-#endif
+int main(int argc, char** argv) {
+  benchmark::Initialize(&argc, argv);
+  benchmark::RunSpecifiedBenchmarks();
+}
