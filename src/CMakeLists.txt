@@ -18,7 +18,15 @@ set(SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(logging)
 
-add_library(libntt SHARED number-theory.cpp ntt.cpp)
+if (${NTT_AVX512})
+    set(SRC number-theory.cpp ntt-avx512.cpp)
+else()
+    set(SRC number-theory.cpp ntt.cpp)
+endif()
+
+add_library(libntt SHARED ${SRC})
+
+
 target_include_directories(libntt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(libntt PUBLIC logging)
 target_compile_options(libntt PRIVATE -Wall -Wextra -march=native)

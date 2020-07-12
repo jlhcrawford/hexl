@@ -59,21 +59,26 @@ endif()
 # Create compilation database compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-check_cxx_source_compiles("#include <immintrin.h>\nint main() { return 0;}" NTT_USE_AVX)
 
-if (NOT ${NTT_USE_AVX})
-  message( FATAL_ERROR "AVX support required" )
-endif()
 
 #------------------------------------------------------------------------------
 # Compiler options...
 #------------------------------------------------------------------------------
 
 option(NTT_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
+option(NTT_AVX512 "Enable optimized NTT using AVX512 instruction set" ON)
 
 message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "NTT_DEBUG:          ${NTT_DEBUG}")
+message(STATUS "NTT_AVX512:         ${NTT_AVX512}")
+
+if (${NTT_AVX512})
+  check_cxx_source_compiles("#include <immintrin.h>\nint main() { return 0;}" NTT_HAS_AVX)
+  if (NOT ${NTT_HAS_AVX})
+    message( FATAL_ERROR "Error with AVX512 support")
+  endif()
+endif()
 
 #------------------------------------------------------------------------------
 # Third-party code...
