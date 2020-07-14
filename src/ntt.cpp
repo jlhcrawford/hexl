@@ -75,6 +75,7 @@ void NTT::ForwardTransformToBitReverse(IntType* elements) {
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
         Q = MultiplyUIntModLazy(*Y, W, mod);
+
         *X++ = tx + Q;
         *Y++ = tx + twice_mod - Q;
       }
@@ -83,11 +84,11 @@ void NTT::ForwardTransformToBitReverse(IntType* elements) {
     t >>= 1;
   }
   for (size_t i = 0; i < n; ++i) {
-    if (input[i] >= twice_mod) {
-      input[i] -= twice_mod;
+    if (elements[i] >= twice_mod) {
+      elements[i] -= twice_mod;
     }
-    if (input[i] >= mod) {
-      input[i] -= mod;
+    if (elements[i] >= mod) {
+      elements[i] -= mod;
     }
   }
 }
