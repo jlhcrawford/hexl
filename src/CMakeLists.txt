@@ -24,9 +24,9 @@ else()
     set(SRC number-theory.cpp ntt.cpp)
 endif()
 
-add_library(libntt SHARED ${SRC})
+add_library(ntt SHARED ${SRC})
 
 
-target_include_directories(libntt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(libntt PUBLIC logging)
-target_compile_options(libntt PRIVATE -Wall -Wextra -march=native)
+target_include_directories(ntt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(ntt PUBLIC libgflags logging libgflags)
+target_compile_options(ntt PRIVATE -Wall -Wextra -march=native)

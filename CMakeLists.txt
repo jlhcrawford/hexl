@@ -67,11 +67,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(NTT_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
 option(NTT_AVX512 "Enable optimized NTT using AVX512 instruction set" ON)
+option(NTT_BENCHMARK "Enable benchmarking" ON)
 
 message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "NTT_DEBUG:          ${NTT_DEBUG}")
 message(STATUS "NTT_AVX512:         ${NTT_AVX512}")
+message(STATUS "NTT_BENCHMARK:      ${NTT_BENCHMARK}")
 
 if (${NTT_AVX512})
   check_cxx_source_compiles("#include <immintrin.h>\nint main() { return 0;}" NTT_HAS_AVX)
@@ -87,7 +89,9 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include(cmake/gtest.cmake)
-include(cmake/gbenchmark.cmake)
+if (${NTT_BENCHMARK})
+  include(cmake/gbenchmark.cmake)
+endif()
 include(cmake/easylogging.cmake)
 include(cmake/gflags.cmake)
 
@@ -95,7 +99,9 @@ include(cmake/gflags.cmake)
 # Subfolders...
 #------------------------------------------------------------------------------
 add_subdirectory(src)
-add_subdirectory(benchmark)
+if (${NTT_BENCHMARK})
+  add_subdirectory(benchmark)
+endif()
 add_subdirectory(test)
 
 add_custom_target( test COMMAND ./test/unit-test DEPENDS unit-test)

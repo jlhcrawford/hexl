@@ -32,7 +32,7 @@ static void BM_NTT1024(benchmark::State& state) {  //  NOLINT
   size_t prime = 0xffffffffffc0001ULL;
 
   std::vector<uint64_t> input(1024, 1);
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
 
   for (auto _ : state) {
     ntt.ForwardTransformToBitReverse(input.data());
@@ -47,7 +47,7 @@ static void BM_NTT4096(benchmark::State& state) {  //  NOLINT
   size_t prime = 0xffffffffffc0001ULL;
 
   std::vector<uint64_t> input(4096, 1);
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
 
   for (auto _ : state) {
     ntt.ForwardTransformToBitReverse(input.data());

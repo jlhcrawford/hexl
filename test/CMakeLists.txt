@@ -19,6 +19,6 @@ set(SRC main.cpp test_number_theory.cpp test_ntt.cpp)
 add_executable(unit-test ${SRC})
 
 target_include_directories(unit-test PRIVATE ".")
-target_link_libraries(unit-test PRIVATE libgtest libntt)
+target_link_libraries(unit-test PRIVATE libgtest ntt)
 target_link_libraries(unit-test PRIVATE Threads::Threads)
 target_link_libraries(unit-test PRIVATE logging)

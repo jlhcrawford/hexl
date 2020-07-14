@@ -25,23 +25,40 @@
 namespace intel {
 namespace ntt {
 
-using IntType = std::uint64_t;  // TODO(fboemer): used signed or unsigned?
-// NFLLib and SEAL use unsigned, so let's go with unsigned for now
+using IntType = std::uint64_t;
 
+// Performs negacyclic NTT and inverse NTT, i.e. the number-theoretic transform
+// over Z_p[X]/(X^N+1).
+// See Faster arithmetic for number-theoretic transforms - David Harvey
+// (https://arxiv.org/abs/1205.2926) for more details.
 class NTT {
  public:
-  // Initializes an NTT object with prime p and degree size
-  NTT(size_t p, size_t degree) : m_p(p), m_degree(degree) {
-    IVLOG(4, "NTT p " << p << " degree " << degree);
+  // Initializes an NTT object with degree degree and prime modulus p.
+  // @param degree Size of the NTT transform, a.k.a N. Must be a power of 2
+  // @param p Prime modulus. Must satisfy p == 1 mod 2N
+  // @brief Performs pre-computation necessary for forward and inverse
+  // transforms
+  NTT(IntType degree, IntType p)
+      : NTT(degree, p, MinimalPrimitiveRoot(2 * degree, p)) {}
+
+  // Initializes an NTT object with degree degree and prime modulus p.
+  // @param degree Size of the NTT transform, a.k.a N. Must be a power of 2
+  // @param p Prime modulus. Must satisfy p == 1 mod 2N
+  // @param root_of_unity 2N'th root of unity in F_p
+  // @brief Performs pre-computation necessary for forward and inverse
+  // transforms
+  NTT(IntType degree, IntType p, IntType root_of_unity)
+      : m_p(p), m_degree(degree) {
     NTT_CHECK(IsPowerOfTwo(m_degree),
               "degree " << degree << " is not a power of 2");
+    NTT_CHECK(m_degree <= (1 << 20),
+              "degree should be less than 2^20, got " << degree);
+
     NTT_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
 
     m_degree_bits = Log2(m_degree);
-    m_w = MinimalPrimitiveRoot(2 * degree, m_p);
-    IVLOG(4, "m_w " << m_w);
+    m_w = root_of_unity;
     m_winv = InverseUIntMod(m_w, m_p);
-    IVLOG(4, "m_winv " << m_winv);
     ComputeRootOfUnityPowers();
     ComputeInverseRootOfUnityPowers();
   }
@@ -52,22 +69,28 @@ class NTT {
     return m_rootOfUnityPowers[i];
   }
 
+  // Compute in-place NTT.
+  // Results are bit-reversed.
   void ForwardTransformToBitReverse(IntType* elements);
 
   // TODO(sejun) implement
+  // Compute in-place inverse NTT.
+  // Results are bit-reversed.
   void ReverseTransformFromBitReverse(IntType* elements);
 
  private:
   // Computed bit-scrambled vector of first m_degree powers
   // of a primitive root.
   void ComputeRootOfUnityPowers();
+
+  // TODO(sejun): implement if needed
   void ComputeInverseRootOfUnityPowers();
 
   size_t m_p;            // prime modulus
-  size_t m_degree;       // size of NTT transform, should be power of 2
+  size_t m_degree;       // N: size of NTT transform, should be power of 2
   size_t m_degree_bits;  // log_2(m_degree)
 
-  uint64_t m_w;     // Minimal 2N'th root of unity
+  uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity
 
   // w^{2^{MaxRoot -j}}, where w is a primitive root of unity for p in

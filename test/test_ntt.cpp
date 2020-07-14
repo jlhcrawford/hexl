@@ -43,7 +43,7 @@ TEST(NTT, Powers) {
   uint64_t modulus = 0xffffffffffc0001ULL;
   {
     uint64_t N = 2;
-    NTT ntt(modulus, N);
+    NTT ntt(N, modulus);
 
     ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0).Operand());
     ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1).Operand());
@@ -51,7 +51,7 @@ TEST(NTT, Powers) {
 
   {
     uint64_t N = 4;
-    NTT ntt(modulus, 4);
+    NTT ntt(N, modulus);
 
     ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0).Operand());
     ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1).Operand());
@@ -65,7 +65,7 @@ TEST(NTT, 2a) {
   uint64_t prime = 0xffffffffffc0001ULL;
   std::vector<uint64_t> exp_output{0, 0};
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -77,7 +77,7 @@ TEST(NTT, 2b) {
   std::vector<uint64_t> exp_output{1, 1};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -90,7 +90,7 @@ TEST(NTT, 2c) {
                                    864126526004445282ULL};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -102,7 +102,7 @@ TEST(NTT, 4a) {
   std::vector<uint64_t> exp_output{82, 2, 81, 98};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -115,7 +115,7 @@ TEST(NTT, 4b) {
                                    272441922811203, 62009615510542};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -127,7 +127,55 @@ TEST(NTT, 4c) {
   std::vector<uint64_t> exp_output{1, 2, 3, 4};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 4d) {
+  std::vector<uint64_t> input{2, 1, 1, 1};
+  uint64_t prime = 73;
+  std::vector<uint64_t> exp_output{17, 41, 36, 60};
+
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 4e) {
+  std::vector<uint64_t> input{31, 21, 15, 34};
+  uint64_t prime = 16417;
+  std::vector<uint64_t> exp_output{1611, 14407, 14082, 2858};
+
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 4f) {
+  std::vector<uint64_t> input{0, 0, 0, 0};
+  uint64_t prime = 4194353;
+  std::vector<uint64_t> exp_output{0, 0, 0, 0};
+
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 4g) {
+  std::vector<uint64_t> input{4127, 9647, 1987, 5410};
+  uint64_t prime = 4194353;
+  std::vector<uint64_t> exp_output{1478161, 3359347, 222964, 3344742};
+
+  size_t N = input.size();
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
@@ -144,7 +192,7 @@ TEST(NTT, 32a) {
                                    23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
 
   size_t N = input.size();
-  NTT ntt(prime, N);
+  NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
   CheckNTTResults(input, exp_output);
