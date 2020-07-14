@@ -90,7 +90,7 @@ class MultiplyFactor {
   uint64_t m_barrett_factor;
 };
 
-inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y,
+inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
                                     const uint64_t modulus) {
   NTT_CHECK(y <= modulus,
             "y " << y << " must be less than modulus " << modulus);
@@ -106,7 +106,7 @@ inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y,
 
 // Computes (x * y) mod modulus
 // @param modulus_precon Pre-computed Barrett reduction factor
-inline uint64_t MultiplyUIntModLazy(uint64_t x, const MultiplyFactor& y,
+inline uint64_t MultiplyUIntModLazy(const uint64_t x, const MultiplyFactor& y,
                                     const uint64_t modulus) {
   NTT_CHECK(y.Operand() <= modulus,
             "y.Operand() " << y.Operand() << " must be less than modulus "
@@ -115,6 +115,20 @@ inline uint64_t MultiplyUIntModLazy(uint64_t x, const MultiplyFactor& y,
   uint64_t tmp1 = MultiplyUInt64Hi(x, y.BarrettFactor());
 
   return y.Operand() * x - tmp1 * modulus;
+}
+
+// Computes (x * y) mod modulus
+// @param modulus_precon Pre-computed Barrett reduction factor
+inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
+                                    uint64_t const y_barrett_factor,
+                                    const uint64_t modulus) {
+  NTT_CHECK(y_operand <= modulus, "y_operand " << y_operand
+                                               << " must be less than modulus "
+                                               << modulus);
+
+  uint64_t tmp1 = MultiplyUInt64Hi(x, y_barrett_factor);
+
+  return y_operand * x - tmp1 * modulus;
 }
 
 }  // namespace ntt
