@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <complex>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "number-theory.hpp"
@@ -24,6 +25,15 @@
 
 namespace intel {
 namespace ntt {
+
+struct hash_pair {
+  template <class T1, class T2>
+  size_t operator()(const std::pair<T1, T2>& p) const {
+    auto hash1 = std::hash<T1>{}(p.first);
+    auto hash2 = std::hash<T2>{}(p.second);
+    return hash1 ^ hash2;
+  }
+};
 
 using IntType = std::uint64_t;
 
@@ -51,27 +61,80 @@ class NTT {
       : m_p(p), m_degree(degree) {
     NTT_CHECK(IsPowerOfTwo(m_degree),
               "degree " << degree << " is not a power of 2");
-    NTT_CHECK(m_degree <= (1 << 20),
-              "degree should be less than 2^20, got " << degree);
+    NTT_CHECK(m_degree <= (1 << s_max_degree_bits),
+              "degree should be less than 2^" << s_max_degree_bits << " got "
+                                              << degree);
 
     NTT_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
+
+    NTT_CHECK(IsPrimitiveRoot(root_of_unity, 2 * degree, p),
+              "root_of_unity" << root_of_unity << " is not a primitive "
+                              << 2 * degree << "'th root of unity mod " << p);
 
     m_degree_bits = Log2(m_degree);
     m_w = root_of_unity;
     m_winv = InverseUIntMod(m_w, m_p);
     ComputeRootOfUnityPowers();
-    ComputeInverseRootOfUnityPowers();
   }
 
   IntType GetMinimalRootOfUnity() const { return m_w; }
 
-  MultiplyFactor GetRootOfUnityPower(size_t i) {
-    return m_rootOfUnityPowers[i];
+  // Returns map of pre-computed root of unity powers
+  // Access via s_root_of_unity_powers[<prime modulus, root of
+  // unity>] Map (degree, prime modulus, root of unity) to root of unity powers
+  static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
+                            hash_pair>&
+  GetStaticRootOfUnityPowers() {
+    static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
+                              hash_pair>
+        s_root_of_unity_powers;
+
+    return s_root_of_unity_powers;
   }
+
+  static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
+                            hash_pair>&
+  GetStaticPreconRootOfUnityPowers() {
+    static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
+                              hash_pair>
+        s_precon_root_of_unity_powers;
+
+    return s_precon_root_of_unity_powers;
+  }
+
+  std::vector<IntType> GetPreconRootOfUnityPowers() {
+    std::pair<IntType, IntType> key{m_p, m_w};
+    auto it = GetStaticPreconRootOfUnityPowers().find(key);
+    NTT_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
+              "Could not find root of unity power");
+    return it->second;
+  }
+
+  std::vector<IntType> GetRootOfUnityPowers() {
+    std::pair<IntType, IntType> key{m_p, m_w};
+    auto it = GetStaticRootOfUnityPowers().find(key);
+    NTT_CHECK(it != GetStaticRootOfUnityPowers().end(),
+              "Could not find root of unity power");
+    return it->second;
+  }
+
+  IntType GetRootOfUnityPower(size_t i) { return GetRootOfUnityPowers()[i]; }
 
   // Compute in-place NTT.
   // Results are bit-reversed.
-  void ForwardTransformToBitReverse(IntType* elements);
+
+  inline void ForwardTransformToBitReverse(IntType* elements) {
+    const auto& root_of_unity_powers = GetRootOfUnityPowers();
+    const auto& precon_root_of_unity_powers = GetPreconRootOfUnityPowers();
+
+    ForwardTransformToBitReverse(m_degree, m_p, root_of_unity_powers.data(),
+                                 precon_root_of_unity_powers.data(), elements);
+  }
+
+  static void ForwardTransformToBitReverse(
+      const IntType degree, const IntType mod,
+      const IntType* root_of_unity_powers,
+      const IntType* precon_root_of_unity_powers, IntType* elements);
 
   // TODO(sejun) implement
   // Compute in-place inverse NTT.
@@ -81,27 +144,45 @@ class NTT {
  private:
   // Computed bit-scrambled vector of first m_degree powers
   // of a primitive root.
-  void ComputeRootOfUnityPowers();
+  inline void ComputeRootOfUnityPowers() {
+    std::pair<IntType, IntType> key = std::make_pair(m_p, m_w);
 
-  // TODO(sejun): implement if needed
-  void ComputeInverseRootOfUnityPowers();
+    auto it = NTT::GetStaticRootOfUnityPowers().find(key);
+    if (it != NTT::GetStaticRootOfUnityPowers().end()) {
+      return;
+    }
+
+    std::vector<IntType> root_of_unity_powers(m_degree);
+    std::vector<IntType> precon_root_of_unity_powers(m_degree);
+
+    MultiplyFactor first(1, m_p);
+    root_of_unity_powers[0] = first.Operand();
+    precon_root_of_unity_powers[0] = first.BarrettFactor();
+    int idx = 0;
+    int prev_idx = idx;
+    for (size_t i = 1; i < m_degree; i++) {
+      idx = ReverseBitsUInt(i, m_degree_bits);
+      MultiplyFactor mf(
+          MultiplyUIntMod(root_of_unity_powers[prev_idx], m_w, m_p), m_p);
+      root_of_unity_powers[idx] = mf.Operand();
+      precon_root_of_unity_powers[idx] = mf.BarrettFactor();
+
+      prev_idx = idx;
+    }
+
+    NTT::GetStaticRootOfUnityPowers()[key] = std::move(root_of_unity_powers);
+    NTT::GetStaticPreconRootOfUnityPowers()[key] =
+        std::move(precon_root_of_unity_powers);
+  }
 
   size_t m_p;            // prime modulus
   size_t m_degree;       // N: size of NTT transform, should be power of 2
   size_t m_degree_bits;  // log_2(m_degree)
+  static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
 
   uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity
-
-  // w^{2^{MaxRoot -j}}, where w is a primitive root of unity for p in
-  // bit-reverse order
-  // TODO(fboemer)
-
-  std::vector<MultiplyFactor> m_rootOfUnityPowers;
-
-  // TODO(sejun)
-  std::vector<IntType> m_inverseRootOfUnityPowers;
-};
+};                  // namespace ntt
 
 }  // namespace ntt
 }  // namespace intel

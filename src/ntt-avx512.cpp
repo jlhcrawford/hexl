@@ -25,36 +25,18 @@
 namespace intel {
 namespace ntt {
 
-void NTT::ComputeRootOfUnityPowers() {
-  m_rootOfUnityPowers.clear();
-  m_rootOfUnityPowers.resize(m_degree);
-
-  m_rootOfUnityPowers[0] = MultiplyFactor(1, m_p);
-  int idx = 0;
-  int prev_idx = idx;
-  for (size_t i = 1; i < m_degree; i++) {
-    idx = ReverseBitsUInt(i, m_degree_bits);
-    m_rootOfUnityPowers[idx] = MultiplyFactor(
-        MultiplyUIntMod(m_rootOfUnityPowers[prev_idx].Operand(), m_w, m_p),
-        m_p);
-    prev_idx = idx;
-  }
-}
-
-void NTT::ComputeInverseRootOfUnityPowers() {
-  // TODO(sejun)
-}
-
 // based on
 // https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
-void NTT::ForwardTransformToBitReverse(IntType* elements) {
-  uint64_t mod = m_p;
+void NTT::ForwardTransformToBitReverse(
+    const IntType degree, const IntType mod,
+    const IntType* root_of_unity_powers,
+    const IntType* precon_root_of_unity_powers, IntType* elements) {
   uint64_t twice_mod = mod << 1;
 
-  __m512i v_modulus = _mm512_set1_epi64(m_p);
+  __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
-  size_t n = m_degree;
+  size_t n = degree;
   size_t t = (n >> 1);
 
   uint64_t* input = elements;
@@ -63,7 +45,8 @@ void NTT::ForwardTransformToBitReverse(IntType* elements) {
     size_t j1 = 0;
     for (size_t i = 0; i < m; i++) {
       size_t j2 = j1 + t;
-      const MultiplyFactor W = m_rootOfUnityPowers[m + i];
+      const uint64_t W_op = root_of_unity_powers[m + i];
+      const uint64_t W_precon = precon_root_of_unity_powers[m + i];
 
       uint64_t* X = input + j1;
       uint64_t* Y = X + t;
@@ -78,13 +61,13 @@ void NTT::ForwardTransformToBitReverse(IntType* elements) {
           // X', Y' = X + WY, X - WY (mod p).
           tx = *X - (twice_mod & static_cast<uint64_t>(
                                      -static_cast<int64_t>(*X >= twice_mod)));
-          Q = MultiplyUIntModLazy(*Y, W, mod);
+          Q = MultiplyUIntModLazy(*Y, W_op, W_precon, mod);
           *X++ = tx + Q;
           *Y++ = tx + twice_mod - Q;
         }
       } else {
-        __m512i v_W_operand = _mm512_set1_epi64(W.Operand());
-        __m512i v_W_barrett = _mm512_set1_epi64(W.BarrettFactor());
+        __m512i v_W_operand = _mm512_set1_epi64(W_op);
+        __m512i v_W_barrett = _mm512_set1_epi64(W_precon);
 
         __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
         __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
