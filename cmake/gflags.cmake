@@ -30,7 +30,6 @@ ExternalProject_Add(
   GIT_REPOSITORY ${GFLAGS_GIT_REPO_URL}
   GIT_TAG ${GFLAGS_GIT_LABEL}
   CMAKE_ARGS ${NTT_FORWARD_CMAKE_ARGS}
-    -DBUILD_SHARED_LIBS=ON
   INSTALL_COMMAND ""
   UPDATE_COMMAND ""
   EXCLUDE_FROM_ALL TRUE)
@@ -45,6 +44,6 @@ add_dependencies(libgflags ext_gflags)
 target_include_directories(libgflags SYSTEM
                            INTERFACE ${BINARY_DIR}/include)
 target_link_libraries(libgflags
-                      INTERFACE ${BINARY_DIR}/lib/libgflags.so)
+                      INTERFACE ${BINARY_DIR}/lib/libgflags.a)
 
 install(TARGETS libgflags LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} )
