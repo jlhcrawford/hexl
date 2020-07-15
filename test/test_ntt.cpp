@@ -20,8 +20,8 @@
 
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
-#include "ntt.hpp"
-#include "number-theory.hpp"
+#include "ntt/ntt.hpp"
+#include "ntt/number-theory.hpp"
 
 namespace intel {
 namespace ntt {

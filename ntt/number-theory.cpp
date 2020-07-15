@@ -14,14 +14,14 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "number-theory.hpp"
+#include "ntt/number-theory.hpp"
 
 #include <bitset>
 #include <cassert>
 #include <random>
 
 #include "logging/logging.hpp"
-#include "util.hpp"
+#include "ntt/util.hpp"
 
 namespace intel {
 namespace ntt {

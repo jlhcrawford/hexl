@@ -16,11 +16,10 @@
 
 #include <benchmark/benchmark.h>
 
-#include <complex>
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "ntt.hpp"
+#include "ntt/ntt.hpp"
 
 namespace intel {
 namespace ntt {

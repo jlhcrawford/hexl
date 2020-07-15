@@ -59,6 +59,11 @@ endif()
 # Create compilation database compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+
+
 
 
 #------------------------------------------------------------------------------
@@ -82,6 +87,42 @@ if (${NTT_AVX512})
   endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# Installation logic...
+# ------------------------------------------------------------------------------
+
+if(LINUX)
+  include(GNUInstallDirs)
+else()
+  set(CMAKE_INSTALL_BINDIR "bin")
+  set(CMAKE_INSTALL_INCLUDEDIR "include")
+  set(CMAKE_INSTALL_DOCDIR "doc")
+  set(CMAKE_INSTALL_LIBDIR "lib")
+endif()
+
+if(NOT DEFINED CMAKE_INSTALL_PREFIX)
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+message(STATUS "CMAKE_INSTALL_LIBDIR:     ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+message(STATUS "CMAKE_INSTALL_PREFIX:     ${CMAKE_INSTALL_PREFIX}")
+
+
+set(NTT_FORWARD_CMAKE_ARGS
+  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  -DCMAKE_CXX_STANDARD:STRING=${CMAKE_CXX_STANDARD}
+  -DCMAKE_CXX_STANDARD_REQUIRED:BOOL=${CMAKE_CXX_STANDARD_REQUIRED}
+  -DCMAKE_CXX_EXTENSIONS:BOOL=${CMAKE_CXX_EXTENSIONS}
+  -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=${CMAKE_EXPORT_COMPILE_COMMANDS}
+  -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=${CMAKE_POSITION_INDEPENDENT_CODE}
+  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  )
+
+message(STATUS "NTT_FORWARD_CMAKE_ARGS ${NTT_FORWARD_CMAKE_ARGS}")
+
 #------------------------------------------------------------------------------
 # Third-party code...
 #------------------------------------------------------------------------------
@@ -98,7 +139,8 @@ include(cmake/gflags.cmake)
 #------------------------------------------------------------------------------
 # Subfolders...
 #------------------------------------------------------------------------------
-add_subdirectory(src)
+add_subdirectory(logging)
+add_subdirectory(ntt)
 if (${NTT_BENCHMARK})
   add_subdirectory(benchmark)
 endif()

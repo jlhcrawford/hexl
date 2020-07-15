@@ -18,10 +18,11 @@
 
 #include <iostream>
 
-#include "avx512_util.hpp"
 #include "logging/logging.hpp"
-#include "ntt.hpp"
-#include "number-theory.hpp"
+#include "ntt/avx512_util.hpp"
+#include "ntt/ntt.hpp"
+#include "ntt/number-theory.hpp"
+
 namespace intel {
 namespace ntt {
 
