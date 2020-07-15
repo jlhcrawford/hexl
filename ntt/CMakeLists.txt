@@ -14,11 +14,24 @@
 # the License.
 # *****************************************************************************
 
-set(SRC logging.cpp)
+set(NTT_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(logging ${SRC})
+if (${NTT_AVX512})
+    set(SRC number-theory.cpp ntt-avx512.cpp)
+else()
+    set(SRC number-theory.cpp ntt.cpp)
+endif()
 
-set_target_properties(logging PROPERTIES LINKER_LANGUAGE CXX)
+add_library(ntt SHARED ${SRC})
 
-target_include_directories(logging PUBLIC ${SRC_ROOT_DIR})
-target_link_libraries(logging PUBLIC easylogging libgflags)
+target_include_directories(ntt PUBLIC ${NTT_SRC_ROOT_DIR})
+target_link_libraries(ntt PUBLIC libgflags logging libgflags Threads::Threads)
+target_compile_options(ntt PRIVATE -Wall -Wextra -march=native)
+
+install(DIRECTORY ${NTT_SRC_ROOT_DIR}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ntt
+        FILES_MATCHING
+        PATTERN "*.hpp"
+        PATTERN "*.h")
+
+install(TARGETS ntt LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )

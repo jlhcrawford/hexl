@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "number-theory.hpp"
+#include "ntt/number-theory.hpp"
 
 namespace intel {
 namespace ntt {

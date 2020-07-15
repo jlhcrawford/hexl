@@ -34,7 +34,8 @@ ExternalProject_Add(
   PREFIX ${EASYLOGGING_PREFIX}
   GIT_REPOSITORY ${EASYLOGGING_GIT_REPO_URL}
   GIT_TAG ${EASYLOGGING_GIT_LABEL}
-  CMAKE_ARGS -DCMAKE_CXX_FLAGS=${EASYLOGGING_CXX_FLAGS}
+  CMAKE_ARGS ${NTT_FORWARD_CMAKE_ARGS}
+    -DCMAKE_CXX_FLAGS=${EASYLOGGING_CXX_FLAGS}
   INSTALL_COMMAND ""
   UPDATE_COMMAND ""
   EXCLUDE_FROM_ALL TRUE
@@ -48,3 +49,9 @@ ExternalProject_Get_Property(ext_easylogging SOURCE_DIR BINARY_DIR)
 add_library(easylogging ${SOURCE_DIR}/src/easylogging++.cc)
 target_include_directories(easylogging PUBLIC ${SOURCE_DIR}/src)
 add_dependencies(easylogging ext_easylogging)
+
+install(DIRECTORY ${SOURCE_DIR}/src/
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING
+        PATTERN "*.hpp"
+        PATTERN "*.h")
