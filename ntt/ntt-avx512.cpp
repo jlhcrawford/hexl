@@ -26,8 +26,6 @@
 namespace intel {
 namespace ntt {
 
-// based on
-// https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
 void NTT::ForwardTransformToBitReverse(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
@@ -38,6 +36,9 @@ void NTT::ForwardTransformToBitReverse(
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
   size_t n = degree;
+  NTT_CHECK(IsPowerOfTwo(degree),
+            "degree " << degree << " is not a power of 2");
+
   size_t t = (n >> 1);
 
   uint64_t* input = elements;
@@ -77,12 +78,8 @@ void NTT::ForwardTransformToBitReverse(
           __m512i v_X = _mm512_loadu_si512(v_X_pt);
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-          // tx = *X - (two_times_modulus &
-          // static_cast<uint64_t>(-static_cast<int64_t>(*X >=
-          // two_times_modulus)));
-          __m512i v_subX = avx512_cmpgteq_epu64(v_X, v_twice_mod);
-          __m512i v_and = _mm512_and_si512(v_twice_mod, v_subX);
-          __m512i v_tx = _mm512_sub_epi64(v_X, v_and);
+          // tx = X >= twice_mod ? X - twice_mod : X
+          __m512i v_tx = avx512_mod_epu64(v_X, v_twice_mod);
 
           // multiply_uint64_hw64(Wprime, *Y, &Q);
           __m512i v_Q = avx512_multiply_uint64_hi(v_W_barrett, v_Y);
@@ -111,13 +108,28 @@ void NTT::ForwardTransformToBitReverse(
     t >>= 1;
   }
 
-  // TODO(fboemer) AVX512
-  for (size_t i = 0; i < n; ++i) {
-    if (input[i] >= twice_mod) {
-      input[i] -= twice_mod;
+  if (n < 8) {
+    for (size_t i = 0; i < n; ++i) {
+      if (input[i] >= twice_mod) {
+        input[i] -= twice_mod;
+      }
+      if (input[i] >= mod) {
+        input[i] -= mod;
+      }
     }
-    if (input[i] >= mod) {
-      input[i] -= mod;
+  } else {
+    // n power of two at least 8 => n divisible by 8
+    NTT_CHECK(n % 8 == 0, "degree " << degree << " not a power of 2");
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
+    for (size_t i = 0; i < n; i += 8) {
+      __m512i v_X = _mm512_loadu_si512(v_X_pt);
+
+      v_X = avx512_mod_epu64(v_X, v_twice_mod);
+      v_X = avx512_mod_epu64(v_X, v_modulus);
+
+      _mm512_storeu_si512(v_X_pt, v_X);
+
+      ++v_X_pt;
     }
   }
 }

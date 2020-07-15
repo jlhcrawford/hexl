@@ -27,22 +27,11 @@
 namespace intel {
 namespace ntt {
 
-// Returns c[i] = a[i] < b[i] ? 0xFFFFFFFFFFFFFFFF : 0
-inline __m512i avx512_cmplt_epu64(__m512i a, __m512i b) {
-  __m512i as = _mm512_add_epi64(a, _mm512_set1_epi64(0x8000000000000000));
-  __m512i bs = _mm512_add_epi64(b, _mm512_set1_epi64(0x8000000000000000));
-
-  __mmask8 mask = _mm512_cmpgt_epi64_mask(bs, as);
-  __int64_t max_uint = -1;
-  return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(max_uint));
-}
-
-// Returns c[i] = a[i] >= b[i] ? 0xFFFFFFFFFFFFFFFF : 0
-inline __m512i avx512_cmpgteq_epu64(__m512i a, __m512i b) {
-  __mmask8 mask = _mm512_cmp_epi64_mask(a, b, _MM_CMPINT_NLT);
-  const __int64_t max_uint = -1;
-  const __m128i avx_max_uint = _mm_set1_epi64x(max_uint);
-  return _mm512_maskz_broadcastq_epi64(mask, avx_max_uint);
+// returns x mod p; assumes x < 2p
+// == x >= p ? x - p : x
+// == min(x-p, x)
+inline __m512i avx512_mod_epu64(__m512i x, __m512i p) {
+  return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
 // Returns c[i] = hi 64 bits of x[i] * y[i]
