@@ -145,7 +145,7 @@ TEST(NumberTheory, InverseUIntMod) {
   input = 1, modulus = 2;
   ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
 
-#ifndef NTT_CHECK
+#ifdef NTT_DEBUG
   input = 2, modulus = 2;
   EXPECT_ANY_THROW(InverseUIntMod(input, modulus));
 
@@ -201,46 +201,92 @@ TEST(NumberTheory, ReverseBitsUInt64) {
   ASSERT_EQ(0x0000FFFF0000FFFFULL, ReverseBitsUInt(0xFFFF0000FFFF0000ULL, 64));
 }
 
-TEST(NumberTheory, MultiplyUIntModLazy) {
+TEST(NumberTheory, MultiplyUIntModLazy64) {
   uint64_t mod = 2;
   uint64_t y = 0;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(1, y, mod));
   y = 1;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(1ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<64>(1, y, mod));
 
   mod = 10;
   y = 0;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(1, y, mod));
   y = 1;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(1ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<64>(1, y, mod));
   y = 6;
-  ASSERT_EQ(2ULL, MultiplyUIntModLazy(7, y, mod));
+  ASSERT_EQ(2ULL, MultiplyUIntModLazy<64>(7, y, mod));
   y = 7;
-  ASSERT_EQ(9ULL, MultiplyUIntModLazy(7, y, mod));
-  ASSERT_EQ(2ULL, MultiplyUIntModLazy(6, y, mod));
+  ASSERT_EQ(9ULL, MultiplyUIntModLazy<64>(7, y, mod));
+  ASSERT_EQ(2ULL, MultiplyUIntModLazy<64>(6, y, mod));
 
   mod = 2305843009211596801ULL;
   y = 0;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(1, y, mod));
   y = 1;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy(0, y, mod));
-  ASSERT_EQ(1ULL, MultiplyUIntModLazy(1, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<64>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<64>(1, y, mod));
   y = 1152921504605798400ULL;
   ASSERT_EQ(576460752302899200ULL,
-            MultiplyUIntModLazy(1152921504605798401ULL, y, mod));
+            MultiplyUIntModLazy<64>(1152921504605798401ULL, y, mod));
   y = 1152921504605798401ULL;
   ASSERT_EQ(576460752302899200ULL,
-            MultiplyUIntModLazy(1152921504605798400ULL, y, mod));
+            MultiplyUIntModLazy<64>(1152921504605798400ULL, y, mod));
   ASSERT_EQ(1729382256908697601ULL,
-            MultiplyUIntModLazy(1152921504605798401ULL, y, mod));
+            MultiplyUIntModLazy<64>(1152921504605798401ULL, y, mod));
   y = 2305843009211596800ULL;
   ASSERT_EQ(2305843009211596802ULL,
-            MultiplyUIntModLazy(2305843009211596800ULL, y, mod));
+            MultiplyUIntModLazy<64>(2305843009211596800ULL, y, mod));
+}
+
+TEST(NumberTheory, MultiplyUIntModLazy52) {
+  uint64_t mod = 2;
+  uint64_t y = 0;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(1, y, mod));
+  y = 1;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<52>(1, y, mod));
+
+  mod = 10;
+  y = 0;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(1, y, mod));
+  y = 1;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<52>(1, y, mod));
+  y = 6;
+  ASSERT_EQ(2ULL, MultiplyUIntModLazy<52>(7, y, mod));
+  y = 7;
+  ASSERT_EQ(9ULL, MultiplyUIntModLazy<52>(7, y, mod));
+  ASSERT_EQ(2ULL, MultiplyUIntModLazy<52>(6, y, mod));
+
+  mod = 2305843009211596801ULL;
+  y = 0;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(1, y, mod));
+  y = 1;
+  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
+  ASSERT_EQ(1ULL, MultiplyUIntModLazy<52>(1, y, mod));
+
+#ifdef NTT_DEBUG
+  y = 1152921504605798400ULL;
+  EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(1152921504605798401ULL, y, mod));
+  y = 1152921504605798401ULL;
+  EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(1152921504605798400ULL, y, mod));
+  EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(1152921504605798401ULL, y, mod));
+  y = 2305843009211596800ULL;
+  EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(2305843009211596800ULL, y, mod));
+#endif
+}
+
+TEST(NumberTheory, MaximumValue) {
+  ASSERT_EQ(MaximumValue(64), 0xffffffffffffffff);
+  ASSERT_EQ(MaximumValue(52), 0xfffffffffffff);
 }
 
 }  // namespace ntt

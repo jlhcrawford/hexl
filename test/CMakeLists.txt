@@ -14,9 +14,11 @@
 # the License.
 # *****************************************************************************
 
-set(SRC main.cpp test_number_theory.cpp test_ntt.cpp)
+set(SRC main.cpp test_number_theory.cpp test_ntt.cpp test_avx512_util.cpp)
 
 add_executable(unit-test ${SRC})
+
+target_compile_options(unit-test PRIVATE -Wall -Wextra -march=native)
 
 target_include_directories(unit-test PRIVATE ".")
 target_link_libraries(unit-test PRIVATE libgtest ntt)

@@ -20,6 +20,8 @@ cmake_minimum_required(VERSION 3.12)
 # Global project name
 project(ntt_avx LANGUAGES C CXX)
 
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 
 # set directory where the custom finders live
@@ -64,27 +66,47 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 
 
-
-
 #------------------------------------------------------------------------------
 # Compiler options...
 #------------------------------------------------------------------------------
 
 option(NTT_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
-option(NTT_AVX512 "Enable optimized NTT using AVX512 instruction set" ON)
 option(NTT_BENCHMARK "Enable benchmarking" ON)
 
 message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "NTT_DEBUG:          ${NTT_DEBUG}")
-message(STATUS "NTT_AVX512:         ${NTT_AVX512}")
 message(STATUS "NTT_BENCHMARK:      ${NTT_BENCHMARK}")
 
-if (${NTT_AVX512})
-  check_cxx_source_compiles("#include <immintrin.h>\nint main() { return 0;}" NTT_HAS_AVX)
-  if (NOT ${NTT_HAS_AVX})
-    message( FATAL_ERROR "Error with AVX512 support")
+if (NTT_DEBUG)
+  add_definitions(-DNTT_DEBUG)
+endif()
+
+function(check_flag FLAG OUTPUT_FLAG)
+  execute_process(COMMAND cat /proc/cpuinfo OUTPUT_VARIABLE FLAG_OUT )
+  execute_process(COMMAND ${CMAKE_COMMAND} -E echo_append "-- Checking flag ${FLAG}...")
+  string(FIND ${FLAG_OUT} "${FLAG}" INDEX_FOUND)
+  if(NOT ${INDEX_FOUND} STREQUAL -1)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E echo "Found. Setting ${OUTPUT_FLAG}")
+    set(${OUTPUT_FLAG} "1" PARENT_SCOPE)
+  else()
+    execute_process(COMMAND ${CMAKE_COMMAND} -E echo "Not found.")
   endif()
+endfunction()
+
+# Check for AVX512 support
+check_flag("avx512f" HAS_AVX512F)
+check_flag("avx512dq" HAS_AVX512DQ)
+check_flag("avx512ifma" HAS_AVX512IFMA)
+
+if (HAS_AVX512IFMA)
+message(STATUS "Setting NTT_HAS_AVX512IFMA")
+  add_definitions(-DNTT_HAS_AVX512IFMA)
+endif()
+
+if (HAS_AVX512F AND HAS_AVX512DQ)
+  message(STATUS "Setting DNTT_HAS_AVX512F")
+  add_definitions(-DNTT_HAS_AVX512F)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -119,6 +141,7 @@ set(NTT_FORWARD_CMAKE_ARGS
   -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=${CMAKE_POSITION_INDEPENDENT_CODE}
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  -DCMAKE_CXX_FLAGS="-march=native"
   )
 
 message(STATUS "NTT_FORWARD_CMAKE_ARGS ${NTT_FORWARD_CMAKE_ARGS}")

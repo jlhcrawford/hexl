@@ -29,11 +29,12 @@ namespace ntt {
 
 // based on
 // https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
-void NTT::ForwardTransformToBitReverse(
+void NTT::ForwardTransformToBitReverse64(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements) {
-  // uint64_t mod = m_p;
+  NTT_CHECK(CheckArguments(degree, mod), "");
+
   uint64_t twice_mod = mod << 1;
 
   size_t n = degree;
@@ -50,6 +51,7 @@ void NTT::ForwardTransformToBitReverse(
 
       uint64_t* X = input + j1;
       uint64_t* Y = X + t;
+
       uint64_t tx;
       uint64_t Q;
 #pragma unroll 4
@@ -59,7 +61,7 @@ void NTT::ForwardTransformToBitReverse(
         // X', Y' = X + WY, X - WY (mod p).
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
-        Q = MultiplyUIntModLazy(*Y, W_op, W_precon, mod);
+        Q = MultiplyUIntModLazy<64>(*Y, W_op, W_precon, mod);
 
         *X++ = tx + Q;
         *Y++ = tx + twice_mod - Q;
@@ -78,6 +80,35 @@ void NTT::ForwardTransformToBitReverse(
     NTT_CHECK(elements[i] < mod,
               "Incorrect modulus reduction " << elements[i] << " >= " << mod);
   }
+}
+
+void NTT::ForwardTransformToBitReverse(
+    const IntType degree, const IntType mod,
+    const IntType* root_of_unity_powers,
+    const IntType* precon_root_of_unity_powers, IntType* elements,
+    bool use_ifma_if_possible) {
+#ifdef NTT_HAS_AVX512IFMA
+  // TODO(fboemer): Check 50-bit limit more carefully
+  constexpr IntType ifma_mod_bound = (1UL << 50);
+  if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
+    IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
+    NTT::ForwardTransformToBitReverseAVX512<52>(
+        degree, mod, root_of_unity_powers, precon_root_of_unity_powers,
+        elements);
+    return;
+  }
+#endif
+
+#ifdef NTT_HAS_AVX512F
+  IVLOG(3, "Calling 64-bit AVX512 NTT");
+  NTT::ForwardTransformToBitReverseAVX512<64>(
+      degree, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);
+  return;
+#endif
+
+  IVLOG(3, "Calling 64-bit default NTT");
+  NTT::ForwardTransformToBitReverse64(degree, mod, root_of_unity_powers,
+                                      precon_root_of_unity_powers, elements);
 }
 
 }  // namespace ntt

@@ -14,6 +14,8 @@
 // limitations under the License.
 //*****************************************************************************
 
+#include "ntt/ntt-avx512.hpp"
+
 #include <immintrin.h>
 
 #include <iostream>
@@ -26,113 +28,17 @@
 namespace intel {
 namespace ntt {
 
-void NTT::ForwardTransformToBitReverse(
+#ifdef NTT_HAS_AVX512IFMA
+template void NTT::ForwardTransformToBitReverseAVX512<52>(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements) {
-  uint64_t twice_mod = mod << 1;
+    const IntType* precon_root_of_unity_powers, IntType* elements);
+#endif
 
-  __m512i v_modulus = _mm512_set1_epi64(mod);
-  __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
-
-  size_t n = degree;
-  NTT_CHECK(IsPowerOfTwo(degree),
-            "degree " << degree << " is not a power of 2");
-
-  size_t t = (n >> 1);
-
-  uint64_t* input = elements;
-
-  for (size_t m = 1; m < n; m <<= 1) {
-    size_t j1 = 0;
-    for (size_t i = 0; i < m; i++) {
-      size_t j2 = j1 + t;
-      const uint64_t W_op = root_of_unity_powers[m + i];
-      const uint64_t W_precon = precon_root_of_unity_powers[m + i];
-
-      uint64_t* X = input + j1;
-      uint64_t* Y = X + t;
-      uint64_t tx;
-      uint64_t Q;
-
-      if (j2 - j1 < 8) {
-#pragma unroll 4
-        for (size_t j = j1; j < j2; j++) {
-          // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
-          // [0, 4p).
-          // X', Y' = X + WY, X - WY (mod p).
-          tx = *X - (twice_mod & static_cast<uint64_t>(
-                                     -static_cast<int64_t>(*X >= twice_mod)));
-          Q = MultiplyUIntModLazy(*Y, W_op, W_precon, mod);
-          *X++ = tx + Q;
-          *Y++ = tx + twice_mod - Q;
-        }
-      } else {
-        __m512i v_W_operand = _mm512_set1_epi64(W_op);
-        __m512i v_W_barrett = _mm512_set1_epi64(W_precon);
-
-        __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
-        __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
-
-        for (size_t j = j1; j < j2; j += 8) {
-          __m512i v_X = _mm512_loadu_si512(v_X_pt);
-          __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
-
-          // tx = X >= twice_mod ? X - twice_mod : X
-          __m512i v_tx = avx512_mod_epu64(v_X, v_twice_mod);
-
-          // multiply_uint64_hw64(Wprime, *Y, &Q);
-          __m512i v_Q = avx512_multiply_uint64_hi(v_W_barrett, v_Y);
-
-          // Q = *Y * W - Q * modulus;
-          __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_operand);
-          __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-          v_Q = _mm512_sub_epi64(tmp1, tmp2);
-
-          // *X++ = tx + Q;
-          v_X = _mm512_add_epi64(v_tx, v_Q);
-
-          // *Y++ = tx + (two_times_modulus - Q);
-          __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-          v_Y = _mm512_add_epi64(v_tx, sub);
-
-          _mm512_storeu_si512(v_X_pt, v_X);
-          _mm512_storeu_si512(v_Y_pt, v_Y);
-
-          ++v_X_pt;
-          ++v_Y_pt;
-        }
-      }
-      j1 += (t << 1);
-    }
-    t >>= 1;
-  }
-
-  if (n < 8) {
-    for (size_t i = 0; i < n; ++i) {
-      if (input[i] >= twice_mod) {
-        input[i] -= twice_mod;
-      }
-      if (input[i] >= mod) {
-        input[i] -= mod;
-      }
-    }
-  } else {
-    // n power of two at least 8 => n divisible by 8
-    NTT_CHECK(n % 8 == 0, "degree " << degree << " not a power of 2");
-    __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
-    for (size_t i = 0; i < n; i += 8) {
-      __m512i v_X = _mm512_loadu_si512(v_X_pt);
-
-      v_X = avx512_mod_epu64(v_X, v_twice_mod);
-      v_X = avx512_mod_epu64(v_X, v_modulus);
-
-      _mm512_storeu_si512(v_X_pt, v_X);
-
-      ++v_X_pt;
-    }
-  }
-}
+template void NTT::ForwardTransformToBitReverseAVX512<64>(
+    const IntType degree, const IntType mod,
+    const IntType* root_of_unity_powers,
+    const IntType* precon_root_of_unity_powers, IntType* elements);
 
 }  // namespace ntt
 }  // namespace intel

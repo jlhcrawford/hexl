@@ -58,26 +58,28 @@ class NTT {
   // @brief Performs pre-computation necessary for forward and inverse
   // transforms
   NTT(IntType degree, IntType p, IntType root_of_unity)
-      : m_p(p), m_degree(degree) {
-    NTT_CHECK(IsPowerOfTwo(m_degree),
-              "degree " << degree << " is not a power of 2");
-    NTT_CHECK(m_degree <= (1 << s_max_degree_bits),
-              "degree should be less than 2^" << s_max_degree_bits << " got "
-                                              << degree);
+      : m_p(p), m_degree(degree), m_w(root_of_unity) {
+    NTT_CHECK(CheckArguments(degree, p), "");
+    NTT_CHECK(IsPrimitiveRoot(m_w, 2 * degree, p),
+              m_w << " is not a primitive 2*" << degree << "'th root of unity");
 
-    NTT_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
-
-    NTT_CHECK(IsPrimitiveRoot(root_of_unity, 2 * degree, p),
-              "root_of_unity" << root_of_unity << " is not a primitive "
-                              << 2 * degree << "'th root of unity mod " << p);
+#ifdef NTT_HAS_AVX512IFMA
+    if (m_p < s_max_ifma_modulus) {
+      m_bit_shift = s_max_ifma_modulus_bits;
+    }
+#endif
 
     m_degree_bits = Log2(m_degree);
-    m_w = root_of_unity;
+
     m_winv = InverseUIntMod(m_w, m_p);
     ComputeRootOfUnityPowers();
   }
 
   IntType GetMinimalRootOfUnity() const { return m_w; }
+
+  IntType GetDegree() const { return m_degree; }
+
+  IntType GetModulus() const { return m_p; }
 
   // Returns map of pre-computed root of unity powers
   // Access via s_root_of_unity_powers[<prime modulus, root of
@@ -134,7 +136,21 @@ class NTT {
   static void ForwardTransformToBitReverse(
       const IntType degree, const IntType mod,
       const IntType* root_of_unity_powers,
+      const IntType* precon_root_of_unity_powers, IntType* elements,
+      bool use_ifma_if_possible = true);
+
+  static void ForwardTransformToBitReverse64(
+      const IntType degree, const IntType mod,
+      const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements);
+
+#ifdef NTT_HAS_AVX512F
+  template <int BitShift>
+  static void ForwardTransformToBitReverseAVX512(
+      const IntType degree, const IntType mod,
+      const IntType* root_of_unity_powers,
+      const IntType* precon_root_of_unity_powers, IntType* elements);
+#endif
 
   // TODO(sejun) implement
   // Compute in-place inverse NTT.
@@ -142,6 +158,20 @@ class NTT {
   void ReverseTransformFromBitReverse(IntType* elements);
 
  private:
+  static bool CheckArguments(IntType degree, IntType p) {
+    // Avoid unused parameter warnings
+    (void)degree;
+    (void)p;
+    NTT_CHECK(IsPowerOfTwo(degree),
+              "degree " << degree << " is not a power of 2");
+    NTT_CHECK(degree <= (1 << s_max_degree_bits),
+              "degree should be less than 2^" << s_max_degree_bits << " got "
+                                              << degree);
+
+    NTT_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
+    return true;
+  }
+
   // Computed bit-scrambled vector of first m_degree powers
   // of a primitive root.
   inline void ComputeRootOfUnityPowers() {
@@ -155,7 +185,7 @@ class NTT {
     std::vector<IntType> root_of_unity_powers(m_degree);
     std::vector<IntType> precon_root_of_unity_powers(m_degree);
 
-    MultiplyFactor first(1, m_p);
+    MultiplyFactor first(1, m_bit_shift, m_p);
     root_of_unity_powers[0] = first.Operand();
     precon_root_of_unity_powers[0] = first.BarrettFactor();
     int idx = 0;
@@ -163,10 +193,10 @@ class NTT {
     for (size_t i = 1; i < m_degree; i++) {
       idx = ReverseBitsUInt(i, m_degree_bits);
       MultiplyFactor mf(
-          MultiplyUIntMod(root_of_unity_powers[prev_idx], m_w, m_p), m_p);
+          MultiplyUIntMod(root_of_unity_powers[prev_idx], m_w, m_p),
+          m_bit_shift, m_p);
       root_of_unity_powers[idx] = mf.Operand();
       precon_root_of_unity_powers[idx] = mf.BarrettFactor();
-
       prev_idx = idx;
     }
 
@@ -175,10 +205,24 @@ class NTT {
         std::move(precon_root_of_unity_powers);
   }
 
-  size_t m_p;            // prime modulus
+  size_t m_p;  // prime modulus
+
+  // Bit shift to use in computing Barrett reduction
+  // It should be 52 if m_p < (1 << 52) and HAS_AVX512IFMA is defined
+  // Otherwise, it defaults to 64
+  size_t m_bit_shift{64};
   size_t m_degree;       // N: size of NTT transform, should be power of 2
   size_t m_degree_bits;  // log_2(m_degree)
   static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
+
+  // Maximum number of bits in modulus;
+  static const size_t s_max_modulus_bits{62};
+
+  // Maximum number of bits in modulus to use IFMA acceleration;
+  static const size_t s_max_ifma_modulus_bits{52};
+
+  // Maximum modulus size to use IFMA acceleration;
+  static const size_t s_max_ifma_modulus{(1UL << s_max_ifma_modulus_bits) - 1};
 
   uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity

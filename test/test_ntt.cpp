@@ -61,7 +61,18 @@ TEST(NTT, Powers) {
   }
 }
 
-TEST(NTT, 2a) {
+TEST(NTT, 2a_48bit) {
+  std::vector<uint64_t> input{0, 0};
+  uint64_t prime = 281474976710897;
+  std::vector<uint64_t> exp_output{0, 0};
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 2a_60bit) {
   std::vector<uint64_t> input{0, 0};
   uint64_t prime = 0xffffffffffc0001ULL;
   std::vector<uint64_t> exp_output{0, 0};
@@ -72,9 +83,9 @@ TEST(NTT, 2a) {
   CheckNTTResults(input, exp_output);
 }
 
-TEST(NTT, 2b) {
+TEST(NTT, 2b_48bit) {
   std::vector<uint64_t> input{1, 0};
-  uint64_t prime = 0xffffffffffc0001ULL;
+  uint64_t prime = 281474976710897;
   std::vector<uint64_t> exp_output{1, 1};
 
   size_t N = input.size();
@@ -84,15 +95,63 @@ TEST(NTT, 2b) {
   CheckNTTResults(input, exp_output);
 }
 
-TEST(NTT, 2c) {
-  std::vector<uint64_t> input{1, 1};
+TEST(NTT, 2b_60bit) {
+  std::vector<uint64_t> input{1, 0};
   uint64_t prime = 0xffffffffffc0001ULL;
-  std::vector<uint64_t> exp_output{288794978602139553ULL,
-                                   864126526004445282ULL};
+  std::vector<uint64_t> exp_output{1, 1};
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 2b_60bit_native) {
+  std::vector<uint64_t> input{1, 0};
+  uint64_t prime = 0xffffffffffc0001ULL;
+  std::vector<uint64_t> exp_output{1, 1};
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse64(
+      N, prime, ntt.GetRootOfUnityPowers().data(),
+      ntt.GetPreconRootOfUnityPowers().data(), input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 2c_48bit) {
+  std::vector<uint64_t> input{1, 1};
+  uint64_t prime = 281474976710897;
+  std::vector<uint64_t> exp_output{19842761023586, 261632215687313};
 
   size_t N = input.size();
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 2c_60bit) {
+  std::vector<uint64_t> input{1, 1};
+  uint64_t prime = 0xffffffffffc0001ULL;
+  std::vector<uint64_t> exp_output{288794978602139553, 864126526004445282};
+
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckNTTResults(input, exp_output);
+}
+
+TEST(NTT, 2c_60bit_native) {
+  std::vector<uint64_t> input{1, 1};
+  uint64_t prime = 0xffffffffffc0001ULL;
+  std::vector<uint64_t> exp_output{288794978602139553, 864126526004445282};
+  size_t N = input.size();
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse64(
+      N, prime, ntt.GetRootOfUnityPowers().data(),
+      ntt.GetPreconRootOfUnityPowers().data(), input.data());
 
   CheckNTTResults(input, exp_output);
 }

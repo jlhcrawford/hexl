@@ -19,10 +19,12 @@
 #include <immintrin.h>
 
 #include <iostream>
+#include <vector>
 
 #include "logging/logging.hpp"
 #include "ntt.hpp"
 #include "number-theory.hpp"
+#include "util.hpp"
 
 namespace intel {
 namespace ntt {
@@ -34,8 +36,56 @@ inline __m512i avx512_mod_epu64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
+inline std::vector<uint64_t> ExtractValues(__m512i x) {
+  __m256i x0 = _mm512_extracti64x4_epi64(x, 0);
+  __m256i x1 = _mm512_extracti64x4_epi64(x, 1);
+
+  std::vector<uint64_t> xs{static_cast<uint64_t>(_mm256_extract_epi64(x0, 0)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x0, 1)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x0, 2)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x0, 3)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x1, 0)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x1, 1)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x1, 2)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x1, 3))};
+
+  return xs;
+}
+
+// Checks all values in a vector are strictly less than bound
+// Returns true
+template <typename T>
+inline bool CheckBounds(const T* values, size_t num_values, T bound) {
+  // Avoid unused variable warnings
+  (void)values;
+  (void)num_values;
+  (void)bound;
+  NTT_CHECK(
+      [&]() {
+        for (size_t i = 0; i < num_values; ++i) {
+          if (values[i] >= bound) return false;
+        }
+        return true;
+      }(),
+      "Value in " << std::vector<T>(values, values + num_values)
+                  << " exceeds bound " << bound);
+  return true;
+}
+
+// Checks all 64-bit values in x are less than bound
+// Returns true
+inline bool CheckBounds(__m512i x, uint64_t bound) {
+  return CheckBounds(ExtractValues(x).data(), 512 / 64, bound);
+}
+
+// Returns c[i] = hi BitShift bits of x[i] * y[i]
+// Assumes x and y are both less than BitShift
+template <int BitShift>
+inline __m512i avx512_multiply_uint64_hi(__m512i x, __m512i y);
+
 // Returns c[i] = hi 64 bits of x[i] * y[i]
-inline __m512i avx512_multiply_uint64_hi(__m512i x, __m512i y) {
+template <>
+inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
   // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
   __m512i lomask = _mm512_set1_epi64(0x00000000ffffffff);
   __m512i xh =
@@ -55,6 +105,42 @@ inline __m512i avx512_multiply_uint64_hi(__m512i x, __m512i y) {
   __m512i hi1 = _mm512_add_epi64(w3, s1h);
   return _mm512_add_epi64(hi1, s2h);
 }
+
+// Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
+// to form a 104-bit intermediate result. Return the high 52-bit unsigned
+// integer from the intermediate result.
+#ifdef NTT_HAS_AVX512IFMA
+template <>
+inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
+  NTT_CHECK(CheckBounds(x, MaximumValue(52)), "");
+  NTT_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  __m512i zero = _mm512_set1_epi64(0);
+  return _mm512_madd52hi_epu64(zero, x, y);
+}
+#endif
+
+// Returns c[i] = hi BitShift bits of x[i] * y[i]
+// Assumes x and y are both less than BitShift
+template <int BitShift>
+inline __m512i avx512_multiply_uint64_lo(__m512i x, __m512i y);
+
+template <>
+inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
+  return _mm512_mullo_epi64(x, y);
+}
+
+#ifdef NTT_HAS_AVX512IFMA
+// Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
+// to form a 104-bit intermediate result. Return the high 52-bit unsigned
+// integer from the intermediate result.
+template <>
+inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
+  NTT_CHECK(CheckBounds(x, MaximumValue(52)), "");
+  NTT_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  __m512i zero = _mm512_set1_epi64(0);
+  return _mm512_madd52lo_epu64(zero, x, y);
+}
+#endif
 
 }  // namespace ntt
 }  // namespace intel
