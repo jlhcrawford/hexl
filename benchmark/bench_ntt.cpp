@@ -26,34 +26,36 @@ namespace ntt {
 
 //=================================================================
 
-static void BM_NTT1024(benchmark::State& state) {  //  NOLINT
-  size_t N = 1024;
-  size_t prime = 0xffffffffffc0001ULL;
+// state[0] is the degree
+// state[1] is approximately the number of bits in the coefficient modulus
+// We distinguish between above and below 52 bits, since optimized
+// AVX512-IFMA implementations exist for < 52 bits
+static void BM_NTT(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
 
-  std::vector<uint64_t> input(1024, 1);
-  NTT ntt(N, prime);
+  size_t prime_bits = state.range(1);
+  size_t prime = 1;
+  if (prime_bits <= 52) {
+    prime = 0xffffee001;
+  } else {
+    prime = 0xffffffffffc0001ULL;
+  }
+
+  std::vector<uint64_t> input(ntt_size, 1);
+  NTT ntt(ntt_size, prime);
 
   for (auto _ : state) {
     ntt.ForwardTransformToBitReverse(input.data());
   }
 }
 
-BENCHMARK(BM_NTT1024)->Unit(benchmark::kMicrosecond)->MinTime(5.0);
-
-//=================================================================
-static void BM_NTT4096(benchmark::State& state) {  //  NOLINT
-  size_t N = 4096;
-  size_t prime = 0xffffffffffc0001ULL;
-
-  std::vector<uint64_t> input(4096, 1);
-  NTT ntt(N, prime);
-
-  for (auto _ : state) {
-    ntt.ForwardTransformToBitReverse(input.data());
-  }
-}
-
-BENCHMARK(BM_NTT4096)->Unit(benchmark::kMicrosecond)->MinTime(5.0);
+BENCHMARK(BM_NTT)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(5.0)
+    ->Args({1024, 52})
+    ->Args({1024, 64})
+    ->Args({4096, 52})
+    ->Args({4096, 64});
 
 }  // namespace ntt
 }  // namespace intel

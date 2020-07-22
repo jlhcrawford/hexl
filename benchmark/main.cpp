@@ -15,12 +15,14 @@
 //*****************************************************************************
 
 #include <benchmark/benchmark.h>
+#include <gflags/gflags.h>
 
 #include "logging/logging.hpp"
 
-INITIALIZE_EASYLOGGINGPP
-
 int main(int argc, char** argv) {
+  gflags::SetUsageMessage(argv[0]);
+  START_EASYLOGGINGPP(argc, argv);
+
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
 }

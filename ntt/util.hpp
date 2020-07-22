@@ -21,9 +21,6 @@
 __extension__ typedef __int128 int128_t;
 __extension__ typedef unsigned __int128 uint128_t;
 
-// TODO(fboemer): better error logging. It should not evaluate expr if in debug
-// mode
-
 #ifdef NTT_DEBUG
 #define NTT_CHECK(cond, expr)                            \
   if (!(cond)) {                                         \

@@ -16,10 +16,10 @@
 
 set(NTT_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (${NTT_AVX512})
-    set(SRC number-theory.cpp ntt-avx512.cpp)
-else()
-    set(SRC number-theory.cpp ntt.cpp)
+set(SRC number-theory.cpp ntt.cpp)
+
+if (${HAS_AVX512F})
+    list(APPEND SRC ntt-avx512.cpp)
 endif()
 
 add_library(ntt SHARED ${SRC})

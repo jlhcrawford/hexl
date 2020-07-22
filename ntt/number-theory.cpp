@@ -30,6 +30,7 @@ uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
   uint64_t a = input % modulus;
   NTT_CHECK(a != 0,
             input << " does not have a InverseMod with modulus " << modulus)
+
   if (modulus == 1) {
     return 0;
   }
@@ -92,7 +93,10 @@ uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus) {
 
 uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus) {
   NTT_CHECK(modulus != 0, "modulus == 0");
+  NTT_CHECK(x < modulus, "x " << x << " > modulus " << modulus);
+  NTT_CHECK(y < modulus, "y " << y << " > modulus " << modulus);
   uint128_t z = MultiplyUInt64(x, y);
+
   return BarrettReduce128(z, modulus);
 }
 
