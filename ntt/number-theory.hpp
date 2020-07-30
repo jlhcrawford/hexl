@@ -17,6 +17,7 @@
 #pragma once
 
 #include <limits>
+#include <vector>
 
 #include "logging/logging.hpp"
 #include "util.hpp"
@@ -122,6 +123,90 @@ inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
                                     const uint64_t modulus) {
   const uint64_t y_barrett = (uint128_t(y) << BitShift) / modulus;
   return MultiplyUIntModLazy<BitShift>(x, y, y_barrett, modulus);
+}
+
+// Returns whether or not the input is prime
+inline bool IsPrime(const uint64_t n) {
+  static const std::vector<uint64_t> as{2,  3,  5,  7,  11, 13,
+                                        17, 19, 23, 29, 31, 37};
+
+  for (const uint64_t a : as) {
+    if (n == a) return true;
+    if (n % a == 0) return false;
+  }
+
+  // Miller-Rabin primality test
+  // n < 2^64, so it is enough to test a=2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+  // and 37. See
+  // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Testing_against_small_sets_of_bases
+
+  // Write n == 2**r * d + 1 with d odd.
+  uint64_t r = 63;
+  while (r > 0) {
+    uint64_t two_pow_r = (1UL << r);
+    if ((n - 1) % two_pow_r == 0) {
+      break;
+    }
+    --r;
+  }
+  NTT_CHECK(r != 0, "Error factoring n " << n);
+  uint64_t d = (n - 1) / (1UL << r);
+
+  NTT_CHECK(n == (1UL << r) * d + 1, "Error factoring n " << n);
+  NTT_CHECK(d % 2 == 1, "d is even");
+
+  for (const uint64_t a : as) {
+    uint64_t x = PowMod(a, d, n);
+    if ((x == 1) || (x == n - 1)) {
+      continue;
+    }
+
+    bool prime = false;
+    for (uint64_t i = 1; i < r; ++i) {
+      x = PowMod(x, 2, n);
+      if (x == n - 1) {
+        prime = true;
+      }
+    }
+    if (!prime) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Generates a list of num_primes primes in the range [2^bit_size,
+// 2^(bit_size+1)]. Ensures each prime p satisfies
+// p % (2*ntt_size+1)) == 1
+// @param num_primes Number of primes to generate
+// @param bit_size Bit size of each prime
+// @param ntt_size N such that each prime p satisfies p % (2N) == 1. N must be
+// a power of two
+inline std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
+                                            size_t ntt_size = 1) {
+  NTT_CHECK(num_primes > 0, "num_primes == 0");
+  NTT_CHECK(IsPowerOfTwo(ntt_size),
+            "ntt_size " << ntt_size << " is not a power of two");
+  NTT_CHECK(Log2(ntt_size) < bit_size,
+            "log2(ntt_size) " << Log2(ntt_size)
+                              << " should be less than bit_size " << bit_size);
+
+  uint64_t value = (1UL << bit_size) + 1;
+
+  std::vector<uint64_t> ret;
+
+  while (value < (1UL << (bit_size + 1))) {
+    if (IsPrime(value)) {
+      ret.emplace_back(value);
+      if (ret.size() == num_primes) {
+        return ret;
+      }
+    }
+    value += 2 * ntt_size;
+  }
+
+  NTT_CHECK(false, "Failed to find enough primes");
+  return ret;
 }
 
 }  // namespace ntt
