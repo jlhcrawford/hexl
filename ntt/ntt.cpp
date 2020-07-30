@@ -87,6 +87,7 @@ void NTT::ForwardTransformToBitReverse(
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements,
     bool use_ifma_if_possible) {
+  (void)use_ifma_if_possible;  // Avoid unused parameter warning
 #ifdef NTT_HAS_AVX512IFMA
   // TODO(fboemer): Check 50-bit limit more carefully
   constexpr IntType ifma_mod_bound = (1UL << 50);

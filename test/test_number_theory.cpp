@@ -289,5 +289,32 @@ TEST(NumberTheory, MaximumValue) {
   ASSERT_EQ(MaximumValue(52), 0xfffffffffffff);
 }
 
+TEST(NumberTheory, IsPrime) {
+  ASSERT_TRUE(IsPrime(2));
+  ASSERT_TRUE(IsPrime(3));
+  ASSERT_TRUE(IsPrime(5));
+  ASSERT_TRUE(IsPrime(2305843009211596801ULL));
+  ASSERT_TRUE(IsPrime(2305843009211596801ULL));
+  ASSERT_FALSE(IsPrime(2305843009211596802ULL));
+  ASSERT_TRUE(IsPrime(0xffffffffffc0001ULL));
+  ASSERT_TRUE(IsPrime(0xffffee001));
+  ASSERT_FALSE(IsPrime(72307ULL * 59399ULL));
+  ASSERT_TRUE(IsPrime(36893488147419103ULL));
+  ASSERT_FALSE(IsPrime(36893488147419107ULL));
+}
+
+TEST(NumberTheory, GeneratePrimes) {
+  for (int bit_size = 40; bit_size < 62; ++bit_size) {
+    std::vector<uint64_t> primes = GeneratePrimes(10, bit_size, 4096);
+    ASSERT_EQ(primes.size(), 10);
+    for (const auto& prime : primes) {
+      ASSERT_EQ(prime % 8192, 1);
+      ASSERT_TRUE(IsPrime(prime));
+      ASSERT_TRUE(prime <= (1UL << (bit_size + 1)));
+      ASSERT_TRUE(prime >= (1UL << bit_size));
+    }
+  }
+}
+
 }  // namespace ntt
 }  // namespace intel
