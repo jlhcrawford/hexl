@@ -22,7 +22,7 @@
 #include "ntt/ntt.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 //=================================================================
 
@@ -57,5 +57,5 @@ BENCHMARK(BM_NTT)
     ->Args({4096, 52})
     ->Args({4096, 64});
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

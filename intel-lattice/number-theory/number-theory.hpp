@@ -23,7 +23,7 @@
 #include "util/check.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 inline bool IsPowerOfTwo(uint64_t num) { return num && !(num & (num - 1)); }
 
@@ -212,5 +212,5 @@ inline std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
   return ret;
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

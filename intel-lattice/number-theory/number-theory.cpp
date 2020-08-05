@@ -24,7 +24,7 @@
 #include "util/check.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
   uint64_t a = input % modulus;
@@ -191,5 +191,5 @@ uint64_t ReverseBitsUInt(uint64_t x, uint64_t bit_width) {
   return rev;
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

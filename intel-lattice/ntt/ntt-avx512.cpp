@@ -25,7 +25,7 @@
 #include "util/avx512_util.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 #ifdef LATTICE_HAS_AVX512IFMA
 template void NTT::ForwardTransformToBitReverseAVX512<52>(
@@ -39,5 +39,5 @@ template void NTT::ForwardTransformToBitReverseAVX512<64>(
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements);
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel
