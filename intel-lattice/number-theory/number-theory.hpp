@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "util.hpp"
+#include "util/check.hpp"
 
 namespace intel {
 namespace ntt {
@@ -29,7 +29,7 @@ inline bool IsPowerOfTwo(uint64_t num) { return num && !(num & (num - 1)); }
 
 // Returns log2(x) for x a power of 2
 inline uint64_t Log2(uint64_t x) {
-  NTT_CHECK(IsPowerOfTwo(x), x << " not a power of 2");
+  LATTICE_CHECK(IsPowerOfTwo(x), x << " not a power of 2");
   uint64_t ret = 0;
   while (x >>= 1) ++ret;
   return ret;
@@ -37,7 +37,7 @@ inline uint64_t Log2(uint64_t x) {
 
 // Returns the maximum value that can be represented using bits bits.
 inline uint64_t MaximumValue(uint64_t bits) {
-  NTT_CHECK(bits <= 64, "MaximumValue requires bits <= 64; got " << bits);
+  LATTICE_CHECK(bits <= 64, "MaximumValue requires bits <= 64; got " << bits);
   if (bits == 64) {
     return std::numeric_limits<uint64_t>::max();
   }
@@ -86,9 +86,9 @@ class MultiplyFactor {
   MultiplyFactor() = default;
   MultiplyFactor(uint64_t operand, uint64_t bit_shift, uint64_t modulus)
       : m_operand(operand) {
-    NTT_CHECK(operand <= modulus, "operand " << operand
-                                             << " must be less than modulus "
-                                             << modulus);
+    LATTICE_CHECK(
+        operand <= modulus,
+        "operand " << operand << " must be less than modulus " << modulus);
     m_barrett_factor =
         static_cast<uint64_t>((uint128_t(operand) << bit_shift) / modulus);
   }
@@ -107,12 +107,14 @@ template <int BitShift>
 inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
                                     uint64_t const y_barrett_factor,
                                     const uint64_t mod) {
-  NTT_CHECK(y_operand <= mod,
-            "y_operand " << y_operand << " must be less than modulus " << mod);
-  NTT_CHECK(mod <= MaximumValue(BitShift),
-            "Modulus " << mod << " exceeds bound " << MaximumValue(BitShift));
-  NTT_CHECK(x <= MaximumValue(BitShift),
-            "Operand " << x << " exceeds bound " << MaximumValue(BitShift));
+  LATTICE_CHECK(y_operand <= mod, "y_operand " << y_operand
+                                               << " must be less than modulus "
+                                               << mod);
+  LATTICE_CHECK(mod <= MaximumValue(BitShift), "Modulus "
+                                                   << mod << " exceeds bound "
+                                                   << MaximumValue(BitShift));
+  LATTICE_CHECK(x <= MaximumValue(BitShift),
+                "Operand " << x << " exceeds bound " << MaximumValue(BitShift));
 
   uint64_t tmp1 = MultiplyUInt64Hi<BitShift>(x, y_barrett_factor);
   return y_operand * x - tmp1 * mod;
@@ -149,11 +151,11 @@ inline bool IsPrime(const uint64_t n) {
     }
     --r;
   }
-  NTT_CHECK(r != 0, "Error factoring n " << n);
+  LATTICE_CHECK(r != 0, "Error factoring n " << n);
   uint64_t d = (n - 1) / (1UL << r);
 
-  NTT_CHECK(n == (1UL << r) * d + 1, "Error factoring n " << n);
-  NTT_CHECK(d % 2 == 1, "d is even");
+  LATTICE_CHECK(n == (1UL << r) * d + 1, "Error factoring n " << n);
+  LATTICE_CHECK(d % 2 == 1, "d is even");
 
   for (const uint64_t a : as) {
     uint64_t x = PowMod(a, d, n);
@@ -184,12 +186,13 @@ inline bool IsPrime(const uint64_t n) {
 // a power of two
 inline std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
                                             size_t ntt_size = 1) {
-  NTT_CHECK(num_primes > 0, "num_primes == 0");
-  NTT_CHECK(IsPowerOfTwo(ntt_size),
-            "ntt_size " << ntt_size << " is not a power of two");
-  NTT_CHECK(Log2(ntt_size) < bit_size,
-            "log2(ntt_size) " << Log2(ntt_size)
-                              << " should be less than bit_size " << bit_size);
+  LATTICE_CHECK(num_primes > 0, "num_primes == 0");
+  LATTICE_CHECK(IsPowerOfTwo(ntt_size),
+                "ntt_size " << ntt_size << " is not a power of two");
+  LATTICE_CHECK(Log2(ntt_size) < bit_size,
+                "log2(ntt_size) " << Log2(ntt_size)
+                                  << " should be less than bit_size "
+                                  << bit_size);
 
   uint64_t value = (1UL << bit_size) + 1;
 
@@ -205,7 +208,7 @@ inline std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
     value += 2 * ntt_size;
   }
 
-  NTT_CHECK(false, "Failed to find enough primes");
+  LATTICE_CHECK(false, "Failed to find enough primes");
   return ret;
 }
 

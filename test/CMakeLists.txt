@@ -21,6 +21,6 @@ add_executable(unit-test ${SRC})
 target_compile_options(unit-test PRIVATE -Wall -Wextra -march=native)
 
 target_include_directories(unit-test PRIVATE ".")
-target_link_libraries(unit-test PRIVATE libgtest ntt)
+target_link_libraries(unit-test PRIVATE libgtest intel_lattice)
 target_link_libraries(unit-test PRIVATE Threads::Threads)
 target_link_libraries(unit-test PRIVATE logging)

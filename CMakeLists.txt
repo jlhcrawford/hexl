@@ -70,16 +70,16 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 # Compiler options...
 #------------------------------------------------------------------------------
 
-option(NTT_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
-option(NTT_BENCHMARK "Enable benchmarking" ON)
+option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
+option(LATTICE_BENCHMARK "Enable benchmarking" ON)
 
 message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
-message(STATUS "NTT_DEBUG:          ${NTT_DEBUG}")
-message(STATUS "NTT_BENCHMARK:      ${NTT_BENCHMARK}")
+message(STATUS "LATTICE_DEBUG:      ${LATTICE_DEBUG}")
+message(STATUS "LATTICE_BENCHMARK:  ${LATTICE_BENCHMARK}")
 
-if (NTT_DEBUG)
-  add_definitions(-DNTT_DEBUG)
+if (LATTICE_DEBUG)
+  add_definitions(-DLATTICE_DEBUG)
 endif()
 
 function(check_flag FLAG OUTPUT_FLAG)
@@ -100,13 +100,13 @@ check_flag("avx512dq" HAS_AVX512DQ)
 check_flag("avx512ifma" HAS_AVX512IFMA)
 
 if (HAS_AVX512IFMA)
-message(STATUS "Setting NTT_HAS_AVX512IFMA")
-  add_definitions(-DNTT_HAS_AVX512IFMA)
+message(STATUS "Setting LATTICE_HAS_AVX512IFMA")
+  add_definitions(-DLATTICE_HAS_AVX512IFMA)
 endif()
 
 if (HAS_AVX512F AND HAS_AVX512DQ)
-  message(STATUS "Setting DNTT_HAS_AVX512F")
-  add_definitions(-DNTT_HAS_AVX512F)
+  message(STATUS "Setting DLATTICE_HAS_AVX512F")
+  add_definitions(-DLATTICE_HAS_AVX512F)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include(cmake/gtest.cmake)
-if (${NTT_BENCHMARK})
+if (${LATTICE_BENCHMARK})
   include(cmake/gbenchmark.cmake)
 endif()
 include(cmake/easylogging.cmake)
@@ -163,8 +163,8 @@ include(cmake/gflags.cmake)
 # Subfolders...
 #------------------------------------------------------------------------------
 add_subdirectory(logging)
-add_subdirectory(ntt)
-if (${NTT_BENCHMARK})
+add_subdirectory(intel-lattice)
+if (${LATTICE_BENCHMARK})
   add_subdirectory(benchmark)
 endif()
 add_subdirectory(test)

@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "number-theory.hpp"
-#include "util.hpp"
+#include "number-theory/number-theory.hpp"
+#include "util/check.hpp"
 
 namespace intel {
 namespace ntt {
@@ -59,11 +59,12 @@ class NTT {
   // transforms
   NTT(IntType degree, IntType p, IntType root_of_unity)
       : m_p(p), m_degree(degree), m_w(root_of_unity) {
-    NTT_CHECK(CheckArguments(degree, p), "");
-    NTT_CHECK(IsPrimitiveRoot(m_w, 2 * degree, p),
-              m_w << " is not a primitive 2*" << degree << "'th root of unity");
+    LATTICE_CHECK(CheckArguments(degree, p), "");
+    LATTICE_CHECK(
+        IsPrimitiveRoot(m_w, 2 * degree, p),
+        m_w << " is not a primitive 2*" << degree << "'th root of unity");
 
-#ifdef NTT_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512IFMA
     if (m_p < s_max_ifma_modulus) {
       m_bit_shift = s_max_ifma_modulus_bits;
     }
@@ -107,16 +108,16 @@ class NTT {
   std::vector<IntType> GetPreconRootOfUnityPowers() {
     std::pair<IntType, IntType> key{m_p, m_w};
     auto it = GetStaticPreconRootOfUnityPowers().find(key);
-    NTT_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
-              "Could not find root of unity power");
+    LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
+                  "Could not find root of unity power");
     return it->second;
   }
 
   std::vector<IntType> GetRootOfUnityPowers() {
     std::pair<IntType, IntType> key{m_p, m_w};
     auto it = GetStaticRootOfUnityPowers().find(key);
-    NTT_CHECK(it != GetStaticRootOfUnityPowers().end(),
-              "Could not find root of unity power");
+    LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
+                  "Could not find root of unity power");
     return it->second;
   }
 
@@ -144,7 +145,7 @@ class NTT {
       const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements);
 
-#ifdef NTT_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512F
   template <int BitShift>
   static void ForwardTransformToBitReverseAVX512(
       const IntType degree, const IntType mod,
@@ -162,13 +163,13 @@ class NTT {
     // Avoid unused parameter warnings
     (void)degree;
     (void)p;
-    NTT_CHECK(IsPowerOfTwo(degree),
-              "degree " << degree << " is not a power of 2");
-    NTT_CHECK(degree <= (1 << s_max_degree_bits),
-              "degree should be less than 2^" << s_max_degree_bits << " got "
-                                              << degree);
+    LATTICE_CHECK(IsPowerOfTwo(degree),
+                  "degree " << degree << " is not a power of 2");
+    LATTICE_CHECK(degree <= (1 << s_max_degree_bits),
+                  "degree should be less than 2^" << s_max_degree_bits
+                                                  << " got " << degree);
 
-    NTT_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
+    LATTICE_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
     return true;
   }
 

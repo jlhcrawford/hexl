@@ -42,10 +42,6 @@ build:
 
   artifacts:
     paths:
-        - build/src/
-        - build/test/
-        - build/ext_easy_logging/
-        - build/ext_gbenchmark/
         - build/
     expire_in: 1 day
 

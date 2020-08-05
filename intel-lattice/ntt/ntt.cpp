@@ -22,7 +22,7 @@
 #include <utility>
 
 #include "logging/logging.hpp"
-#include "number-theory.hpp"
+#include "number-theory/number-theory.hpp"
 
 namespace intel {
 namespace ntt {
@@ -33,7 +33,7 @@ void NTT::ForwardTransformToBitReverse64(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements) {
-  NTT_CHECK(CheckArguments(degree, mod), "");
+  LATTICE_CHECK(CheckArguments(degree, mod), "");
 
   uint64_t twice_mod = mod << 1;
 
@@ -54,7 +54,8 @@ void NTT::ForwardTransformToBitReverse64(
 
       uint64_t tx;
       uint64_t Q;
-#pragma unroll 4
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
       for (size_t j = j1; j < j2; j++) {
         // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
         // [0, 4p).
@@ -77,8 +78,8 @@ void NTT::ForwardTransformToBitReverse64(
     if (elements[i] >= mod) {
       elements[i] -= mod;
     }
-    NTT_CHECK(elements[i] < mod,
-              "Incorrect modulus reduction " << elements[i] << " >= " << mod);
+    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
+                                         << elements[i] << " >= " << mod);
   }
 }
 
@@ -88,7 +89,7 @@ void NTT::ForwardTransformToBitReverse(
     const IntType* precon_root_of_unity_powers, IntType* elements,
     bool use_ifma_if_possible) {
   (void)use_ifma_if_possible;  // Avoid unused parameter warning
-#ifdef NTT_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512IFMA
   // TODO(fboemer): Check 50-bit limit more carefully
   constexpr IntType ifma_mod_bound = (1UL << 50);
   if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
@@ -100,7 +101,7 @@ void NTT::ForwardTransformToBitReverse(
   }
 #endif
 
-#ifdef NTT_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 NTT");
   NTT::ForwardTransformToBitReverseAVX512<64>(
       degree, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);

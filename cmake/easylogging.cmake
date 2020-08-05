@@ -51,7 +51,7 @@ target_include_directories(easylogging PUBLIC ${SOURCE_DIR}/src)
 add_dependencies(easylogging ext_easylogging)
 
 install(DIRECTORY ${SOURCE_DIR}/src/
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/
         FILES_MATCHING
         PATTERN "*.hpp"
         PATTERN "*.h")

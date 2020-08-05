@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "ntt/avx512_util.hpp"
 #include "ntt/ntt.hpp"
-#include "ntt/number-theory.hpp"
+#include "number-theory/number-theory.hpp"
+#include "util/avx512_util.hpp"
 
 namespace intel {
 namespace ntt {
@@ -50,9 +50,9 @@ void NTT::ForwardTransformToBitReverseAVX512(
   size_t n = degree;
 
   CheckArguments(degree, mod);
-  NTT_CHECK(CheckBounds(precon_root_of_unity_powers, n, MaximumValue(BitShift)),
-            "");
-  NTT_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
+  LATTICE_CHECK(
+      CheckBounds(precon_root_of_unity_powers, n, MaximumValue(BitShift)), "");
+  LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
 
   size_t t = (n >> 1);
 
@@ -71,7 +71,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
       uint64_t Q;
 
       if (j2 - j1 < 8) {
-#pragma unroll 4
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
         for (size_t j = j1; j < j2; j++) {
           // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
           // [0, 4p).
@@ -80,11 +81,11 @@ void NTT::ForwardTransformToBitReverseAVX512(
                                      -static_cast<int64_t>(*X >= twice_mod)));
           Q = MultiplyUIntModLazy<BitShift>(*Y, W_op, W_precon, mod);
 
-          NTT_CHECK(tx + Q <= MaximumValue(BitShift),
-                    "tx " << tx << " + Q " << Q << " excceds");
-          NTT_CHECK(tx + twice_mod - Q <= MaximumValue(BitShift),
-                    "tx " << tx << " + twice_mod " << twice_mod << " + Q " << Q
-                          << " excceds");
+          LATTICE_CHECK(tx + Q <= MaximumValue(BitShift),
+                        "tx " << tx << " + Q " << Q << " excceds");
+          LATTICE_CHECK(tx + twice_mod - Q <= MaximumValue(BitShift),
+                        "tx " << tx << " + twice_mod " << twice_mod << " + Q "
+                              << Q << " excceds");
           *X++ = tx + Q;
           *Y++ = tx + twice_mod - Q;
         }
@@ -120,8 +121,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
           _mm512_storeu_si512(v_X_pt, v_X);
           _mm512_storeu_si512(v_Y_pt, v_Y);
 
-          NTT_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
-          NTT_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
+          LATTICE_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
+          LATTICE_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
 
           ++v_X_pt;
           ++v_Y_pt;
@@ -143,7 +144,7 @@ void NTT::ForwardTransformToBitReverseAVX512(
     }
   } else {
     // n power of two at least 8 => n divisible by 8
-    NTT_CHECK(n % 8 == 0, "degree " << degree << " not a power of 2");
+    LATTICE_CHECK(n % 8 == 0, "degree " << degree << " not a power of 2");
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
     for (size_t i = 0; i < n; i += 8) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
