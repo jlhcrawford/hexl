@@ -14,31 +14,20 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "ntt/ntt-avx512.hpp"
-
-#include <immintrin.h>
-
-#include <iostream>
+#pragma once
 
 #include "logging/logging.hpp"
-#include "ntt/avx512_util.hpp"
-#include "ntt/ntt.hpp"
-#include "ntt/number-theory.hpp"
 
-namespace intel {
-namespace ntt {
+__extension__ typedef __int128 int128_t;
+__extension__ typedef unsigned __int128 uint128_t;
 
-#ifdef NTT_HAS_AVX512IFMA
-template void NTT::ForwardTransformToBitReverseAVX512<52>(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements);
+#ifdef LATTICE_DEBUG
+#define LATTICE_CHECK(cond, expr)                        \
+  if (!(cond)) {                                         \
+    LOG(ERROR) << expr;                                  \
+    throw std::runtime_error("Error. Check log output"); \
+  }
+#else
+#define LATTICE_CHECK(cond, expr) \
+  {}
 #endif
-
-template void NTT::ForwardTransformToBitReverseAVX512<64>(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements);
-
-}  // namespace ntt
-}  // namespace intel

@@ -22,9 +22,8 @@
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "ntt.hpp"
-#include "number-theory.hpp"
-#include "util.hpp"
+#include "number-theory/number-theory.hpp"
+#include "util/check.hpp"
 
 namespace intel {
 namespace ntt {
@@ -60,7 +59,7 @@ inline bool CheckBounds(const T* values, size_t num_values, T bound) {
   (void)values;
   (void)num_values;
   (void)bound;
-  NTT_CHECK(
+  LATTICE_CHECK(
       [&]() {
         for (size_t i = 0; i < num_values; ++i) {
           if (values[i] >= bound) return false;
@@ -109,11 +108,11 @@ inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
 // Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
 // to form a 104-bit intermediate result. Return the high 52-bit unsigned
 // integer from the intermediate result.
-#ifdef NTT_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
-  NTT_CHECK(CheckBounds(x, MaximumValue(52)), "");
-  NTT_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
+  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
   __m512i zero = _mm512_set1_epi64(0);
   return _mm512_madd52hi_epu64(zero, x, y);
 }
@@ -129,14 +128,14 @@ inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
   return _mm512_mullo_epi64(x, y);
 }
 
-#ifdef NTT_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512IFMA
 // Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
 // to form a 104-bit intermediate result. Return the high 52-bit unsigned
 // integer from the intermediate result.
 template <>
 inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
-  NTT_CHECK(CheckBounds(x, MaximumValue(52)), "");
-  NTT_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
+  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
   __m512i zero = _mm512_set1_epi64(0);
   return _mm512_madd52lo_epu64(zero, x, y);
 }

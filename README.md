@@ -16,7 +16,7 @@ We may end up merging this into intel-palisade-development, or keep it as a sepa
 mkdir build
 cd build
 # Other compilers may work; we find best performance with clang-10
-# For debugging with heavy performance hit, include -DNTT_DEBUG=ON
+# For debugging with heavy performance hit, include -DLATTICE_DEBUG=ON
 cmake .. -DCMAKE_CXX_COMPILER=clang++-10 -DCMAKE_C_COMPILER=clang-10
 
 make -j

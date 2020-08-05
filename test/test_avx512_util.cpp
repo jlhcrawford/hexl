@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "ntt/avx512_util.hpp"
+#include "util/avx512_util.hpp"
 
 namespace intel {
 namespace ntt {
@@ -43,7 +43,7 @@ inline bool Equals(__m512i a, __m512i b) {
   return match;
 }
 
-#ifdef NTT_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512IFMA
 TEST(AVX512, avx512_multiply_uint64_hi52) {
   {
     __m512i w = _mm512_set_epi64(90774764920991, 90774764920991, 90774764920991,

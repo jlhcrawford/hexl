@@ -14,22 +14,22 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "ntt/number-theory.hpp"
+#include "number-theory/number-theory.hpp"
 
 #include <bitset>
 #include <cassert>
 #include <random>
 
 #include "logging/logging.hpp"
-#include "ntt/util.hpp"
+#include "util/check.hpp"
 
 namespace intel {
 namespace ntt {
 
 uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
   uint64_t a = input % modulus;
-  NTT_CHECK(a != 0,
-            input << " does not have a InverseMod with modulus " << modulus)
+  LATTICE_CHECK(a != 0,
+                input << " does not have a InverseMod with modulus " << modulus)
 
   if (modulus == 1) {
     return 0;
@@ -59,7 +59,7 @@ uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
 }
 
 uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus) {
-  NTT_CHECK(modulus != 0, "modulus == 0")
+  LATTICE_CHECK(modulus != 0, "modulus == 0")
   return input % modulus;
 
   // TODO(fboemer): actually use barrett reduction
@@ -92,9 +92,9 @@ uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus) {
 }
 
 uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus) {
-  NTT_CHECK(modulus != 0, "modulus == 0");
-  NTT_CHECK(x < modulus, "x " << x << " > modulus " << modulus);
-  NTT_CHECK(y < modulus, "y " << y << " > modulus " << modulus);
+  LATTICE_CHECK(modulus != 0, "modulus == 0");
+  LATTICE_CHECK(x < modulus, "x " << x << " > modulus " << modulus);
+  LATTICE_CHECK(y < modulus, "y " << y << " > modulus " << modulus);
   uint128_t z = MultiplyUInt64(x, y);
 
   return BarrettReduce128(z, modulus);
@@ -120,7 +120,7 @@ bool IsPrimitiveRoot(uint64_t root, uint64_t degree, uint64_t modulus) {
   if (root == 0) {
     return false;
   }
-  NTT_CHECK(IsPowerOfTwo(degree), degree << " not a power of 2");
+  LATTICE_CHECK(IsPowerOfTwo(degree), degree << " not a power of 2");
 
   IVLOG(4, "IsPrimitiveRoot root " << root << ", degree " << degree
                                    << ", modulus " << modulus);
@@ -150,8 +150,8 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus) {
       return root;
     }
   }
-  NTT_CHECK(false, "no primitive root found for degree "
-                       << degree << " modulus " << modulus);
+  LATTICE_CHECK(false, "no primitive root found for degree "
+                           << degree << " modulus " << modulus);
   return 0;
 }
 

@@ -21,7 +21,7 @@
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
 #include "ntt/ntt.hpp"
-#include "ntt/number-theory.hpp"
+#include "number-theory/number-theory.hpp"
 
 namespace intel {
 namespace ntt {

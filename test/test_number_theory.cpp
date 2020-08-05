@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "ntt/number-theory.hpp"
+#include "number-theory/number-theory.hpp"
 
 namespace intel {
 namespace ntt {
@@ -145,7 +145,7 @@ TEST(NumberTheory, InverseUIntMod) {
   input = 1, modulus = 2;
   ASSERT_EQ(1ULL, InverseUIntMod(input, modulus));
 
-#ifdef NTT_DEBUG
+#ifdef LATTICE_DEBUG
   input = 2, modulus = 2;
   EXPECT_ANY_THROW(InverseUIntMod(input, modulus));
 
@@ -273,7 +273,7 @@ TEST(NumberTheory, MultiplyUIntModLazy52) {
   ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
   ASSERT_EQ(1ULL, MultiplyUIntModLazy<52>(1, y, mod));
 
-#ifdef NTT_DEBUG
+#ifdef LATTICE_DEBUG
   y = 1152921504605798400ULL;
   EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(1152921504605798401ULL, y, mod));
   y = 1152921504605798401ULL;
