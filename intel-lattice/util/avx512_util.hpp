@@ -26,7 +26,7 @@
 #include "util/check.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 // returns x mod p; assumes x < 2p
 // == x >= p ? x - p : x
@@ -141,5 +141,5 @@ inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
 }
 #endif
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

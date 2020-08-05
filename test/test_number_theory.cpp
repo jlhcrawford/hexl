@@ -22,7 +22,7 @@
 #include "number-theory/number-theory.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 TEST(NumberTheory, Log2) {
   ASSERT_EQ(0, Log2(1));
@@ -316,5 +316,5 @@ TEST(NumberTheory, GeneratePrimes) {
   }
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

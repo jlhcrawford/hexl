@@ -24,7 +24,7 @@
 #include "util/check.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 struct hash_pair {
   template <class T1, class T2>
@@ -227,7 +227,7 @@ class NTT {
 
   uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity
-};                  // namespace ntt
+};
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

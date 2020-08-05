@@ -27,7 +27,7 @@
 #include "util/avx512_util.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 template <int BitShift>
 void NTT::ForwardTransformToBitReverseAVX512(
@@ -159,5 +159,5 @@ void NTT::ForwardTransformToBitReverseAVX512(
   }
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

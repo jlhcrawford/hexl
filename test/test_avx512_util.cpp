@@ -24,7 +24,7 @@
 #include "util/avx512_util.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 inline bool Equals(__m512i a, __m512i b) {
   bool match = true;
@@ -60,5 +60,5 @@ TEST(AVX512, avx512_multiply_uint64_hi52) {
 }
 #endif
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

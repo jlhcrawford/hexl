@@ -25,7 +25,7 @@
 #include "number-theory/number-theory.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 // based on
 // https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
@@ -113,5 +113,5 @@ void NTT::ForwardTransformToBitReverse(
                                       precon_root_of_unity_powers, elements);
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel

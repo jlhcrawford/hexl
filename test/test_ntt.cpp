@@ -24,7 +24,7 @@
 #include "number-theory/number-theory.hpp"
 
 namespace intel {
-namespace ntt {
+namespace lattice {
 
 // Checks whether x == y.
 void CheckNTTResults(const std::vector<uint64_t>& x,
@@ -285,5 +285,5 @@ TEST(NTT, 32a) {
   CheckNTTResults(input, exp_output);
 }
 
-}  // namespace ntt
+}  // namespace lattice
 }  // namespace intel
