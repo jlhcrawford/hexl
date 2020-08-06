@@ -14,11 +14,13 @@
 # the License.
 # *****************************************************************************
 
-set(SRC main.cpp bench_ntt.cpp)
+set(SRC main.cpp
+    bench_ntt.cpp
+    bench_poly_mult.cpp)
 
-add_executable(bench_ntt ${SRC})
+add_executable(bench_lattice ${SRC})
 
-target_include_directories(bench_ntt PRIVATE ".")
-target_link_libraries(bench_ntt PRIVATE intel_lattice)
-target_link_libraries(bench_ntt PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
-target_link_libraries(bench_ntt PRIVATE logging)
+target_include_directories(bench_lattice PRIVATE ".")
+target_link_libraries(bench_lattice PRIVATE intel_lattice)
+target_link_libraries(bench_lattice PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
+target_link_libraries(bench_lattice PRIVATE logging)

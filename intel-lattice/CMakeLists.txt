@@ -22,7 +22,8 @@ set(SRC ntt/ntt.cpp
 )
 
 if (${HAS_AVX512F})
-    list(APPEND SRC ntt/ntt-avx512.cpp)
+    list(APPEND SRC ntt/ntt-avx512.cpp
+        poly/poly-mult-avx512.cpp)
 endif()
 
 add_library(intel_lattice SHARED ${SRC})

@@ -1,14 +1,23 @@
-# NTT-avx
+# Intel-lattice
+** We plan to rename this repository to Intel-lattice. **
 
-This repository provides an efficient implementation of the negacyclic number-theoretic transform (NTT). Currently, we only support 64-bit unsigned integers. We provide three implementations:
+This repository provides an efficient implementation of integer arithmetic on Galois fields. We only support 64-bit unsigned integers.
 
-1) A default implementation
-2) An AVX-512-accelerated implementation
-3) An AVX512-IFMA-accelearated implementation for prime moduli < 52 bits
+We currently provide two primary functions:
 
-The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+-  The negacyclic number-theoretic transform (NTT), with the following implementations:
+   - 1) A default implementation in native C++
+   - 2) An AVX512-accelerated implementation
+   - 3) An AVX512-IFMA-accelearated implementation for prime moduli < 52 bits
 
-We may end up merging this into intel-palisade-development, or keep it as a separate repo.
+  The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+
+- Polynomial-polynomial modular multiplication, with the following implementations;
+  - 1) A default implementation in native C++
+  - 2) An AVX512-accelerated implementation
+
+  The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+
 
 # Build
 ```bash
