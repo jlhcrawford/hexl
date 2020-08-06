@@ -14,7 +14,11 @@
 # the License.
 # *****************************************************************************
 
-set(SRC main.cpp test_number_theory.cpp test_ntt.cpp test_avx512_util.cpp)
+set(SRC main.cpp
+    test_number_theory.cpp
+    test_ntt.cpp
+    test_poly_mult.cpp
+    test_avx512_util.cpp)
 
 add_executable(unit-test ${SRC})
 

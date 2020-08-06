@@ -22,23 +22,10 @@
 #include "logging/logging.hpp"
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
+#include "test/test_util.hpp"
 
 namespace intel {
 namespace lattice {
-
-// Checks whether x == y.
-void CheckNTTResults(const std::vector<uint64_t>& x,
-                     const std::vector<uint64_t>& y) {
-  IVLOG(5, "Checking NTT results");
-  IVLOG(5, "x " << x);
-  IVLOG(5, "y " << y);
-  EXPECT_EQ(x.size(), y.size());
-  uint64_t N = x.size();
-  EXPECT_TRUE(IsPowerOfTwo(N));
-  for (size_t i = 0; i < N; ++i) {
-    EXPECT_EQ(x[i], y[i]);
-  }
-}
 
 TEST(NTT, Powers) {
   uint64_t modulus = 0xffffffffffc0001ULL;
@@ -69,7 +56,7 @@ TEST(NTT, 2a_48bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2a_60bit) {
@@ -80,7 +67,7 @@ TEST(NTT, 2a_60bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2b_48bit) {
@@ -92,7 +79,7 @@ TEST(NTT, 2b_48bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2b_49bit) {
@@ -104,7 +91,7 @@ TEST(NTT, 2b_49bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2b_50bit) {
@@ -116,7 +103,7 @@ TEST(NTT, 2b_50bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2b_60bit) {
@@ -129,7 +116,7 @@ TEST(NTT, 2b_60bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2b_60bit_native) {
@@ -143,7 +130,7 @@ TEST(NTT, 2b_60bit_native) {
       N, prime, ntt.GetRootOfUnityPowers().data(),
       ntt.GetPreconRootOfUnityPowers().data(), input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2c_48bit) {
@@ -155,7 +142,7 @@ TEST(NTT, 2c_48bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2c_60bit) {
@@ -167,7 +154,7 @@ TEST(NTT, 2c_60bit) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 2c_60bit_native) {
@@ -180,7 +167,7 @@ TEST(NTT, 2c_60bit_native) {
       N, prime, ntt.GetRootOfUnityPowers().data(),
       ntt.GetPreconRootOfUnityPowers().data(), input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4a) {
@@ -192,7 +179,7 @@ TEST(NTT, 4a) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4b) {
@@ -205,7 +192,7 @@ TEST(NTT, 4b) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4c) {
@@ -217,7 +204,7 @@ TEST(NTT, 4c) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4d) {
@@ -229,7 +216,7 @@ TEST(NTT, 4d) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4e) {
@@ -241,7 +228,7 @@ TEST(NTT, 4e) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4f) {
@@ -253,7 +240,7 @@ TEST(NTT, 4f) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 4g) {
@@ -265,7 +252,7 @@ TEST(NTT, 4g) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 TEST(NTT, 32a) {
@@ -282,7 +269,7 @@ TEST(NTT, 32a) {
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckNTTResults(input, exp_output);
+  CheckEqual(input, exp_output);
 }
 
 }  // namespace lattice

@@ -17,7 +17,6 @@
 #include "number-theory/number-theory.hpp"
 
 #include <bitset>
-#include <cassert>
 #include <random>
 
 #include "logging/logging.hpp"
@@ -61,34 +60,7 @@ uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
 uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus) {
   LATTICE_CHECK(modulus != 0, "modulus == 0")
   return input % modulus;
-
-  // TODO(fboemer): actually use barrett reduction
-
-  // uint64_t tmp1, tmp3;
-
-  // uint128_t const_ratio = Compute64BitConstRatio(modulus);
-
-  // // Multiply input and const_ratio
-  // // Round 1
-  // uint64_t carry = MultiplyUInt64Hi(Hi64Bits(input), Hi64Bits(const_ratio));
-
-  // uint128_t tmp2 = MultiplyUInt64(Hi64Bits(input), Low64Bits(const_ratio));
-  // tmp3 = Low64Bits(tmp2) + AddUInt64NoCarry(Hi64Bits(tmp2), carry);
-
-  // // Round 2
-  // tmp2 = MultiplyUInt64(Low64Bits(input), Hi64Bits(const_ratio));
-  // carry = Low64Bits(tmp2) + AddUInt64NoCarry(tmp1, Hi64Bits(tmp2));
-
-  // // This is all we care about
-  // tmp1 = Low64Bits(input) * Low64Bits(const_ratio) + tmp3 + carry;
-
-  // // Barrett subtraction
-  // tmp3 = Hi64Bits(input) - tmp1 * modulus;
-
-  // // One more subtraction is enough
-  // return static_cast<std::uint64_t>(tmp3) -
-  //        (modulus & static_cast<std::uint64_t>(
-  //                       -static_cast<std::int64_t>(tmp3 >= modulus)));
+  // TODO(fboemer): actually use barrett reduction if performance-critical
 }
 
 uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus) {
@@ -158,7 +130,8 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus) {
 // Returns true whether root is a degree-th root of unity
 // degree must be a power of two.
 uint64_t MinimalPrimitiveRoot(uint64_t degree, uint64_t modulus) {
-  assert(IsPowerOfTwo(degree));
+  LATTICE_CHECK(IsPowerOfTwo(degree),
+                "Degere " << degree << " is not a power of 2");
 
   uint64_t root = GeneratePrimitiveRoot(degree, modulus);
 
@@ -189,6 +162,83 @@ uint64_t ReverseBitsUInt(uint64_t x, uint64_t bit_width) {
     x >>= 1;
   }
   return rev;
+}
+
+bool IsPrime(const uint64_t n) {
+  static const std::vector<uint64_t> as{2,  3,  5,  7,  11, 13,
+                                        17, 19, 23, 29, 31, 37};
+
+  for (const uint64_t a : as) {
+    if (n == a) return true;
+    if (n % a == 0) return false;
+  }
+
+  // Miller-Rabin primality test
+  // n < 2^64, so it is enough to test a=2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
+  // and 37. See
+  // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Testing_against_small_sets_of_bases
+
+  // Write n == 2**r * d + 1 with d odd.
+  uint64_t r = 63;
+  while (r > 0) {
+    uint64_t two_pow_r = (1UL << r);
+    if ((n - 1) % two_pow_r == 0) {
+      break;
+    }
+    --r;
+  }
+  LATTICE_CHECK(r != 0, "Error factoring n " << n);
+  uint64_t d = (n - 1) / (1UL << r);
+
+  LATTICE_CHECK(n == (1UL << r) * d + 1, "Error factoring n " << n);
+  LATTICE_CHECK(d % 2 == 1, "d is even");
+
+  for (const uint64_t a : as) {
+    uint64_t x = PowMod(a, d, n);
+    if ((x == 1) || (x == n - 1)) {
+      continue;
+    }
+
+    bool prime = false;
+    for (uint64_t i = 1; i < r; ++i) {
+      x = PowMod(x, 2, n);
+      if (x == n - 1) {
+        prime = true;
+      }
+    }
+    if (!prime) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
+                                     size_t ntt_size) {
+  LATTICE_CHECK(num_primes > 0, "num_primes == 0");
+  LATTICE_CHECK(IsPowerOfTwo(ntt_size),
+                "ntt_size " << ntt_size << " is not a power of two");
+  LATTICE_CHECK(Log2(ntt_size) < bit_size,
+                "log2(ntt_size) " << Log2(ntt_size)
+                                  << " should be less than bit_size "
+                                  << bit_size);
+
+  uint64_t value = (1UL << bit_size) + 1;
+
+  std::vector<uint64_t> ret;
+
+  while (value < (1UL << (bit_size + 1))) {
+    if (IsPrime(value)) {
+      ret.emplace_back(value);
+      if (ret.size() == num_primes) {
+        return ret;
+      }
+    }
+    value += 2 * ntt_size;
+  }
+
+  LATTICE_CHECK(false, "Failed to find enough primes");
+  return ret;
 }
 
 }  // namespace lattice
