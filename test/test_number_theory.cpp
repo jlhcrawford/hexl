@@ -14,8 +14,6 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include <chrono>
-#include <memory>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -314,6 +312,31 @@ TEST(NumberTheory, GeneratePrimes) {
       ASSERT_TRUE(prime >= (1UL << bit_size));
     }
   }
+}
+
+TEST(NumberTheory, AddUint64) {
+  uint64_t result;
+  EXPECT_EQ(0, AddUint64(1, 0, &result));
+  EXPECT_EQ(1, result);
+
+  EXPECT_EQ(0, AddUint64(1, 1, &result));
+  EXPECT_EQ(2, result);
+
+  EXPECT_EQ(0, AddUint64(10, 7, &result));
+  EXPECT_EQ(17, result);
+
+  EXPECT_EQ(0, AddUint64(1UL << 32, 1UL << 16, &result));
+  EXPECT_EQ(4295032832, result);
+
+  // Test overflow
+  EXPECT_EQ(1, AddUint64(1UL << 63, 1UL << 63, &result));
+  EXPECT_EQ(0, result);
+
+  EXPECT_EQ(1, AddUint64((1UL << 63) + 1, 1UL << 63, &result));
+  EXPECT_EQ(1, result);
+
+  EXPECT_EQ(1, AddUint64((1UL << 63) + 13, (1UL << 63) + 17, &result));
+  EXPECT_EQ(30, result);
 }
 
 }  // namespace lattice

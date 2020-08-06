@@ -18,6 +18,7 @@ set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SRC ntt/ntt.cpp
         number-theory/number-theory.cpp
+        poly/poly-mult.cpp
 )
 
 if (${HAS_AVX512F})

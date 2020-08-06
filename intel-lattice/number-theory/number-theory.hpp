@@ -25,6 +25,51 @@
 namespace intel {
 namespace lattice {
 
+// Computes floor(2^128 / modulus)
+class Barrett128Factor {
+ public:
+  Barrett128Factor() = delete;
+
+  explicit Barrett128Factor(uint64_t modulus) {
+    constexpr uint128_t two_pow_64 = uint128_t(1) << 64;
+    constexpr uint128_t two_pow_128_minus_1 = uint128_t(-1);
+
+    // The Barrett factor is actually floor(2^128 / modulus)
+    // But since modulus should be prime, modulus does not divide 2^128,
+    // hence floor(2^128/modulus) = floor((2^128 - 1) / modulus)
+    uint128_t barrett_factor = (two_pow_128_minus_1 / modulus);
+    m_barrett_hi = barrett_factor >> 64;
+    m_barrett_lo = barrett_factor % two_pow_64;
+  }
+
+  uint64_t Hi() const { return m_barrett_hi; }
+  uint64_t Lo() const { return m_barrett_lo; }
+
+ private:
+  uint64_t m_barrett_hi;
+  uint64_t m_barrett_lo;
+};
+
+class MultiplyFactor {
+ public:
+  MultiplyFactor() = default;
+  MultiplyFactor(uint64_t operand, uint64_t bit_shift, uint64_t modulus)
+      : m_operand(operand) {
+    LATTICE_CHECK(
+        operand <= modulus,
+        "operand " << operand << " must be less than modulus " << modulus);
+    m_barrett_factor =
+        static_cast<uint64_t>((uint128_t(operand) << bit_shift) / modulus);
+  }
+
+  inline uint64_t BarrettFactor() const { return m_barrett_factor; }
+  inline uint64_t Operand() const { return m_operand; }
+
+ private:
+  uint64_t m_operand;
+  uint64_t m_barrett_factor;
+};
+
 inline bool IsPowerOfTwo(uint64_t num) { return num && !(num & (num - 1)); }
 
 // Returns log2(x) for x a power of 2
@@ -55,9 +100,17 @@ inline uint128_t MultiplyUInt64(uint64_t x, uint64_t y) {
   return static_cast<uint128_t>(x) * y;
 }
 
-// Multiply packed unsigned 52-bit integers in x and y to form a 104-bit
-// intermediate result. Return the high 52-bit unsigned integer stored in an
-// unsigned 64-bit integer
+// Multiplies x * y as 128-bit integer.
+// @param prod_hi Stores high 64 bits of product
+// @param prod_lo Stores low 64 bits of product
+inline void MultiplyUInt64(uint64_t x, uint64_t y, uint64_t* prod_hi,
+                           uint64_t* prod_lo) {
+  uint128_t prod = MultiplyUInt64(x, y);
+  *prod_hi = static_cast<uint64_t>(prod >> 64);
+  *prod_lo = static_cast<uint64_t>(prod);
+}
+
+// Return the high 128-BitShift bits of the 128-bit product x * y
 template <int BitShift>
 inline uint64_t MultiplyUInt64Hi(uint64_t x, uint64_t y) {
   uint128_t product = static_cast<uint128_t>(x) * y;
@@ -81,26 +134,6 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus);
 // degree must be a power of two.
 uint64_t MinimalPrimitiveRoot(uint64_t degree, uint64_t modulus);
 
-class MultiplyFactor {
- public:
-  MultiplyFactor() = default;
-  MultiplyFactor(uint64_t operand, uint64_t bit_shift, uint64_t modulus)
-      : m_operand(operand) {
-    LATTICE_CHECK(
-        operand <= modulus,
-        "operand " << operand << " must be less than modulus " << modulus);
-    m_barrett_factor =
-        static_cast<uint64_t>((uint128_t(operand) << bit_shift) / modulus);
-  }
-
-  inline uint64_t BarrettFactor() const { return m_barrett_factor; }
-  inline uint64_t Operand() const { return m_operand; }
-
- private:
-  uint64_t m_operand;
-  uint64_t m_barrett_factor;
-};
-
 // Computes (x * y) mod modulus
 // @param modulus_precon Pre-computed Barrett reduction factor
 template <int BitShift>
@@ -121,61 +154,32 @@ inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
 }
 
 template <int BitShift>
+inline uint64_t ComputeBarrettFactor(const uint64_t modulus) {
+  LATTICE_CHECK(BitShift <= 64,
+                "BitShift " << BitShift << " needs to be <= 64");
+  return (uint128_t(1) << BitShift) / modulus;
+}
+
+template <int BitShift>
 inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
                                     const uint64_t modulus) {
-  const uint64_t y_barrett = (uint128_t(y) << BitShift) / modulus;
+  uint64_t y_barrett = (uint128_t(y) << BitShift) / modulus;
   return MultiplyUIntModLazy<BitShift>(x, y, y_barrett, modulus);
 }
 
-// Returns whether or not the input is prime
-inline bool IsPrime(const uint64_t n) {
-  static const std::vector<uint64_t> as{2,  3,  5,  7,  11, 13,
-                                        17, 19, 23, 29, 31, 37};
-
-  for (const uint64_t a : as) {
-    if (n == a) return true;
-    if (n % a == 0) return false;
-  }
-
-  // Miller-Rabin primality test
-  // n < 2^64, so it is enough to test a=2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
-  // and 37. See
-  // https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Testing_against_small_sets_of_bases
-
-  // Write n == 2**r * d + 1 with d odd.
-  uint64_t r = 63;
-  while (r > 0) {
-    uint64_t two_pow_r = (1UL << r);
-    if ((n - 1) % two_pow_r == 0) {
-      break;
-    }
-    --r;
-  }
-  LATTICE_CHECK(r != 0, "Error factoring n " << n);
-  uint64_t d = (n - 1) / (1UL << r);
-
-  LATTICE_CHECK(n == (1UL << r) * d + 1, "Error factoring n " << n);
-  LATTICE_CHECK(d % 2 == 1, "d is even");
-
-  for (const uint64_t a : as) {
-    uint64_t x = PowMod(a, d, n);
-    if ((x == 1) || (x == n - 1)) {
-      continue;
-    }
-
-    bool prime = false;
-    for (uint64_t i = 1; i < r; ++i) {
-      x = PowMod(x, 2, n);
-      if (x == n - 1) {
-        prime = true;
-      }
-    }
-    if (!prime) {
-      return false;
-    }
-  }
-  return true;
+// Adds two unsigned 64-bit integers
+// @param operand1 Number to add
+// @param operand2 Number to add
+// @param result Stores the sum
+// @return The carry bit
+inline unsigned char AddUint64(uint64_t operand1, uint64_t operand2,
+                               uint64_t* result) {
+  *result = operand1 + operand2;
+  return static_cast<unsigned char>(*result < operand1);
 }
+
+// Returns whether or not the input is prime
+bool IsPrime(const uint64_t n);
 
 // Generates a list of num_primes primes in the range [2^bit_size,
 // 2^(bit_size+1)]. Ensures each prime p satisfies
@@ -184,33 +188,8 @@ inline bool IsPrime(const uint64_t n) {
 // @param bit_size Bit size of each prime
 // @param ntt_size N such that each prime p satisfies p % (2N) == 1. N must be
 // a power of two
-inline std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
-                                            size_t ntt_size = 1) {
-  LATTICE_CHECK(num_primes > 0, "num_primes == 0");
-  LATTICE_CHECK(IsPowerOfTwo(ntt_size),
-                "ntt_size " << ntt_size << " is not a power of two");
-  LATTICE_CHECK(Log2(ntt_size) < bit_size,
-                "log2(ntt_size) " << Log2(ntt_size)
-                                  << " should be less than bit_size "
-                                  << bit_size);
-
-  uint64_t value = (1UL << bit_size) + 1;
-
-  std::vector<uint64_t> ret;
-
-  while (value < (1UL << (bit_size + 1))) {
-    if (IsPrime(value)) {
-      ret.emplace_back(value);
-      if (ret.size() == num_primes) {
-        return ret;
-      }
-    }
-    value += 2 * ntt_size;
-  }
-
-  LATTICE_CHECK(false, "Failed to find enough primes");
-  return ret;
-}
+std::vector<uint64_t> GeneratePrimes(size_t num_primes, size_t bit_size,
+                                     size_t ntt_size = 1);
 
 }  // namespace lattice
 }  // namespace intel
