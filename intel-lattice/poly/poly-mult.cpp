@@ -16,17 +16,15 @@
 
 #include "poly/poly-mult.hpp"
 
-#include <random>
-
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
 
 namespace intel {
 namespace lattice {
 
-void MultiplyModInPlace(uint64_t *operand1, const uint64_t *operand2,
-                        const uint64_t n, const uint64_t barrett_hi,
-                        const uint64_t barrett_lo, const uint64_t modulus) {
+void MultiplyModInPlace64(uint64_t *operand1, const uint64_t *operand2,
+                          const uint64_t n, const uint64_t barrett_hi,
+                          const uint64_t barrett_lo, const uint64_t modulus) {
   for (size_t i = 0; i < n; ++i) {
     // Reduces z using base 2^64 Barrett reduction
     uint64_t tmp1;
