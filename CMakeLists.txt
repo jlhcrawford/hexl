@@ -18,7 +18,7 @@ project(ntt-avx CXX)
 cmake_minimum_required(VERSION 3.12)
 
 # Global project name
-project(ntt_avx LANGUAGES C CXX)
+project(intel_lattice LANGUAGES C CXX)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
@@ -131,7 +131,7 @@ message(STATUS "CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "CMAKE_INSTALL_PREFIX:     ${CMAKE_INSTALL_PREFIX}")
 
 
-set(NTT_FORWARD_CMAKE_ARGS
+set(LATTICE_FORWARD_CMAKE_ARGS
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
   -DCMAKE_CXX_STANDARD:STRING=${CMAKE_CXX_STANDARD}
@@ -144,7 +144,7 @@ set(NTT_FORWARD_CMAKE_ARGS
   -DCMAKE_CXX_FLAGS="-march=native"
   )
 
-message(STATUS "NTT_FORWARD_CMAKE_ARGS ${NTT_FORWARD_CMAKE_ARGS}")
+message(STATUS "LATTICE_FORWARD_CMAKE_ARGS ${LATTICE_FORWARD_CMAKE_ARGS}")
 
 #------------------------------------------------------------------------------
 # Third-party code...
