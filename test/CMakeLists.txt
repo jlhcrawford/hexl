@@ -18,7 +18,11 @@ set(SRC main.cpp
     test_number_theory.cpp
     test_ntt.cpp
     test_poly_mult.cpp
-    test_avx512_util.cpp)
+)
+
+if (${HAS_AVX512F})
+    list(APPEND SRC test_avx512_util.cpp)
+endif()
 
 add_executable(unit-test ${SRC})
 
