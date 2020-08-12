@@ -48,7 +48,7 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
 // Checks all values in a vector are strictly less than bound
 // Returns true
 template <typename T>
-inline bool CheckBounds(const T *values, size_t num_values, T bound) {
+inline bool CheckBounds(const T* values, size_t num_values, T bound) {
   // Avoid unused variable warnings
   (void)values;
   (void)num_values;
@@ -132,8 +132,8 @@ inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
 
 // Returns hi[i] = hi  64 bits of x[i] * y[i],
 //         lo[i] = low 64 bits of x[i] * y[i]
-inline void avx512_multiply_uint64(__m512i x, __m512i y, __m512i *hi,
-                                   __m512i *lo) {
+inline void avx512_multiply_uint64(__m512i x, __m512i y, __m512i* hi,
+                                   __m512i* lo) {
   // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
   __m512i lomask = _mm512_set1_epi64(0x00000000ffffffff);
   __m512i xh =
@@ -185,7 +185,7 @@ inline __m512i avx512_cmplt_epu64(__m512i a, __m512i b, uint64_t match_value) {
 }
 
 // Returns c[i] = low 64 bits of x[i] + y[i]
-inline __m512i avx512_add_uint64(__m512i x, __m512i y, __m512i *c) {
+inline __m512i avx512_add_uint64(__m512i x, __m512i y, __m512i* c) {
   *c = _mm512_add_epi64(x, y);
   return avx512_cmplt_epu64(*c, x, 1);
 }

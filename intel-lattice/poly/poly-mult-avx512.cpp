@@ -24,7 +24,7 @@
 namespace intel {
 namespace lattice {
 
-void MultiplyModInPlace64AVX512(uint64_t *operand1, const uint64_t *operand2,
+void MultiplyModInPlace64AVX512(uint64_t* operand1, const uint64_t* operand2,
                                 const uint64_t n, const uint64_t barrett_hi,
                                 const uint64_t barrett_lo,
                                 const uint64_t modulus) {
@@ -35,8 +35,8 @@ void MultiplyModInPlace64AVX512(uint64_t *operand1, const uint64_t *operand2,
   __m512i vconst_ratio_hi = _mm512_set1_epi64(barrett_hi);
   __m512i vconst_ratio_lo = _mm512_set1_epi64(barrett_lo);
   __m512i vmodulus = _mm512_set1_epi64(modulus);
-  __m512i *vp_operand1 = reinterpret_cast<__m512i *>(operand1);
-  const __m512i *vp_operand2 = reinterpret_cast<const __m512i *>(operand2);
+  __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
+  const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
 
   for (size_t i = 0; i < n; i += 8) {
     __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
