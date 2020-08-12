@@ -231,18 +231,6 @@ TEST(NTT, 4e) {
   CheckEqual(input, exp_output);
 }
 
-TEST(NTT, 4f) {
-  std::vector<uint64_t> input{0, 0, 0, 0};
-  uint64_t prime = 4194353;
-  std::vector<uint64_t> exp_output{0, 0, 0, 0};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
 TEST(NTT, 4g) {
   std::vector<uint64_t> input{4127, 9647, 1987, 5410};
   uint64_t prime = 4194353;
@@ -271,6 +259,43 @@ TEST(NTT, 32a) {
 
   CheckEqual(input, exp_output);
 }
+
+class NTTTest
+    : public ::testing::TestWithParam<std::tuple<uint64_t, uint64_t>> {
+ protected:
+  void SetUp() {}
+
+  void TearDown() {}
+
+ public:
+};
+
+TEST_P(NTTTest, Zeros) {
+  uint64_t N = std::get<0>(GetParam());
+  uint64_t prime_bits = std::get<1>(GetParam());
+  uint64_t prime = GeneratePrimes(1, prime_bits, N)[0];
+
+  std::vector<uint64_t> input(N, 0);
+  std::vector<uint64_t> exp_output(N, 0);
+
+  NTT ntt(N, prime);
+  ntt.ForwardTransformToBitReverse(input.data());
+
+  CheckEqual(input, exp_output);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NTTTest, NTTTest,
+    ::testing::Values(
+        std::make_tuple(1 << 1, 30), std::make_tuple(1 << 2, 30),
+        std::make_tuple(1 << 3, 30), std::make_tuple(1 << 4, 35),
+        std::make_tuple(1 << 5, 35), std::make_tuple(1 << 6, 35),
+        std::make_tuple(1 << 7, 40), std::make_tuple(1 << 8, 40),
+        std::make_tuple(1 << 9, 40), std::make_tuple(1 << 10, 45),
+        std::make_tuple(1 << 11, 45), std::make_tuple(1 << 12, 45),
+        std::make_tuple(1 << 13, 50), std::make_tuple(1 << 14, 50),
+        std::make_tuple(1 << 15, 50), std::make_tuple(1 << 16, 55),
+        std::make_tuple(1 << 17, 55)));
 
 }  // namespace lattice
 }  // namespace intel

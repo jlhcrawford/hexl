@@ -57,8 +57,9 @@ void NTT::ForwardTransformToBitReverse64(
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
       for (size_t j = j1; j < j2; j++) {
-        // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
+        // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
         // [0, 4p).
+        // See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
         // X', Y' = X + WY, X - WY (mod p).
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
@@ -88,13 +89,14 @@ void NTT::ForwardTransformToBitReverse(
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements,
     bool use_ifma_if_possible) {
-  (void)use_ifma_if_possible;  // Avoid unused parameter warning
+  (void)
+      use_ifma_if_possible;  // Avoid unused parameter warning
+
 #ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): Check 50-bit limit more carefully
-  constexpr IntType ifma_mod_bound = (1UL << 50);
-  if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
+                             // TODO(fboemer): Check 50-bit limit more carefully
+  if (use_ifma_if_possible && (mod < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
-    NTT::ForwardTransformToBitReverseAVX512<52>(
+    NTT::ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
         degree, mod, root_of_unity_powers, precon_root_of_unity_powers,
         elements);
     return;

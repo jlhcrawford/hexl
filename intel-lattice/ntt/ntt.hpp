@@ -66,7 +66,8 @@ class NTT {
 
 #ifdef LATTICE_HAS_AVX512IFMA
     if (m_p < s_max_ifma_modulus) {
-      m_bit_shift = s_max_ifma_modulus_bits;
+      IVLOG(3, "Setting m_bit_shift to " << s_ifma_shift_bits);
+      m_bit_shift = s_ifma_shift_bits;
     }
 #endif
 
@@ -219,11 +220,14 @@ class NTT {
   // Maximum number of bits in modulus;
   static const size_t s_max_modulus_bits{62};
 
-  // Maximum number of bits in modulus to use IFMA acceleration;
-  static const size_t s_max_ifma_modulus_bits{52};
+  // Maximum number of bits in modulus to use IFMA acceleration
+  static const size_t s_max_ifma_modulus_bits{50};
 
-  // Maximum modulus size to use IFMA acceleration;
-  static const size_t s_max_ifma_modulus{(1UL << s_max_ifma_modulus_bits) - 1};
+  // Bit shift used in Barrett precomputation when IFMA acceleration is enabled
+  static const size_t s_ifma_shift_bits{52};
+
+  // Maximum modulus size to use IFMA acceleration
+  static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
 
   uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity
