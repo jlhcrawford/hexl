@@ -22,7 +22,7 @@
 namespace intel {
 namespace lattice {
 
-void MultiplyModInPlace64(uint64_t *operand1, const uint64_t *operand2,
+void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
                           const uint64_t n, const uint64_t barrett_hi,
                           const uint64_t barrett_lo, const uint64_t modulus) {
   for (size_t i = 0; i < n; ++i) {
