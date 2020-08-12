@@ -50,9 +50,13 @@ class Barrett128Factor {
   uint64_t m_barrett_lo;
 };
 
+// Stores an integer on which modular multiplication can be performed more
+// efficicently, at the cost of some precomputation.
 class MultiplyFactor {
  public:
   MultiplyFactor() = default;
+
+  // Computes and stores the Barrett factor (operand << bit_shift) / modulus
   MultiplyFactor(uint64_t operand, uint64_t bit_shift, uint64_t modulus)
       : m_operand(operand) {
     LATTICE_CHECK(
@@ -70,6 +74,7 @@ class MultiplyFactor {
   uint64_t m_barrett_factor;
 };
 
+// Returns whether or not num is a power of two
 inline bool IsPowerOfTwo(uint64_t num) { return num && !(num & (num - 1)); }
 
 // Returns log2(x) for x a power of 2
@@ -80,7 +85,7 @@ inline uint64_t Log2(uint64_t x) {
   return ret;
 }
 
-// Returns the maximum value that can be represented using bits bits.
+// Returns the maximum value that can be represented using bits bits
 inline uint64_t MaximumValue(uint64_t bits) {
   LATTICE_CHECK(bits <= 64, "MaximumValue requires bits <= 64; got " << bits);
   if (bits == 64) {
@@ -110,13 +115,14 @@ inline void MultiplyUInt64(uint64_t x, uint64_t y, uint64_t* prod_hi,
   *prod_lo = static_cast<uint64_t>(prod);
 }
 
-// Return the high 128-BitShift bits of the 128-bit product x * y
+// Return the high 128 minus BitShift bits of the 128-bit product x * y
 template <int BitShift>
 inline uint64_t MultiplyUInt64Hi(uint64_t x, uint64_t y) {
   uint128_t product = static_cast<uint128_t>(x) * y;
   return (uint64_t)(product >> BitShift);
 }
 
+// Returns (x * y) mod modulus
 uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus);
 
 // Returns base^exp mod modulus
@@ -134,7 +140,7 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus);
 // degree must be a power of two.
 uint64_t MinimalPrimitiveRoot(uint64_t degree, uint64_t modulus);
 
-// Computes (x * y) mod modulus
+// Computes (x * y) mod modulus, except that the output is in [0, 2 * modulus]
 // @param modulus_precon Pre-computed Barrett reduction factor
 template <int BitShift>
 inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
@@ -149,17 +155,11 @@ inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
   LATTICE_CHECK(x <= MaximumValue(BitShift),
                 "Operand " << x << " exceeds bound " << MaximumValue(BitShift));
 
-  uint64_t tmp1 = MultiplyUInt64Hi<BitShift>(x, y_barrett_factor);
-  return y_operand * x - tmp1 * mod;
+  uint64_t Q = MultiplyUInt64Hi<BitShift>(x, y_barrett_factor);
+  return y_operand * x - Q * mod;
 }
 
-template <int BitShift>
-inline uint64_t ComputeBarrettFactor(const uint64_t modulus) {
-  LATTICE_CHECK(BitShift <= 64,
-                "BitShift " << BitShift << " needs to be <= 64");
-  return (uint128_t(1) << BitShift) / modulus;
-}
-
+// Computes (x * y) mod modulus, except that the output is in [0, 2 * modulus]
 template <int BitShift>
 inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
                                     const uint64_t modulus) {

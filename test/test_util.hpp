@@ -37,7 +37,7 @@ inline void CheckEqual(const std::vector<uint64_t>& x,
   EXPECT_EQ(x.size(), y.size());
   uint64_t N = x.size();
   for (size_t i = 0; i < N; ++i) {
-    EXPECT_EQ(x[i], y[i]);
+    ASSERT_EQ(x[i], y[i]);
   }
 }
 

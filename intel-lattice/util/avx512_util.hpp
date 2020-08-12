@@ -28,6 +28,7 @@
 namespace intel {
 namespace lattice {
 
+// Returns the unsigned 64-bit integer values in x as a vector
 inline std::vector<uint64_t> ExtractValues(__m512i x) {
   __m256i x0 = _mm512_extracti64x4_epi64(x, 0);
   __m256i x1 = _mm512_extracti64x4_epi64(x, 1);
@@ -70,12 +71,12 @@ inline bool CheckBounds(__m512i x, uint64_t bound) {
   return CheckBounds(ExtractValues(x).data(), 512 / 64, bound);
 }
 
-// Returns c[i] = hi BitShift bits of x[i] * y[i]
-// Assumes x and y are both less than BitShift
+// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
+// and y to form a 2*BitShift-bit intermediate result.
+// Returns the high BitShift-bit unsigned integer from the intermediate result
 template <int BitShift>
 inline __m512i avx512_multiply_uint64_hi(__m512i x, __m512i y);
 
-// Returns c[i] = hi 64 bits of x[i] * y[i]
 template <>
 inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
   // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
@@ -98,9 +99,6 @@ inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
   return _mm512_add_epi64(hi1, s2h);
 }
 
-// Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
-// to form a 104-bit intermediate result. Return the high 52-bit unsigned
-// integer from the intermediate result.
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
@@ -111,8 +109,9 @@ inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
 }
 #endif
 
-// Returns c[i] = hi BitShift bits of x[i] * y[i]
-// Assumes x and y are both less than BitShift
+// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
+// and y to form a 104-bit intermediate result.
+// Returns the low BitShift-bit unsigned integer from the intermediate result
 template <int BitShift>
 inline __m512i avx512_multiply_uint64_lo(__m512i x, __m512i y);
 
@@ -122,9 +121,6 @@ inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
 }
 
 #ifdef LATTICE_HAS_AVX512IFMA
-// Multiply packed unsigned 52-bit integers in each 64-bit element of x and y
-// to form a 104-bit intermediate result. Return the high 52-bit unsigned
-// integer from the intermediate result.
 template <>
 inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
   LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");

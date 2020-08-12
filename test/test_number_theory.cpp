@@ -263,14 +263,6 @@ TEST(NumberTheory, MultiplyUIntModLazy52) {
   ASSERT_EQ(9ULL, MultiplyUIntModLazy<52>(7, y, mod));
   ASSERT_EQ(2ULL, MultiplyUIntModLazy<52>(6, y, mod));
 
-  mod = 2305843009211596801ULL;
-  y = 0;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(1, y, mod));
-  y = 1;
-  ASSERT_EQ(0ULL, MultiplyUIntModLazy<52>(0, y, mod));
-  ASSERT_EQ(1ULL, MultiplyUIntModLazy<52>(1, y, mod));
-
 #ifdef LATTICE_DEBUG
   y = 1152921504605798400ULL;
   EXPECT_ANY_THROW(MultiplyUIntModLazy<52>(1152921504605798401ULL, y, mod));

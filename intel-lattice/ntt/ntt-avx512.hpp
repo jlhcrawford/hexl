@@ -51,8 +51,10 @@ void NTT::ForwardTransformToBitReverseAVX512(
 
   CheckArguments(degree, mod);
   LATTICE_CHECK(
-      CheckBounds(precon_root_of_unity_powers, n, MaximumValue(BitShift)), "");
-  LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
+      CheckBounds(precon_root_of_unity_powers, n, MaximumValue(BitShift)),
+      "precon_root_of_unity_powers too large");
+  LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)),
+                "elements too large");
 
   size_t t = (n >> 1);
 
@@ -74,8 +76,9 @@ void NTT::ForwardTransformToBitReverseAVX512(
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
         for (size_t j = j1; j < j2; j++) {
-          // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
+          // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
           // [0, 4p).
+          // See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
           // X', Y' = X + WY, X - WY (mod p).
           tx = *X - (twice_mod & static_cast<uint64_t>(
                                      -static_cast<int64_t>(*X >= twice_mod)));
@@ -107,8 +110,9 @@ void NTT::ForwardTransformToBitReverseAVX512(
           __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_barrett, v_Y);
 
           // Q = *Y * W - Q * modulus;
-          __m512i tmp1 = avx512_multiply_uint64_lo<BitShift>(v_Y, v_W_operand);
-          __m512i tmp2 = avx512_multiply_uint64_lo<BitShift>(v_Q, v_modulus);
+          // Use 64-bit multiply low, even when BitShift != 52
+          __m512i tmp1 = avx512_multiply_uint64_lo<64>(v_Y, v_W_operand);
+          __m512i tmp2 = avx512_multiply_uint64_lo<64>(v_Q, v_modulus);
           v_Q = _mm512_sub_epi64(tmp1, tmp2);
 
           // *X++ = tx + Q;
