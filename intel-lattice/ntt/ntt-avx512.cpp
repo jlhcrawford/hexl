@@ -41,13 +41,14 @@ NTT::ForwardTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
     const IntType* precon_root_of_unity_powers, IntType* elements);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void NTT::InverseTransformToBitReverseAVX512<52>(
+template void NTT::InverseTransformToBitReverseAVX512<NTT::s_ifma_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* inv_root_of_unity_powers,
     const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
 #endif
 
-template void NTT::InverseTransformToBitReverseAVX512<64>(
+template void
+NTT::InverseTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* inv_root_of_unity_powers,
     const IntType* inv_scaled_root_of_unity_powers, IntType* elements);

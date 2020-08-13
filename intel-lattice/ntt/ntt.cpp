@@ -238,7 +238,7 @@ void NTT::InverseTransformToBitReverse(
   if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
 
-    NTT::InverseTransformToBitReverseAVX512<52>(
+    NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
         degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
         elements);
     return;
@@ -247,7 +247,7 @@ void NTT::InverseTransformToBitReverse(
 */
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 invNTT");
-  NTT::InverseTransformToBitReverseAVX512<64>(
+  NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
       degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
       elements);
   return;

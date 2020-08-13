@@ -286,11 +286,6 @@ void NTT::InverseTransformToBitReverseAVX512(
     t <<= 1;
   }
 
-  // TODO(skim): for debugging, remove after completion
-  // IVLOG(3,  "After===");
-  // for (size_t i = 0; i < degree; i++)
-  //   IVLOG(3, elements[i]);
-
   const uint64_t W_op = inv_root_of_unity_powers[root_index];
   const uint64_t inv_n = InverseUIntMod(n, mod);
   const uint64_t inv_n_prime = DivideUInt128UInt64Lo(0, inv_n, mod);

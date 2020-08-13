@@ -381,5 +381,52 @@ TEST(NumberTheory, SubUIntMod) {
   }
 }
 
+TEST(NumberTheory, DivideUInt128UInt64) {
+  {
+    uint64_t* result;
+    uint64_t numerator[2]{0, 4294908658ULL};
+    result = DivideUInt128UInt64(numerator, 2ULL);
+    EXPECT_EQ(0, result[0]);
+    EXPECT_EQ(2147454329ULL, result[1]);
+    EXPECT_EQ(0, numerator[0]);
+    EXPECT_EQ(0, numerator[1]);
+  }
+
+  {
+    uint64_t* result;
+    uint64_t numerator[2]{0, 4294908658ULL};
+    result = DivideUInt128UInt64(numerator, 454ULL);
+    EXPECT_EQ(4225685867105271735ULL, result[0]);
+    EXPECT_EQ(9460151ULL, result[1]);
+    EXPECT_EQ(374, numerator[0]);
+    EXPECT_EQ(0, numerator[1]);
+  }
+}
+
+TEST(NumberTheory, DivideUInt128UInt64Hi) {
+  EXPECT_EQ(2147454329ULL, DivideUInt128UInt64Hi(0, 4294908658ULL, 2ULL));
+  EXPECT_EQ(9460151ULL, DivideUInt128UInt64Hi(0, 4294908658ULL, 454ULL));
+  EXPECT_EQ(0, DivideUInt128UInt64Hi(4294908658ULL, 0, 2ULL));
+  EXPECT_EQ(0, DivideUInt128UInt64Hi(4294908658ULL, 0, 454ULL));
+  EXPECT_EQ(1, DivideUInt128UInt64Hi(0xffffffffffc0001ULL, 0xffffffffffc0001ULL,
+                                     0xffffffffffc0001ULL));
+  EXPECT_EQ(0x0000814f65f0676c,
+            DivideUInt128UInt64Hi(0xffffffffffc0001ULL, 0xffffffffffc0001ULL,
+                                  0x1fad));
+}
+
+TEST(NumberTheory, DivideUInt128UInt64Lo) {
+  EXPECT_EQ(0, DivideUInt128UInt64Lo(0, 4294908658ULL, 2ULL));
+  EXPECT_EQ(4225685867105271735ULL,
+            DivideUInt128UInt64Lo(0, 4294908658ULL, 454ULL));
+  EXPECT_EQ(2147454329ULL, DivideUInt128UInt64Lo(4294908658ULL, 0, 2ULL));
+  EXPECT_EQ(9460151, DivideUInt128UInt64Lo(4294908658ULL, 0, 454ULL));
+  EXPECT_EQ(1, DivideUInt128UInt64Lo(0xffffffffffc0001ULL, 0xffffffffffc0001ULL,
+                                     0xffffffffffc0001ULL));
+  EXPECT_EQ(0x40d09d1774d70dab,
+            DivideUInt128UInt64Lo(0xffffffffffc0001ULL, 0xffffffffffc0001ULL,
+                                  0x1fad));
+}
+
 }  // namespace lattice
 }  // namespace intel
