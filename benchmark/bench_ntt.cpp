@@ -57,5 +57,35 @@ BENCHMARK(BM_NTT)
     ->Args({4096, 49})
     ->Args({4096, 64});
 
+// state[0] is the degree
+// state[1] is approximately the number of bits in the coefficient modulus
+// invNTT currently doesn't support IFMA
+static void BM_invNTT(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+
+  size_t prime_bits = state.range(1);
+  size_t prime = 1;
+  if (prime_bits <= 52) {
+    prime = 0xffffee001;
+  } else {
+    prime = 0xffffffffffc0001ULL;
+  }
+
+  std::vector<uint64_t> input(ntt_size, 1);
+  NTT ntt(ntt_size, prime);
+
+  for (auto _ : state) {
+    ntt.InverseTransformToBitReverse(input.data());
+  }
+}
+
+BENCHMARK(BM_invNTT)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(5.0)
+    ->Args({1024, 52})
+    ->Args({1024, 64})
+    ->Args({4096, 52})
+    ->Args({4096, 64});
+
 }  // namespace lattice
 }  // namespace intel
