@@ -28,14 +28,14 @@ namespace lattice {
 
 // state[0] is the degree
 // state[1] is approximately the number of bits in the coefficient modulus
-// We distinguish between above and below 52 bits, since optimized
-// AVX512-IFMA implementations exist for < 52 bits
+// We distinguish between above and below 50 bits, since optimized
+// AVX512-IFMA implementations exist for < 50 bits
 static void BM_NTT(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
 
   size_t prime_bits = state.range(1);
   size_t prime = 1;
-  if (prime_bits <= 52) {
+  if (prime_bits <= NTT::s_ifma_shift_bits) {
     prime = 0xffffee001;
   } else {
     prime = 0xffffffffffc0001ULL;
@@ -52,9 +52,9 @@ static void BM_NTT(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_NTT)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024, 52})
+    ->Args({1024, 49})
     ->Args({1024, 64})
-    ->Args({4096, 52})
+    ->Args({4096, 49})
     ->Args({4096, 64});
 
 }  // namespace lattice

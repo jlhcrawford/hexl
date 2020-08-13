@@ -14,8 +14,8 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include <chrono>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -23,6 +23,10 @@
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
 #include "test/test_util.hpp"
+
+#ifdef LATTICE_HAS_AVX512IFMA
+#include "ntt/ntt-avx512.hpp"
+#endif
 
 namespace intel {
 namespace lattice {
@@ -48,219 +52,80 @@ TEST(NTT, Powers) {
   }
 }
 
-TEST(NTT, 2a_48bit) {
-  std::vector<uint64_t> input{0, 0};
-  uint64_t prime = 281474976710897;
-  std::vector<uint64_t> exp_output{0, 0};
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
+// Parameters = (degree, prime, input, expected_output)
+class NTTAPITest
+    : public ::testing::TestWithParam<std::tuple<
+          uint64_t, uint64_t, std::vector<uint64_t>, std::vector<uint64_t>>> {
+ protected:
+  void SetUp() {}
 
-  CheckEqual(input, exp_output);
-}
+  void TearDown() {}
 
-TEST(NTT, 2a_60bit) {
-  std::vector<uint64_t> input{0, 0};
-  uint64_t prime = 0xffffffffffc0001ULL;
-  std::vector<uint64_t> exp_output{0, 0};
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
+ public:
+};
 
-  CheckEqual(input, exp_output);
-}
+// Test different parts of the API
+TEST_P(NTTAPITest, Fwd) {
+  uint64_t N = std::get<0>(GetParam());
+  uint64_t prime = std::get<1>(GetParam());
 
-TEST(NTT, 2b_48bit) {
-  std::vector<uint64_t> input{1, 0};
-  uint64_t prime = 281474976710897;
-  std::vector<uint64_t> exp_output{1, 1};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2b_49bit) {
-  std::vector<uint64_t> input{1, 0};
-  std::vector<uint64_t> exp_output{1, 1};
-
-  size_t N = input.size();
-  uint64_t prime = GeneratePrimes(1, 49, N)[0];
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2b_50bit) {
-  std::vector<uint64_t> input{1, 0};
-  std::vector<uint64_t> exp_output{1, 1};
-
-  size_t N = input.size();
-  uint64_t prime = GeneratePrimes(1, 50, N)[0];
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2b_60bit) {
-  std::vector<uint64_t> input{1, 0};
-  std::vector<uint64_t> exp_output{1, 1};
-
-  size_t N = input.size();
-  uint64_t prime = GeneratePrimes(1, 60, N)[0];
+  std::vector<uint64_t> input = std::get<2>(GetParam());
+  std::vector<uint64_t> input2 = input;
+  std::vector<uint64_t> exp_output = std::get<3>(GetParam());
 
   NTT ntt(N, prime);
   ntt.ForwardTransformToBitReverse(input.data());
 
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2b_60bit_native) {
-  std::vector<uint64_t> input{1, 0};
-  std::vector<uint64_t> exp_output{1, 1};
-
-  size_t N = input.size();
-  uint64_t prime = GeneratePrimes(1, 60, N)[0];
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse64(
-      N, prime, ntt.GetRootOfUnityPowers().data(),
-      ntt.GetPreconRootOfUnityPowers().data(), input.data());
+  // Compute reference
+  NTT::ReferenceForwardTransformToBitReverse(
+      N, prime, ntt.GetRootOfUnityPowers().data(), input2.data());
 
   CheckEqual(input, exp_output);
+  CheckEqual(input2, exp_output);
 }
 
-TEST(NTT, 2c_48bit) {
-  std::vector<uint64_t> input{1, 1};
-  uint64_t prime = 281474976710897;
-  std::vector<uint64_t> exp_output{19842761023586, 261632215687313};
+INSTANTIATE_TEST_SUITE_P(
+    NTTAPITest, NTTAPITest,
+    ::testing::Values(
+        std::make_tuple(2, 281474976710897, std::vector<uint64_t>{0, 0},
+                        std::vector<uint64_t>{0, 0}),
+        std::make_tuple(2, 0xffffffffffc0001ULL, std::vector<uint64_t>{0, 0},
+                        std::vector<uint64_t>{0, 0}),
+        std::make_tuple(2, 281474976710897, std::vector<uint64_t>{1, 0},
+                        std::vector<uint64_t>{1, 1}),
+        std::make_tuple(2, 281474976710897, std::vector<uint64_t>{1, 1},
+                        std::vector<uint64_t>{19842761023586, 261632215687313}),
+        std::make_tuple(2, 0xffffffffffc0001ULL, std::vector<uint64_t>{1, 1},
+                        std::vector<uint64_t>{288794978602139553,
+                                              864126526004445282}),
+        std::make_tuple(4, 113, std::vector<uint64_t>{94, 109, 11, 18},
+                        std::vector<uint64_t>{82, 2, 81, 98}),
+        std::make_tuple(4, 281474976710897,
+                        std::vector<uint64_t>{281474976710765, 49,
+                                              281474976710643, 275},
+                        std::vector<uint64_t>{12006376116355, 216492038983166,
+                                              272441922811203, 62009615510542}),
+        std::make_tuple(4, 113, std::vector<uint64_t>{59, 50, 98, 50},
+                        std::vector<uint64_t>{1, 2, 3, 4}),
+        std::make_tuple(4, 73, std::vector<uint64_t>{2, 1, 1, 1},
+                        std::vector<uint64_t>{17, 41, 36, 60}),
+        std::make_tuple(4, 16417, std::vector<uint64_t>{31, 21, 15, 34},
+                        std::vector<uint64_t>{1611, 14407, 14082, 2858}),
+        std::make_tuple(4, 4194353,
+                        std::vector<uint64_t>{4127, 9647, 1987, 5410},
+                        std::vector<uint64_t>{1478161, 3359347, 222964,
+                                              3344742}),
+        std::make_tuple(
+            32, 769,
+            std::vector<uint64_t>{401, 203, 221, 352, 487, 151, 405, 356,
+                                  343, 424, 635, 757, 457, 280, 624, 353,
+                                  496, 353, 624, 280, 457, 757, 635, 424,
+                                  343, 356, 405, 151, 487, 352, 221, 203},
+            std::vector<uint64_t>{1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                                  12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                                  23, 24, 25, 26, 27, 28, 29, 30, 31, 32})));
 
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2c_60bit) {
-  std::vector<uint64_t> input{1, 1};
-  uint64_t prime = 0xffffffffffc0001ULL;
-  std::vector<uint64_t> exp_output{288794978602139553, 864126526004445282};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 2c_60bit_native) {
-  std::vector<uint64_t> input{1, 1};
-  uint64_t prime = 0xffffffffffc0001ULL;
-  std::vector<uint64_t> exp_output{288794978602139553, 864126526004445282};
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse64(
-      N, prime, ntt.GetRootOfUnityPowers().data(),
-      ntt.GetPreconRootOfUnityPowers().data(), input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4a) {
-  uint64_t prime = 113;
-  std::vector<uint64_t> input{94, 109, 11, 18};
-  std::vector<uint64_t> exp_output{82, 2, 81, 98};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4b) {
-  std::vector<uint64_t> input{281474976710765, 49, 281474976710643, 275};
-  uint64_t prime = 281474976710897;
-  std::vector<uint64_t> exp_output{12006376116355, 216492038983166,
-                                   272441922811203, 62009615510542};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4c) {
-  std::vector<uint64_t> input{59, 50, 98, 50};
-  uint64_t prime = 113;
-  std::vector<uint64_t> exp_output{1, 2, 3, 4};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4d) {
-  std::vector<uint64_t> input{2, 1, 1, 1};
-  uint64_t prime = 73;
-  std::vector<uint64_t> exp_output{17, 41, 36, 60};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4e) {
-  std::vector<uint64_t> input{31, 21, 15, 34};
-  uint64_t prime = 16417;
-  std::vector<uint64_t> exp_output{1611, 14407, 14082, 2858};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 4g) {
-  std::vector<uint64_t> input{4127, 9647, 1987, 5410};
-  uint64_t prime = 4194353;
-  std::vector<uint64_t> exp_output{1478161, 3359347, 222964, 3344742};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-TEST(NTT, 32a) {
-  std::vector<uint64_t> input{401, 203, 221, 352, 487, 151, 405, 356,
-                              343, 424, 635, 757, 457, 280, 624, 353,
-                              496, 353, 624, 280, 457, 757, 635, 424,
-                              343, 356, 405, 151, 487, 352, 221, 203};
-  uint64_t prime = 769;
-  std::vector<uint64_t> exp_output{1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                                   12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-                                   23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
-
-class NTTTest
+class NTTZerosTest
     : public ::testing::TestWithParam<std::tuple<uint64_t, uint64_t>> {
  protected:
   void SetUp() {}
@@ -270,7 +135,8 @@ class NTTTest
  public:
 };
 
-TEST_P(NTTTest, Zeros) {
+// Parameters = (degree, prime_bits)
+TEST_P(NTTZerosTest, Zeros) {
   uint64_t N = std::get<0>(GetParam());
   uint64_t prime_bits = std::get<1>(GetParam());
   uint64_t prime = GeneratePrimes(1, prime_bits, N)[0];
@@ -285,7 +151,7 @@ TEST_P(NTTTest, Zeros) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    NTTTest, NTTTest,
+    NTTZerosTest, NTTZerosTest,
     ::testing::Values(
         std::make_tuple(1 << 1, 30), std::make_tuple(1 << 2, 30),
         std::make_tuple(1 << 3, 30), std::make_tuple(1 << 4, 35),
@@ -296,6 +162,55 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(1 << 13, 50), std::make_tuple(1 << 14, 50),
         std::make_tuple(1 << 15, 50), std::make_tuple(1 << 16, 55),
         std::make_tuple(1 << 17, 55)));
+
+#ifdef LATTICE_HAS_AVX512IFMA
+class NTTPrimesTest
+    : public ::testing::TestWithParam<std::tuple<uint64_t, uint64_t>> {
+ protected:
+  void SetUp() {}
+
+  void TearDown() {}
+
+ public:
+};
+
+// Test primes around 50 bits to check IFMA behavior
+// Parameters = (degree, prime_bits)
+TEST_P(NTTPrimesTest, IFMAPrimes) {
+  uint64_t N = std::get<0>(GetParam());
+  uint64_t prime_bits = std::get<1>(GetParam());
+  uint64_t prime = GeneratePrimes(1, prime_bits, N)[0];
+
+  std::vector<uint64_t> input64(N, 0);
+  for (size_t i = 0; i < N; ++i) {
+    input64[i] = i % prime;
+  }
+  std::vector<uint64_t> input_ifma = input64;
+
+  std::vector<uint64_t> exp_output(N, 0);
+
+  // Compute reference
+  NTT ntt64(N, prime);
+  NTT::ReferenceForwardTransformToBitReverse(
+      N, prime, ntt64.GetRootOfUnityPowers().data(), input64.data());
+
+  // Compute with s_ifma_shift_bits-bit bit shift
+  NTT ntt_ifma(N, prime);
+  NTT::ForwardTransformToBitReverseAVX512<52>(
+      N, ntt_ifma.GetModulus(), ntt_ifma.GetRootOfUnityPowers().data(),
+      ntt_ifma.GetPreconRootOfUnityPowers().data(), input_ifma.data());
+
+  CheckEqual(input64, input_ifma);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NTTPrimesTest, NTTPrimesTest,
+    ::testing::Values(std::make_tuple(1 << 1, 48), std::make_tuple(1 << 2, 48),
+                      std::make_tuple(1 << 3, 48), std::make_tuple(1 << 4, 48),
+                      std::make_tuple(1 << 5, 49), std::make_tuple(1 << 6, 49),
+                      std::make_tuple(1 << 7, 49),
+                      std::make_tuple(1 << 8, 49)));
+#endif
 
 }  // namespace lattice
 }  // namespace intel

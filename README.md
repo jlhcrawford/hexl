@@ -8,7 +8,7 @@ We currently provide two primary functions:
 -  The negacyclic number-theoretic transform (NTT), with the following implementations:
    - 1) A default implementation in native C++
    - 2) An AVX512-accelerated implementation
-   - 3) An AVX512-IFMA-accelearated implementation for prime moduli < 52 bits
+   - 3) An AVX512-IFMA-accelearated implementation for prime moduli < 50 bits
 
   The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
 

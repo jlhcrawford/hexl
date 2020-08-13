@@ -123,7 +123,16 @@ inline uint64_t MultiplyUInt64Hi(uint64_t x, uint64_t y) {
 }
 
 // Returns (x * y) mod modulus
-uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus);
+// Assumes x, y < modulus
+uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, uint64_t modulus);
+
+// Returns (x + y) mod modulus
+// Assumes x, y < modulus
+uint64_t AddUIntMod(uint64_t x, uint64_t y, uint64_t modulus);
+
+// Returns (x - y) mod modulus
+// Assumes x, y < modulus
+uint64_t SubUIntMod(uint64_t x, uint64_t y, uint64_t modulus);
 
 // Returns base^exp mod modulus
 uint64_t PowMod(uint64_t base, uint64_t exp, uint64_t modulus);
@@ -143,9 +152,8 @@ uint64_t MinimalPrimitiveRoot(uint64_t degree, uint64_t modulus);
 // Computes (x * y) mod modulus, except that the output is in [0, 2 * modulus]
 // @param modulus_precon Pre-computed Barrett reduction factor
 template <int BitShift>
-inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
-                                    uint64_t const y_barrett_factor,
-                                    const uint64_t mod) {
+inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y_operand,
+                                    uint64_t y_barrett_factor, uint64_t mod) {
   LATTICE_CHECK(y_operand <= mod, "y_operand " << y_operand
                                                << " must be less than modulus "
                                                << mod);
@@ -161,8 +169,7 @@ inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y_operand,
 
 // Computes (x * y) mod modulus, except that the output is in [0, 2 * modulus]
 template <int BitShift>
-inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
-                                    const uint64_t modulus) {
+inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y, uint64_t modulus) {
   uint64_t y_barrett = (uint128_t(y) << BitShift) / modulus;
   return MultiplyUIntModLazy<BitShift>(x, y, y_barrett, modulus);
 }
@@ -172,16 +179,16 @@ inline uint64_t MultiplyUIntModLazy(const uint64_t x, const uint64_t y,
 // @param operand2 Number to add
 // @param result Stores the sum
 // @return The carry bit
-inline unsigned char AddUint64(uint64_t operand1, uint64_t operand2,
+inline unsigned char AddUInt64(uint64_t operand1, uint64_t operand2,
                                uint64_t* result) {
   *result = operand1 + operand2;
   return static_cast<unsigned char>(*result < operand1);
 }
 
 // Returns whether or not the input is prime
-bool IsPrime(const uint64_t n);
+bool IsPrime(uint64_t n);
 
-// Generates a list of num_primes primes in the range [2^bit_size,
+// Generates a list of num_primes primes in the range [2^(bit_size,
 // 2^(bit_size+1)]. Ensures each prime p satisfies
 // p % (2*ntt_size+1)) == 1
 // @param num_primes Number of primes to generate

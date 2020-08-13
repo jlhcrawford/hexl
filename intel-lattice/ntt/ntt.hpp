@@ -58,7 +58,7 @@ class NTT {
   // @brief Performs pre-computation necessary for forward and inverse
   // transforms
   NTT(IntType degree, IntType p, IntType root_of_unity)
-      : m_p(p), m_degree(degree), m_w(root_of_unity) {
+      : m_degree(degree), m_p(p), m_w(root_of_unity) {
     LATTICE_CHECK(CheckArguments(degree, p), "");
     LATTICE_CHECK(
         IsPrimitiveRoot(m_w, 2 * degree, p),
@@ -83,9 +83,9 @@ class NTT {
 
   IntType GetModulus() const { return m_p; }
 
-  // Returns map of pre-computed root of unity powers
+  // Returns the map of pre-computed root of unity powers
   // Access via s_root_of_unity_powers[<prime modulus, root of
-  // unity>] Map (degree, prime modulus, root of unity) to root of unity powers
+  // unity>]
   static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
                             hash_pair>&
   GetStaticRootOfUnityPowers() {
@@ -96,6 +96,9 @@ class NTT {
     return s_root_of_unity_powers;
   }
 
+  // Returns the map of pre-computed pre-conditioned root of unity powers
+  // Access via s_precon_root_of_unity_powers[<prime modulus, root of
+  // unity>]
   static std::unordered_map<std::pair<IntType, IntType>, std::vector<IntType>,
                             hash_pair>&
   GetStaticPreconRootOfUnityPowers() {
@@ -106,6 +109,8 @@ class NTT {
     return s_precon_root_of_unity_powers;
   }
 
+  // Returns the vector of pre-conditioned pre-computed root of unity powers for
+  // the modulus and root of unity
   std::vector<IntType> GetPreconRootOfUnityPowers() {
     std::pair<IntType, IntType> key{m_p, m_w};
     auto it = GetStaticPreconRootOfUnityPowers().find(key);
@@ -114,6 +119,8 @@ class NTT {
     return it->second;
   }
 
+  // Returns the vector of pre-computed root of unity powers for the modulus and
+  // root of unity
   std::vector<IntType> GetRootOfUnityPowers() {
     std::pair<IntType, IntType> key{m_p, m_w};
     auto it = GetStaticRootOfUnityPowers().find(key);
@@ -122,29 +129,48 @@ class NTT {
     return it->second;
   }
 
+  // Returns the root of unity at index i
   IntType GetRootOfUnityPower(size_t i) { return GetRootOfUnityPowers()[i]; }
 
   // Compute in-place NTT.
   // Results are bit-reversed.
-
-  inline void ForwardTransformToBitReverse(IntType* elements) {
+  void ForwardTransformToBitReverse(IntType* elements) {
     const auto& root_of_unity_powers = GetRootOfUnityPowers();
     const auto& precon_root_of_unity_powers = GetPreconRootOfUnityPowers();
 
     ForwardTransformToBitReverse(m_degree, m_p, root_of_unity_powers.data(),
-                                 precon_root_of_unity_powers.data(), elements);
+                                 precon_root_of_unity_powers.data(), elements,
+                                 m_bit_shift);
   }
 
+  // Computes the in-place forward NTT
+  // @param degree Size of the transfrom. Must be a power of two.
+  // @param mod Prime modulus. Must satisfy Must satisfy p == 1 mod 2N
+  // @param root_of_unity_powers Powers of 2N'th root of unity in F_p. In
+  // bit-reversed order
+  // @param precon_root_of_unity_powers Preconditioned root_of_unity_powers
+  // @param elements Input data. Overwritten with NTT output
+  // @param bit_shift The bit shift used in preconditioning. Should be
+  // s_ifma_shift_bits for IFMA and s_default_shift_bits otherwise
   static void ForwardTransformToBitReverse(
-      const IntType degree, const IntType mod,
-      const IntType* root_of_unity_powers,
+      IntType degree, IntType mod, const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements,
-      bool use_ifma_if_possible = true);
+      IntType bit_shift);
 
   static void ForwardTransformToBitReverse64(
-      const IntType degree, const IntType mod,
-      const IntType* root_of_unity_powers,
+      IntType degree, IntType mod, const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements);
+
+  // Reference NTT which is written for clarity rather than performance
+  // Use for debugging
+  // @param degree Size of the transfrom. Must be a power of two.
+  // @param mod Prime modulus. Must satisfy Must satisfy p == 1 mod 2N
+  // @param root_of_unity_powers Powers of 2N'th root of unity in F_p. In
+  // bit-reversed order
+  // @param elements Input data. Overwritten with NTT output
+  static void ReferenceForwardTransformToBitReverse(
+      IntType degree, IntType mod, const IntType* root_of_unity_powers,
+      IntType* elements);
 
 #ifdef LATTICE_HAS_AVX512F
   template <int BitShift>
@@ -159,24 +185,27 @@ class NTT {
   // Results are bit-reversed.
   void ReverseTransformFromBitReverse(IntType* elements);
 
+  static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
+
+  // Maximum number of bits in modulus;
+  static const size_t s_max_modulus_bits{62};
+
+  // Default bit shift used in Barrett precomputation
+  static const size_t s_default_shift_bits{64};
+
+  // Maximum number of bits in modulus to use IFMA acceleration
+  static const size_t s_max_ifma_modulus_bits{50};
+
+  // Bit shift used in Barrett precomputation when IFMA acceleration is enabled
+  static const size_t s_ifma_shift_bits{52};
+
+  // Maximum modulus size to use IFMA acceleration
+  static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
+
  private:
-  static bool CheckArguments(IntType degree, IntType p) {
-    // Avoid unused parameter warnings
-    (void)degree;
-    (void)p;
-    LATTICE_CHECK(IsPowerOfTwo(degree),
-                  "degree " << degree << " is not a power of 2");
-    LATTICE_CHECK(degree <= (1 << s_max_degree_bits),
-                  "degree should be less than 2^" << s_max_degree_bits
-                                                  << " got " << degree);
-
-    LATTICE_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
-    return true;
-  }
-
-  // Computed bit-scrambled vector of first m_degree powers
+  // Computes the bit-scrambled vector of first m_degree powers
   // of a primitive root.
-  inline void ComputeRootOfUnityPowers() {
+  void ComputeRootOfUnityPowers() {
     std::pair<IntType, IntType> key = std::make_pair(m_p, m_w);
 
     auto it = NTT::GetStaticRootOfUnityPowers().find(key);
@@ -207,27 +236,26 @@ class NTT {
         std::move(precon_root_of_unity_powers);
   }
 
-  size_t m_p;  // prime modulus
+  static bool CheckArguments(IntType degree, IntType p) {
+    // Avoid unused parameter warnings
+    (void)degree;
+    (void)p;
+    LATTICE_CHECK(IsPowerOfTwo(degree),
+                  "degree " << degree << " is not a power of 2");
+    LATTICE_CHECK(degree <= (1 << s_max_degree_bits),
+                  "degree should be less than 2^" << s_max_degree_bits
+                                                  << " got " << degree);
 
-  // Bit shift to use in computing Barrett reduction
-  // It should be 52 if m_p < (1 << 52) and HAS_AVX512IFMA is defined
-  // Otherwise, it defaults to 64
-  size_t m_bit_shift{64};
-  size_t m_degree;       // N: size of NTT transform, should be power of 2
+    LATTICE_CHECK(p % (2 * degree) == 1, "p mod 2n != 1");
+    return true;
+  }
+
+  size_t m_degree;  // N: size of NTT transform, should be power of 2
+  size_t m_p;       // prime modulus
+
   size_t m_degree_bits;  // log_2(m_degree)
-  static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
-
-  // Maximum number of bits in modulus;
-  static const size_t s_max_modulus_bits{62};
-
-  // Maximum number of bits in modulus to use IFMA acceleration
-  static const size_t s_max_ifma_modulus_bits{50};
-
-  // Bit shift used in Barrett precomputation when IFMA acceleration is enabled
-  static const size_t s_ifma_shift_bits{52};
-
-  // Maximum modulus size to use IFMA acceleration
-  static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
+  // Bit shift to use in computing Barrett reduction
+  size_t m_bit_shift{s_default_shift_bits};
 
   uint64_t m_w;     // A 2N'th root of unity
   uint64_t m_winv;  // Inverse of minimal root of unity

@@ -16,7 +16,6 @@
 
 #include <immintrin.h>
 
-#include <chrono>
 #include <memory>
 #include <vector>
 

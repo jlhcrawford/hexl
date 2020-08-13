@@ -30,8 +30,7 @@ namespace lattice {
 // based on
 // https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
 void NTT::ForwardTransformToBitReverse64(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
+    IntType degree, IntType mod, const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(degree, mod), "");
 
@@ -84,17 +83,46 @@ void NTT::ForwardTransformToBitReverse64(
   }
 }
 
+void NTT::ReferenceForwardTransformToBitReverse(
+    IntType degree, IntType mod, const IntType* root_of_unity_powers,
+    IntType* elements) {
+  LATTICE_CHECK(CheckArguments(degree, mod), "");
+
+  size_t t = (degree >> 1);
+  for (size_t m = 1; m < degree; m <<= 1) {
+    size_t j1 = 0;
+    for (size_t i = 0; i < m; i++) {
+      size_t j2 = j1 + t;
+      const uint64_t W_op = root_of_unity_powers[m + i];
+
+      uint64_t* X = elements + j1;
+      uint64_t* Y = X + t;
+      for (size_t j = j1; j < j2; j++) {
+        uint64_t tx = *X;
+        // X', Y' = X + WY, X - WY (mod p).
+        uint64_t W_x_Y = MultiplyUIntMod(*Y, W_op, mod);
+        *X++ = AddUIntMod(tx, W_x_Y, mod);
+        *Y++ = SubUIntMod(tx, W_x_Y, mod);
+      }
+      j1 += (t << 1);
+    }
+    t >>= 1;
+  }
+}
+
 void NTT::ForwardTransformToBitReverse(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
+    IntType degree, IntType mod, const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements,
-    bool use_ifma_if_possible) {
-  (void)
-      use_ifma_if_possible;  // Avoid unused parameter warning
+    IntType bit_shift) {
+  LATTICE_CHECK(
+      bit_shift == s_ifma_shift_bits || bit_shift == s_default_shift_bits,
+      "Bit shift " << bit_shift << " should be either " << s_ifma_shift_bits
+                   << " or " << s_default_shift_bits);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-                             // TODO(fboemer): Check 50-bit limit more carefully
-  if (use_ifma_if_possible && (mod < s_max_ifma_modulus)) {
+  // TODO(fboemer): Check 50-bit limit more
+  // carefully
+  if (bit_shift == s_ifma_shift_bits && (mod < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     NTT::ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
         degree, mod, root_of_unity_powers, precon_root_of_unity_powers,
@@ -105,7 +133,7 @@ void NTT::ForwardTransformToBitReverse(
 
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 NTT");
-  NTT::ForwardTransformToBitReverseAVX512<64>(
+  NTT::ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
       degree, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);
   return;
 #endif

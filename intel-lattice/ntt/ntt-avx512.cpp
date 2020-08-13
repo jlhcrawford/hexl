@@ -28,13 +28,14 @@ namespace intel {
 namespace lattice {
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void NTT::ForwardTransformToBitReverseAVX512<52>(
+template void NTT::ForwardTransformToBitReverseAVX512<NTT::s_ifma_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements);
 #endif
 
-template void NTT::ForwardTransformToBitReverseAVX512<64>(
+template void
+NTT::ForwardTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements);
