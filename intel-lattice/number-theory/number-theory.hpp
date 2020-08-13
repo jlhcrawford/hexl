@@ -105,6 +105,47 @@ inline uint128_t MultiplyUInt64(uint64_t x, uint64_t y) {
   return static_cast<uint128_t>(x) * y;
 }
 
+// Performs bit-wise division with 128b numerator and 64b denominator
+// @param x Numerator in 2 64bit to represent 128b unsigned integer where
+// x[1]=high 64b, x[0]=low 64b, returns n mod denominator after division
+// @param y Denominator
+inline uint64_t* DivideUInt128UInt64(uint64_t* x, uint64_t y) {
+  uint64_t* result = new uint64_t[2];
+  uint128_t n, q;
+
+  n = (static_cast<uint128_t>(x[1]) << 64) | (static_cast<uint128_t>(x[0]));
+  q = n / y;
+  n -= q * y;
+
+  x[0] = static_cast<uint64_t>(n);
+  x[1] = 0;
+
+  result[0] = static_cast<uint64_t>(q);        // low 64 bit
+  result[1] = static_cast<uint64_t>(q >> 64);  // high 64 bit
+
+  return result;
+}
+
+// Returns low 64bit of 128b/64b where x1=high 64b, x0=low 64b
+inline uint64_t DivideUInt128UInt64Lo(uint64_t x0, uint64_t x1, uint64_t y) {
+  uint128_t n, q;
+
+  n = (static_cast<uint128_t>(x1) << 64) | (static_cast<uint128_t>(x0));
+  q = n / y;
+
+  return static_cast<uint64_t>(q);
+}
+
+// Returns high 64bit of 128b/64b where x1=high 64b, x0=low 64b
+inline uint64_t DivideUInt128UInt64Hi(uint64_t x0, uint64_t x1, uint64_t y) {
+  uint128_t n, q;
+
+  n = (static_cast<uint128_t>(x1) << 64) | (static_cast<uint128_t>(x0));
+  q = n / y;
+
+  return static_cast<uint64_t>(q >> 64);
+}
+
 // Multiplies x * y as 128-bit integer.
 // @param prod_hi Stores high 64 bits of product
 // @param prod_lo Stores low 64 bits of product

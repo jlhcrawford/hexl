@@ -3,7 +3,7 @@
 
 This repository provides an efficient implementation of integer arithmetic on Galois fields. We only support 64-bit unsigned integers.
 
-We currently provide two primary functions:
+We currently provide three primary functions:
 
 -  The negacyclic number-theoretic transform (NTT), with the following implementations:
    - 1) A default implementation in native C++
@@ -17,6 +17,12 @@ We currently provide two primary functions:
   - 2) An AVX512-accelerated implementation
 
   The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+
+-  The inverse negacyclic number-theoretic transform (NTT), with the following implementations:
+   - 1) A default implementation in native C++
+   - 2) An AVX512-accelerated implementation
+
+  The library will automatically choose the best implementation for the given hardware. Implementation 2) is most preferred, followed by implementation 1).
 
 
 # Build

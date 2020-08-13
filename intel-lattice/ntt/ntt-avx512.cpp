@@ -40,5 +40,17 @@ NTT::ForwardTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
     const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements);
 
+#ifdef LATTICE_HAS_AVX512IFMA
+template void NTT::InverseTransformToBitReverseAVX512<52>(
+    const IntType degree, const IntType mod,
+    const IntType* inv_root_of_unity_powers,
+    const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
+#endif
+
+template void NTT::InverseTransformToBitReverseAVX512<64>(
+    const IntType degree, const IntType mod,
+    const IntType* inv_root_of_unity_powers,
+    const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
+
 }  // namespace lattice
 }  // namespace intel

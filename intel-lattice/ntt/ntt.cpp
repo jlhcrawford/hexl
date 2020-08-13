@@ -143,5 +143,120 @@ void NTT::ForwardTransformToBitReverse(
                                       precon_root_of_unity_powers, elements);
 }
 
+void NTT::InverseTransformToBitReverse64(
+    const IntType degree, const IntType mod,
+    const IntType* inv_root_of_unity_powers, IntType* elements) {
+  LATTICE_CHECK(CheckArguments(degree, mod), "");
+
+  uint64_t twice_mod = mod << 1;
+
+  size_t n = degree;
+  size_t t = 1;
+  size_t root_index = 1;
+
+  uint64_t* input = elements;
+
+  for (size_t m = (n >> 1); m > 1; m >>= 1) {
+    size_t j1 = 0;
+    for (size_t i = 0; i < m; i++, root_index++) {
+      size_t j2 = j1 + t;
+      const uint64_t W_op = inv_root_of_unity_powers[root_index];
+
+      uint64_t* X = input + j1;
+      uint64_t* Y = X + t;
+
+      uint64_t tx;
+      uint64_t ty;
+
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
+      for (size_t j = j1; j < j2; j++) {
+        // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
+        // [0, 4p).
+        // X', Y' = X + Y (mod p), W(X - Y) (mod p).
+        tx = *X + *Y;
+        ty = *X + twice_mod - *Y;
+        *X++ = tx - (twice_mod & static_cast<uint64_t>(
+                                     (-static_cast<int64_t>(tx >= twice_mod))));
+        *Y++ = MultiplyUIntModLazy<64>(ty, W_op, mod);
+      }
+      j1 += (t << 1);
+    }
+    t <<= 1;
+  }
+
+  const uint64_t W_op = inv_root_of_unity_powers[root_index];
+  const uint64_t inv_n = InverseUIntMod(n, mod);
+
+  const uint64_t inv_n_w = MultiplyUIntMod(inv_n, W_op, mod);
+
+  uint64_t* X = input;
+  uint64_t* Y = X + (n >> 1);
+  uint64_t tx;
+  uint64_t ty;
+
+  // Inverse negacyclic NTT using Harvey's butterfly. (See Patrick Longa and
+  // Michael Naehrig - https://eprint.iacr.org/2016/504.pdf) Merge inverse root
+  // of unity with inverse degree and modulus
+  for (size_t j = (n >> 1); j < n; j++) {
+    tx = *X + *Y;
+    tx -= twice_mod &
+          static_cast<uint64_t>(-static_cast<int64_t>(tx >= twice_mod));
+    ty = *X + twice_mod - *Y;
+    *X++ = MultiplyUIntModLazy<64>(tx, inv_n, mod);
+    // uint64_t Q = MultiplyUInt64Hi<64>(inv_n_prime, tx);
+    // *X++ = inv_n * tx - Q * mod;
+    *Y++ = MultiplyUIntModLazy<64>(ty, inv_n_w, mod);
+    // Q = MultiplyUInt64Hi<64>(inv_n_w_prime, ty);
+    // *Y++ = inv_n_w * ty - Q * mod;
+  }
+
+  // Reduce from [0, 4p) to [0,p)
+  for (size_t i = 0; i < n; ++i) {
+    if (elements[i] >= twice_mod) {
+      elements[i] -= twice_mod;
+    }
+    if (elements[i] >= mod) {
+      elements[i] -= mod;
+    }
+    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
+                                         << elements[i] << " >= " << mod);
+  }
+}
+
+void NTT::InverseTransformToBitReverse(
+    const IntType degree, const IntType mod,
+    const IntType* inv_root_of_unity_powers,
+    const IntType* inv_scaled_root_of_unity_powers, IntType* elements) {
+  // TODO(skim): Enable IFMA after investigation where the scaled inverse root
+  // of unity is within 2**52 range - add with (bool use_ifma_if_possible)
+
+/*
+#ifdef LATTICE_HAS_AVX512IFMA
+  // TODO(fboemer): Check 50-bit limit more carefully
+  constexpr IntType ifma_mod_bound = (1UL << 50);
+  if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
+    IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
+
+    NTT::InverseTransformToBitReverseAVX512<52>(
+        degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+        elements);
+    return;
+  }
+#endif
+*/
+#ifdef LATTICE_HAS_AVX512F
+  IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  NTT::InverseTransformToBitReverseAVX512<64>(
+      degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+      elements);
+  return;
+#endif
+
+  IVLOG(3, "Calling 64-bit default invNTT");
+  NTT::InverseTransformToBitReverse64(degree, mod, inv_root_of_unity_powers,
+                                      elements);
+}
+
 }  // namespace lattice
 }  // namespace intel
