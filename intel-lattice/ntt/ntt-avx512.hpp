@@ -110,7 +110,7 @@ void NTT::ForwardTransformToBitReverseAVX512(
           __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_barrett, v_Y);
 
           // Q = *Y * W - Q * modulus;
-          // Use 64-bit multiply low, even when BitShift != 52
+          // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
           __m512i tmp1 = avx512_multiply_uint64_lo<64>(v_Y, v_W_operand);
           __m512i tmp2 = avx512_multiply_uint64_lo<64>(v_Q, v_modulus);
           v_Q = _mm512_sub_epi64(tmp1, tmp2);

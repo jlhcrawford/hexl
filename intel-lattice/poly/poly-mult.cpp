@@ -39,11 +39,11 @@ void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
     // Round 1
     uint64_t carry = MultiplyUInt64Hi<64>(prod_lo, barrett_lo);
     MultiplyUInt64(prod_lo, barrett_hi, &tmp2_hi, &tmp2_lo);
-    uint64_t tmp3 = tmp2_hi + AddUint64(tmp2_lo, carry, &tmp1);
+    uint64_t tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
 
     // Round 2
     MultiplyUInt64(prod_hi, barrett_lo, &tmp2_hi, &tmp2_lo);
-    carry = tmp2_hi + AddUint64(tmp1, tmp2_lo, &tmp1);
+    carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
     tmp1 = prod_hi * barrett_hi + tmp3 + carry;
 
     // Barrett subtraction

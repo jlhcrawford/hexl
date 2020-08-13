@@ -57,19 +57,33 @@ uint64_t InverseUIntMod(uint64_t input, uint64_t modulus) {
   return uint64_t(x);
 }
 
-uint64_t BarrettReduce128(const uint128_t input, const uint64_t modulus) {
+uint64_t BarrettReduce128(uint128_t input, uint64_t modulus) {
   LATTICE_CHECK(modulus != 0, "modulus == 0")
   return input % modulus;
   // TODO(fboemer): actually use barrett reduction if performance-critical
 }
 
-uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, const uint64_t modulus) {
+uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, uint64_t modulus) {
   LATTICE_CHECK(modulus != 0, "modulus == 0");
-  LATTICE_CHECK(x < modulus, "x " << x << " > modulus " << modulus);
-  LATTICE_CHECK(y < modulus, "y " << y << " > modulus " << modulus);
+  LATTICE_CHECK(x < modulus, "x " << x << " >= modulus " << modulus);
+  LATTICE_CHECK(y < modulus, "y " << y << " >= modulus " << modulus);
   uint128_t z = MultiplyUInt64(x, y);
 
   return BarrettReduce128(z, modulus);
+}
+
+uint64_t AddUIntMod(uint64_t x, uint64_t y, uint64_t modulus) {
+  LATTICE_CHECK(x < modulus, "x " << x << " >= modulus " << modulus);
+  LATTICE_CHECK(y < modulus, "y " << y << " >= modulus " << modulus);
+  uint64_t sum = x + y;
+  return (sum >= modulus) ? (sum - modulus) : sum;
+}
+
+uint64_t SubUIntMod(uint64_t x, uint64_t y, uint64_t modulus) {
+  LATTICE_CHECK(x < modulus, "x " << x << " >= modulus " << modulus);
+  LATTICE_CHECK(y < modulus, "y " << y << " >= modulus " << modulus);
+  uint64_t diff = (x + modulus) - y;
+  return (diff >= modulus) ? (diff - modulus) : diff;
 }
 
 // Returns base^exp mod modulus
@@ -164,7 +178,7 @@ uint64_t ReverseBitsUInt(uint64_t x, uint64_t bit_width) {
   return rev;
 }
 
-bool IsPrime(const uint64_t n) {
+bool IsPrime(uint64_t n) {
   static const std::vector<uint64_t> as{2,  3,  5,  7,  11, 13,
                                         17, 19, 23, 29, 31, 37};
 

@@ -28,14 +28,14 @@ namespace lattice {
 
 // state[0] is the degree
 // state[1] is approximately the number of bits in the coefficient modulus
-// We distinguish between above and below 52 bits, since optimized
-// AVX512-IFMA implementations exist for < 52 bits
+// We distinguish between above and below 50 bits, since optimized
+// AVX512-IFMA implementations exist for < 50 bits
 static void BM_PolyMult(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
 
   size_t modulus_bits = state.range(1);
   size_t modulus = 1;
-  if (modulus_bits <= 52) {
+  if (modulus_bits < 50) {
     modulus = 0xffffee001;
   } else {
     modulus = 0xffffffffffc0001ULL;
@@ -52,9 +52,9 @@ static void BM_PolyMult(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_PolyMult)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
-    ->Args({1024, 52})
+    ->Args({1024, 49})
     ->Args({1024, 64})
-    ->Args({4096, 52})
+    ->Args({4096, 49})
     ->Args({4096, 64});
 
 }  // namespace lattice

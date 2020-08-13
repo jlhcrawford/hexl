@@ -306,29 +306,79 @@ TEST(NumberTheory, GeneratePrimes) {
   }
 }
 
-TEST(NumberTheory, AddUint64) {
+TEST(NumberTheory, AddUInt64) {
   uint64_t result;
-  EXPECT_EQ(0, AddUint64(1, 0, &result));
+  EXPECT_EQ(0, AddUInt64(1, 0, &result));
   EXPECT_EQ(1, result);
 
-  EXPECT_EQ(0, AddUint64(1, 1, &result));
+  EXPECT_EQ(0, AddUInt64(1, 1, &result));
   EXPECT_EQ(2, result);
 
-  EXPECT_EQ(0, AddUint64(10, 7, &result));
+  EXPECT_EQ(0, AddUInt64(10, 7, &result));
   EXPECT_EQ(17, result);
 
-  EXPECT_EQ(0, AddUint64(1UL << 32, 1UL << 16, &result));
+  EXPECT_EQ(0, AddUInt64(1UL << 32, 1UL << 16, &result));
   EXPECT_EQ(4295032832, result);
 
   // Test overflow
-  EXPECT_EQ(1, AddUint64(1UL << 63, 1UL << 63, &result));
+  EXPECT_EQ(1, AddUInt64(1UL << 63, 1UL << 63, &result));
   EXPECT_EQ(0, result);
 
-  EXPECT_EQ(1, AddUint64((1UL << 63) + 1, 1UL << 63, &result));
+  EXPECT_EQ(1, AddUInt64((1UL << 63) + 1, 1UL << 63, &result));
   EXPECT_EQ(1, result);
 
-  EXPECT_EQ(1, AddUint64((1UL << 63) + 13, (1UL << 63) + 17, &result));
+  EXPECT_EQ(1, AddUInt64((1UL << 63) + 13, (1UL << 63) + 17, &result));
   EXPECT_EQ(30, result);
+}
+
+TEST(NumberTheory, AddUIntMod) {
+  {
+    uint64_t modulus = 2;
+    EXPECT_EQ(1, AddUIntMod(1, 0, modulus));
+    EXPECT_EQ(1, AddUIntMod(0, 1, modulus));
+    EXPECT_EQ(0, AddUIntMod(1, 1, modulus));
+  }
+
+  {
+    uint64_t modulus = 10;
+    EXPECT_EQ(0, AddUIntMod(3, 7, modulus));
+    EXPECT_EQ(0, AddUIntMod(4, 6, modulus));
+    EXPECT_EQ(1, AddUIntMod(5, 6, modulus));
+    EXPECT_EQ(2, AddUIntMod(6, 6, modulus));
+  }
+
+  {
+    uint64_t modulus = 1UL << 63;
+    EXPECT_EQ(10, AddUIntMod(3, 7, modulus));
+    EXPECT_EQ(0, AddUIntMod(modulus - 1, 1, modulus));
+    EXPECT_EQ(1, AddUIntMod(modulus - 1, 2, modulus));
+    EXPECT_EQ(modulus - 4, AddUIntMod(modulus - 1, modulus - 3, modulus));
+  }
+}
+
+TEST(NumberTheory, SubUIntMod) {
+  {
+    uint64_t modulus = 2;
+    EXPECT_EQ(1, SubUIntMod(1, 0, modulus));
+    EXPECT_EQ(1, SubUIntMod(0, 1, modulus));
+    EXPECT_EQ(0, SubUIntMod(1, 1, modulus));
+  }
+
+  {
+    uint64_t modulus = 10;
+    EXPECT_EQ(6, SubUIntMod(3, 7, modulus));
+    EXPECT_EQ(8, SubUIntMod(4, 6, modulus));
+    EXPECT_EQ(2, SubUIntMod(6, 4, modulus));
+    EXPECT_EQ(0, SubUIntMod(6, 6, modulus));
+  }
+
+  {
+    uint64_t modulus = 1UL << 63;
+    EXPECT_EQ(modulus - 4, SubUIntMod(3, 7, modulus));
+    EXPECT_EQ(modulus - 2, SubUIntMod(modulus - 1, 1, modulus));
+    EXPECT_EQ(3, SubUIntMod(2, modulus - 1, modulus));
+    EXPECT_EQ(2, SubUIntMod(modulus - 1, modulus - 3, modulus));
+  }
 }
 
 }  // namespace lattice
