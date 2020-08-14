@@ -191,7 +191,7 @@ class NTT {
   }
 
   // Computes the in-place forward NTT
-  // @param degree Size of the transfrom. Must be a power of two.
+  // @param n Size of the transfrom, a.k.a. degree. Must be a power of two.
   // @param mod Prime modulus. Must satisfy Must satisfy p == 1 mod 2N
   // @param root_of_unity_powers Powers of 2N'th root of unity in F_p. In
   // bit-reversed order
@@ -200,30 +200,29 @@ class NTT {
   // @param bit_shift The bit shift used in preconditioning. Should be
   // s_ifma_shift_bits for IFMA and s_default_shift_bits otherwise
   static void ForwardTransformToBitReverse(
-      IntType degree, IntType mod, const IntType* root_of_unity_powers,
+      IntType n, IntType mod, const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements,
       IntType bit_shift);
 
   static void ForwardTransformToBitReverse64(
-      IntType degree, IntType mod, const IntType* root_of_unity_powers,
+      IntType n, IntType mod, const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements);
 
   // Reference NTT which is written for clarity rather than performance
   // Use for debugging
-  // @param degree Size of the transfrom. Must be a power of two.
+  // @param n Size of the transfrom, a.k.a. degree. Must be a power of two.
   // @param mod Prime modulus. Must satisfy Must satisfy p == 1 mod 2N
   // @param root_of_unity_powers Powers of 2N'th root of unity in F_p. In
   // bit-reversed order
   // @param elements Input data. Overwritten with NTT output
   static void ReferenceForwardTransformToBitReverse(
-      IntType degree, IntType mod, const IntType* root_of_unity_powers,
+      IntType n, IntType mod, const IntType* root_of_unity_powers,
       IntType* elements);
 
 #ifdef LATTICE_HAS_AVX512F
   template <int BitShift>
   static void ForwardTransformToBitReverseAVX512(
-      const IntType degree, const IntType mod,
-      const IntType* root_of_unity_powers,
+      const IntType n, const IntType mod, const IntType* root_of_unity_powers,
       const IntType* precon_root_of_unity_powers, IntType* elements);
 #endif
 
@@ -238,21 +237,24 @@ class NTT {
   }
 
   static void InverseTransformToBitReverse(
-      const IntType degree, const IntType mod,
+      const IntType n, const IntType mod,
       const IntType* inv_root_of_unity_powers,
       const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
   // TODO(skim) Add after invNTT AVX512 IFMA - (bool use_ifma_if_possible =
   // true)
 
+  // Inverse negacyclic NTT using Harvey's butterfly. (See Patrick Longa and
+  // Michael Naehrig - https://eprint.iacr.org/2016/504.pdf) Merge inverse root
+  // of unity with inverse degree and modulus
   static void InverseTransformToBitReverse64(
-      const IntType degree, const IntType mod,
+      const IntType n, const IntType mod,
       const IntType* inv_root_of_unity_powers, IntType* elements);
 
 // TODO(sejun) investigate how to use IFMA for inverse
 #ifdef LATTICE_HAS_AVX512F
   template <int BitShift>
   static void InverseTransformToBitReverseAVX512(
-      const IntType degree, const IntType mod,
+      const IntType n, const IntType mod,
       const IntType* inv_root_of_unity_powers,
       const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
 #endif

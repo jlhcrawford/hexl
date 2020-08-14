@@ -27,19 +27,13 @@
 namespace intel {
 namespace lattice {
 
-// based on
-// https://github.com/microsoft/SEAL/blob/master/native/src/seal/util/ntt.cpp#L200
 void NTT::ForwardTransformToBitReverse64(
-    IntType degree, IntType mod, const IntType* root_of_unity_powers,
+    IntType n, IntType mod, const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements) {
-  LATTICE_CHECK(CheckArguments(degree, mod), "");
+  LATTICE_CHECK(CheckArguments(n, mod), "");
 
   uint64_t twice_mod = mod << 1;
-
-  size_t n = degree;
   size_t t = (n >> 1);
-
-  uint64_t* input = elements;
 
   for (size_t m = 1; m < n; m <<= 1) {
     size_t j1 = 0;
@@ -48,7 +42,7 @@ void NTT::ForwardTransformToBitReverse64(
       const uint64_t W_op = root_of_unity_powers[m + i];
       const uint64_t W_precon = precon_root_of_unity_powers[m + i];
 
-      uint64_t* X = input + j1;
+      uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
       uint64_t tx;
@@ -84,12 +78,12 @@ void NTT::ForwardTransformToBitReverse64(
 }
 
 void NTT::ReferenceForwardTransformToBitReverse(
-    IntType degree, IntType mod, const IntType* root_of_unity_powers,
+    IntType n, IntType mod, const IntType* root_of_unity_powers,
     IntType* elements) {
-  LATTICE_CHECK(CheckArguments(degree, mod), "");
+  LATTICE_CHECK(CheckArguments(n, mod), "");
 
-  size_t t = (degree >> 1);
-  for (size_t m = 1; m < degree; m <<= 1) {
+  size_t t = (n >> 1);
+  for (size_t m = 1; m < n; m <<= 1) {
     size_t j1 = 0;
     for (size_t i = 0; i < m; i++) {
       size_t j2 = j1 + t;
@@ -111,7 +105,7 @@ void NTT::ReferenceForwardTransformToBitReverse(
 }
 
 void NTT::ForwardTransformToBitReverse(
-    IntType degree, IntType mod, const IntType* root_of_unity_powers,
+    IntType n, IntType mod, const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements,
     IntType bit_shift) {
   LATTICE_CHECK(
@@ -125,8 +119,7 @@ void NTT::ForwardTransformToBitReverse(
   if (bit_shift == s_ifma_shift_bits && (mod < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     NTT::ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
-        degree, mod, root_of_unity_powers, precon_root_of_unity_powers,
-        elements);
+        n, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);
     return;
   }
 #endif
@@ -134,27 +127,23 @@ void NTT::ForwardTransformToBitReverse(
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 NTT");
   NTT::ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-      degree, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);
+      n, mod, root_of_unity_powers, precon_root_of_unity_powers, elements);
   return;
 #endif
 
   IVLOG(3, "Calling 64-bit default NTT");
-  NTT::ForwardTransformToBitReverse64(degree, mod, root_of_unity_powers,
+  NTT::ForwardTransformToBitReverse64(n, mod, root_of_unity_powers,
                                       precon_root_of_unity_powers, elements);
 }
 
 void NTT::InverseTransformToBitReverse64(
-    const IntType degree, const IntType mod,
-    const IntType* inv_root_of_unity_powers, IntType* elements) {
-  LATTICE_CHECK(CheckArguments(degree, mod), "");
+    const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
+    IntType* elements) {
+  LATTICE_CHECK(CheckArguments(n, mod), "");
 
   uint64_t twice_mod = mod << 1;
-
-  size_t n = degree;
   size_t t = 1;
   size_t root_index = 1;
-
-  uint64_t* input = elements;
 
   for (size_t m = (n >> 1); m > 1; m >>= 1) {
     size_t j1 = 0;
@@ -162,7 +151,7 @@ void NTT::InverseTransformToBitReverse64(
       size_t j2 = j1 + t;
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
 
-      uint64_t* X = input + j1;
+      uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
       uint64_t tx;
@@ -187,28 +176,20 @@ void NTT::InverseTransformToBitReverse64(
 
   const uint64_t W_op = inv_root_of_unity_powers[root_index];
   const uint64_t inv_n = InverseUIntMod(n, mod);
-
   const uint64_t inv_n_w = MultiplyUIntMod(inv_n, W_op, mod);
 
-  uint64_t* X = input;
+  uint64_t* X = elements;
   uint64_t* Y = X + (n >> 1);
   uint64_t tx;
   uint64_t ty;
 
-  // Inverse negacyclic NTT using Harvey's butterfly. (See Patrick Longa and
-  // Michael Naehrig - https://eprint.iacr.org/2016/504.pdf) Merge inverse root
-  // of unity with inverse degree and modulus
   for (size_t j = (n >> 1); j < n; j++) {
     tx = *X + *Y;
     tx -= twice_mod &
           static_cast<uint64_t>(-static_cast<int64_t>(tx >= twice_mod));
     ty = *X + twice_mod - *Y;
     *X++ = MultiplyUIntModLazy<64>(tx, inv_n, mod);
-    // uint64_t Q = MultiplyUInt64Hi<64>(inv_n_prime, tx);
-    // *X++ = inv_n * tx - Q * mod;
     *Y++ = MultiplyUIntModLazy<64>(ty, inv_n_w, mod);
-    // Q = MultiplyUInt64Hi<64>(inv_n_w_prime, ty);
-    // *Y++ = inv_n_w * ty - Q * mod;
   }
 
   // Reduce from [0, 4p) to [0,p)
@@ -225,8 +206,7 @@ void NTT::InverseTransformToBitReverse64(
 }
 
 void NTT::InverseTransformToBitReverse(
-    const IntType degree, const IntType mod,
-    const IntType* inv_root_of_unity_powers,
+    const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
     const IntType* inv_scaled_root_of_unity_powers, IntType* elements) {
   // TODO(skim): Enable IFMA after investigation where the scaled inverse root
   // of unity is within 2**52 range - add with (bool use_ifma_if_possible)
@@ -239,7 +219,7 @@ void NTT::InverseTransformToBitReverse(
     IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
 
     NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
-        degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+        n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
         elements);
     return;
   }
@@ -248,13 +228,13 @@ void NTT::InverseTransformToBitReverse(
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 invNTT");
   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
-      degree, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+      n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
       elements);
   return;
 #endif
 
   IVLOG(3, "Calling 64-bit default invNTT");
-  NTT::InverseTransformToBitReverse64(degree, mod, inv_root_of_unity_powers,
+  NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,
                                       elements);
 }
 
