@@ -48,9 +48,16 @@ inline MAKE_LOGGABLE(std::vector<std::complex<double>>, vector, os) {
   return os;
 }
 
+// Wrap IVLOG with LATTICE_DEBUG; this ensures no logging overhead in release
+// mode
+#ifdef LATTICE_DEBUG
 #define IVLOG(N, rest)   \
   do {                   \
     if (VLOG_IS_ON(N)) { \
       VLOG(N) << rest;   \
     }                    \
   } while (0);
+#else
+#define IVLOG(N, rest) \
+  {}
+#endif

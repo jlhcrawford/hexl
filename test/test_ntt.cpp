@@ -71,6 +71,7 @@ TEST_P(NTTAPITest, Fwd) {
 
   std::vector<uint64_t> input = std::get<2>(GetParam());
   std::vector<uint64_t> input2 = input;
+  std::vector<uint64_t> input3 = input;
   std::vector<uint64_t> exp_output = std::get<3>(GetParam());
 
   NTT ntt(N, prime);
@@ -82,6 +83,10 @@ TEST_P(NTTAPITest, Fwd) {
 
   CheckEqual(input, exp_output);
   CheckEqual(input2, exp_output);
+
+  // Test round-trip
+  ntt.InverseTransformToBitReverse(input.data());
+  CheckEqual(input, input3);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -211,24 +216,6 @@ INSTANTIATE_TEST_SUITE_P(
                       std::make_tuple(1 << 7, 49),
                       std::make_tuple(1 << 8, 49)));
 #endif
-
-TEST(NTTInvNTTTest, InvNTT) {
-  std::vector<uint64_t> input{1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                              12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-                              23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
-
-  uint64_t prime = 769;
-  std::vector<uint64_t> exp_output{401, 203, 221, 352, 487, 151, 405, 356,
-                                   343, 424, 635, 757, 457, 280, 624, 353,
-                                   496, 353, 624, 280, 457, 757, 635, 424,
-                                   343, 356, 405, 151, 487, 352, 221, 203};
-
-  size_t N = input.size();
-  NTT ntt(N, prime);
-  ntt.InverseTransformToBitReverse(input.data());
-
-  CheckEqual(input, exp_output);
-}
 
 }  // namespace lattice
 }  // namespace intel
