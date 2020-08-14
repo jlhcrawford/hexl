@@ -73,10 +73,19 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
 option(LATTICE_BENCHMARK "Enable benchmarking" ON)
 
-message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
-message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
-message(STATUS "LATTICE_DEBUG:      ${LATTICE_DEBUG}")
-message(STATUS "LATTICE_BENCHMARK:  ${LATTICE_BENCHMARK}")
+message(STATUS "CMAKE_C_COMPILER:         ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER:       ${CMAKE_CXX_COMPILER}")
+message(STATUS "LATTICE_DEBUG:            ${LATTICE_DEBUG}")
+message(STATUS "LATTICE_BENCHMARK:        ${LATTICE_BENCHMARK}")
+message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
+message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
+message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
+
+# Sanitizers
+option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
+option(ENABLE_THREAD_SANITIZER "Compiles and links with Thread Sanitizer" OFF)
+option(ENABLE_UB_SANITIZER "Compiles and links with Undefined Behavior Sanitizer" OFF)
+
 
 if (LATTICE_DEBUG)
   add_definitions(-DLATTICE_DEBUG)
@@ -108,6 +117,31 @@ if (HAS_AVX512F AND HAS_AVX512DQ)
   message(STATUS "Setting DLATTICE_HAS_AVX512F")
   add_definitions(-DLATTICE_HAS_AVX512F)
 endif()
+
+if(ENABLE_ADDRESS_SANITIZER)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=leak")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address -fsanitize=leak")
+endif()
+
+if(ENABLE_UB_SANITIZER)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=float-divide-by-zero -fsanitize=undefined -fsanitize=float-cast-overflow -fsanitize=implicit-conversion -fPIE")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=float-divide-by-zero -fsanitize=undefined -fsanitize=float-cast-overflow -fsanitize=implicit-conversion  -fPIE -pie")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=float-divide-by-zero -fsanitize=undefined -fsanitize=float-cast-overflow -fsanitize=implicit-conversion -fPIE -pie")
+endif()
+
+if(ENABLE_THREAD_SANITIZER)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+	set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=thread")
+endif()
+
+if(ENABLE_ADDRESS_SANITIZER OR ENABLE_THREAD_SANITIZER OR ENABLE_UB_SANITIZER)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g -fno-omit-frame-pointer")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -g -fno-omit-frame-pointer")
+endif()
+
 
 # ------------------------------------------------------------------------------
 # Installation logic...
