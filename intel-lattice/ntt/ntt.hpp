@@ -248,7 +248,8 @@ class NTT {
   // of unity with inverse degree and modulus
   static void InverseTransformToBitReverse64(
       const IntType n, const IntType mod,
-      const IntType* inv_root_of_unity_powers, IntType* elements);
+      const IntType* inv_root_of_unity_powers,
+      const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
 
 // TODO(sejun) investigate how to use IFMA for inverse
 #ifdef LATTICE_HAS_AVX512F
@@ -301,9 +302,11 @@ class NTT {
     MultiplyFactor first(1, m_bit_shift, m_p);
     root_of_unity_powers[0] = first.Operand();
     precon_root_of_unity_powers[0] = first.BarrettFactor();
-    inv_root_of_unity_powers[0] = InverseUIntMod(first.Operand(), m_p);
-    inv_scaled_root_of_unity_powers[0] =
-        DivideUInt128UInt64Lo(0, inv_root_of_unity_powers[0], m_p);
+
+    MultiplyFactor first_inv(InverseUIntMod(first.Operand(), m_p), m_bit_shift,
+                             m_p);
+    inv_root_of_unity_powers[0] = first_inv.Operand();
+    inv_scaled_root_of_unity_powers[0] = first_inv.BarrettFactor();
     int idx = 0;
     int prev_idx = idx;
     for (size_t i = 1; i < m_degree; i++) {
@@ -314,9 +317,10 @@ class NTT {
       root_of_unity_powers[idx] = mf.Operand();
       precon_root_of_unity_powers[idx] = mf.BarrettFactor();
 
-      inv_root_of_unity_powers[idx] = InverseUIntMod(mf.Operand(), m_p);
-      inv_scaled_root_of_unity_powers[idx] =
-          DivideUInt128UInt64Lo(0, inv_root_of_unity_powers[idx], m_p);
+      MultiplyFactor mf_inv(InverseUIntMod(mf.Operand(), m_p), m_bit_shift,
+                            m_p);
+      inv_root_of_unity_powers[idx] = mf_inv.Operand();
+      inv_scaled_root_of_unity_powers[idx] = mf_inv.BarrettFactor();
 
       prev_idx = idx;
     }
@@ -342,7 +346,7 @@ class NTT {
         idx++;
       }
     }
-    inv_scaled_root_of_unity_powers = temp;
+    inv_scaled_root_of_unity_powers = std::move(temp);
 
     NTT::GetStaticRootOfUnityPowers()[key] = std::move(root_of_unity_powers);
     NTT::GetStaticPreconRootOfUnityPowers()[key] =
