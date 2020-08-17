@@ -86,6 +86,7 @@ TEST_P(NTTAPITest, Fwd) {
 
   // Test round-trip
   ntt.InverseTransformToBitReverse(input.data());
+
   CheckEqual(input, input3);
 }
 
@@ -120,6 +121,14 @@ INSTANTIATE_TEST_SUITE_P(
                         std::vector<uint64_t>{4127, 9647, 1987, 5410},
                         std::vector<uint64_t>{1478161, 3359347, 222964,
                                               3344742}),
+        std::make_tuple(8, 4194353,
+                        std::vector<uint64_t>{1, 0, 0, 0, 0, 0, 0, 0},
+                        std::vector<uint64_t>{1, 1, 1, 1, 1, 1, 1, 1}),
+        std::make_tuple(8, 4194353,
+                        std::vector<uint64_t>{1, 1, 0, 0, 0, 0, 0, 0},
+                        std::vector<uint64_t>{132171, 4062184, 2675172, 1519183,
+                                              462763, 3731592, 1824324,
+                                              2370031}),
         std::make_tuple(
             32, 769,
             std::vector<uint64_t>{401, 203, 221, 352, 487, 151, 405, 356,

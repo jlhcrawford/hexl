@@ -138,7 +138,7 @@ void NTT::ForwardTransformToBitReverse(
 
 void NTT::InverseTransformToBitReverse64(
     const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
-    IntType* elements) {
+    const IntType* scaled_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
   uint64_t twice_mod = mod << 1;
@@ -150,6 +150,7 @@ void NTT::InverseTransformToBitReverse64(
     for (size_t i = 0; i < m; i++, root_index++) {
       size_t j2 = j1 + t;
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
+      const uint64_t W_op_precon = scaled_inv_root_of_unity_powers[root_index];
 
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
@@ -167,7 +168,7 @@ void NTT::InverseTransformToBitReverse64(
         ty = *X + twice_mod - *Y;
         *X++ = tx - (twice_mod & static_cast<uint64_t>(
                                      (-static_cast<int64_t>(tx >= twice_mod))));
-        *Y++ = MultiplyUIntModLazy<64>(ty, W_op, mod);
+        *Y++ = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);
       }
       j1 += (t << 1);
     }
@@ -211,30 +212,32 @@ void NTT::InverseTransformToBitReverse(
   // TODO(skim): Enable IFMA after investigation where the scaled inverse root
   // of unity is within 2**52 range - add with (bool use_ifma_if_possible)
 
-/*
-#ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): Check 50-bit limit more carefully
-  constexpr IntType ifma_mod_bound = (1UL << 50);
-  if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
-    IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
+  /*
+  #ifdef LATTICE_HAS_AVX512IFMA
+    // TODO(fboemer): Check 50-bit limit more carefully
+    constexpr IntType ifma_mod_bound = (1UL << 50);
+    if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
+      IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
 
-    NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
-        n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-        elements);
-    return;
-  }
-#endif
-*/
-#ifdef LATTICE_HAS_AVX512F
-  IVLOG(3, "Calling 64-bit AVX512 invNTT");
-  NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
-      n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-      elements);
-  return;
-#endif
+      NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
+          n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+          elements);
+      return;
+    }
+  #endif
+  */
+  // TODO(skim): Fix heap-buffer-overflow
+  // #ifdef LATTICE_HAS_AVX512F
+  //   IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  //   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
+  //       n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+  //       elements);
+  //   return;
+  // #endif
 
   IVLOG(3, "Calling 64-bit default invNTT");
   NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,
+                                      inv_scaled_root_of_unity_powers,
                                       elements);
 }
 
