@@ -226,14 +226,14 @@ void NTT::InverseTransformToBitReverse(
     }
   #endif
   */
-  // TODO(skim): Fix heap-buffer-overflow
-  // #ifdef LATTICE_HAS_AVX512F
-  //   IVLOG(3, "Calling 64-bit AVX512 invNTT");
-  //   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
-  //       n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-  //       elements);
-  //   return;
-  // #endif
+
+#ifdef LATTICE_HAS_AVX512F
+  IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
+      n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+      elements);
+  return;
+#endif
 
   IVLOG(3, "Calling 64-bit default invNTT");
   NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,
