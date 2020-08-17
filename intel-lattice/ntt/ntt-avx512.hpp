@@ -272,7 +272,7 @@ void NTT::InverseTransformToBitReverseAVX512(
   uint64_t* X = elements;
   uint64_t* Y = X + (n >> 1);
 
-  if (n < 8) {
+  if (n <= 8) {
     for (size_t j = (n >> 1); j < n; j++) {
       uint64_t tx;
       uint64_t ty;
