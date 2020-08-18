@@ -152,6 +152,9 @@ void NTT::InverseTransformToBitReverse64(
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
       const uint64_t W_op_precon = scaled_inv_root_of_unity_powers[root_index];
 
+      IVLOG(4, "m = " << i << ", i = " << i);
+      IVLOG(4, "j1 = " << j1 << ", j2 = " << j2);
+
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
@@ -161,11 +164,14 @@ void NTT::InverseTransformToBitReverse64(
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
       for (size_t j = j1; j < j2; j++) {
+        IVLOG(4, "Loaded *X " << *X);
+        IVLOG(4, "Loaded *Y " << *Y);
         // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
         // [0, 4p).
         // X', Y' = X + Y (mod p), W(X - Y) (mod p).
         tx = *X + *Y;
         ty = *X + twice_mod - *Y;
+
         *X++ = tx - (twice_mod & static_cast<uint64_t>(
                                      (-static_cast<int64_t>(tx >= twice_mod))));
         *Y++ = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);

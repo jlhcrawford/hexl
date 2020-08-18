@@ -15,6 +15,7 @@
 //*****************************************************************************
 
 #include <memory>
+#include <random>
 #include <tuple>
 #include <vector>
 
@@ -225,6 +226,66 @@ INSTANTIATE_TEST_SUITE_P(
                       std::make_tuple(1 << 7, 49),
                       std::make_tuple(1 << 8, 49)));
 #endif
+
+// Checks AVX512 and native forward NTT implementations match
+TEST(NTT, FwdNTT_AVX512) {
+  uint64_t N = 512;
+  uint64_t prime = GeneratePrimes(1, 15, N)[0];
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distrib(0, prime - 1);
+
+  for (size_t trial = 0; trial < 1000; ++trial) {
+    std::vector<std::uint64_t> input(N, 0);
+    for (size_t i = 0; i < N; ++i) {
+      input[i] = distrib(gen);
+    }
+    std::vector<std::uint64_t> input2 = input;
+
+    NTT ntt(N, prime);
+    NTT::ForwardTransformToBitReverseAVX512<64>(
+        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
+        ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
+
+    NTT::ForwardTransformToBitReverse64(
+        N, prime, ntt.GetRootOfUnityPowers().data(),
+        ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
+
+    EXPECT_EQ(input, input2);
+    ASSERT_EQ(input, input2);
+  }
+}
+
+// Checks AVX512 and native InvNTT implementations match
+TEST(NTT, InvNTT_AVX512) {
+  uint64_t N = 512;
+  uint64_t prime = GeneratePrimes(1, 15, N)[0];
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distrib(0, prime - 1);
+
+  for (size_t trial = 0; trial < 1000; ++trial) {
+    std::vector<std::uint64_t> input(N, 0);
+    for (size_t i = 0; i < N; ++i) {
+      input[i] = distrib(gen);
+    }
+    std::vector<std::uint64_t> input2 = input;
+
+    NTT ntt(N, prime);
+    NTT::InverseTransformToBitReverseAVX512<64>(
+        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
+        ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
+
+    NTT::InverseTransformToBitReverse64(
+        N, prime, ntt.GetRootOfUnityPowers().data(),
+        ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
+
+    EXPECT_EQ(input, input2);
+    ASSERT_EQ(input, input2);
+  }
+}
 
 }  // namespace lattice
 }  // namespace intel

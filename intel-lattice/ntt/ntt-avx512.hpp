@@ -172,13 +172,13 @@ void NTT::InverseTransformToBitReverseAVX512(
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
-  IVLOG(5, "inv_root_of_unity_powers " << std::vector<uint64_t>(
+  IVLOG(4, "inv_root_of_unity_powers " << std::vector<uint64_t>(
                inv_root_of_unity_powers, inv_root_of_unity_powers + n))
-  IVLOG(5, "inv_scaled_root_of_unity_powers "
+  IVLOG(4, "inv_scaled_root_of_unity_powers "
                << std::vector<uint64_t>(inv_scaled_root_of_unity_powers,
                                         inv_scaled_root_of_unity_powers + n));
 
-  IVLOG(5, "elements " << std::vector<uint64_t>(elements, elements + n));
+  IVLOG(4, "elements " << std::vector<uint64_t>(elements, elements + n));
 
   size_t t = 1;
   size_t root_index = 1;
@@ -193,12 +193,8 @@ void NTT::InverseTransformToBitReverseAVX512(
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
-      IVLOG(5, "---m,i : " << m << "," << i);
-      IVLOG(5, "*X        : " << *X);
-      IVLOG(5, "*Y        : " << *Y);
-      IVLOG(5, "W_operand : " << W_op << " " << (W_op > 0x000fffffffffffff));
-      IVLOG(5, "W_precon  : " << W_precon << " "
-                              << (W_precon > 0x000fffffffffffff));
+      IVLOG(4, "m = " << i << ", i = " << i);
+      IVLOG(4, "j1 = " << j1 << ", j2 = " << j2);
 
       uint64_t tx;
       uint64_t ty;
@@ -207,6 +203,8 @@ void NTT::InverseTransformToBitReverseAVX512(
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
         for (size_t j = j1; j < j2; j++) {
+          IVLOG(4, "Loaded *X " << *X);
+          IVLOG(4, "Loaded *Y " << *Y);
           // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
           // [0, 4p).
           // X', Y' = X + Y (mod p), W(X - Y) (mod p).
@@ -228,6 +226,9 @@ void NTT::InverseTransformToBitReverseAVX512(
           __m512i v_X = _mm512_loadu_si512(v_X_pt);
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
+          IVLOG(4, "Loaded v_X " << ExtractValues(v_X));
+          IVLOG(4, "Loaded v_Y " << ExtractValues(v_Y));
+
           // tx = *X + *Y
           __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
 
@@ -240,11 +241,16 @@ void NTT::InverseTransformToBitReverseAVX512(
 
           // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
           // multiply_uint64_hw64(W_precon, *Y, &Q);
-          __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_precon, v_Y);
+          __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_precon, v_ty);
+          IVLOG(4, "v_W_precon " << ExtractValues(v_W_precon));
+          IVLOG(4, "v_Q " << ExtractValues(v_Q));
 
           // *Y++ = ty * W_op - Q * modulus;
-          __m512i tmp_y1 = avx512_multiply_uint64_lo<BitShift>(v_ty, v_W_op);
-          __m512i tmp_y2 = avx512_multiply_uint64_lo<BitShift>(v_Q, v_modulus);
+          // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
+          __m512i tmp_y1 = avx512_multiply_uint64_lo<64>(v_ty, v_W_op);
+          __m512i tmp_y2 = avx512_multiply_uint64_lo<64>(v_Q, v_modulus);
+          IVLOG(4, "tmp_y1 " << ExtractValues(tmp_y1));
+          IVLOG(4, "tmp_y2 " << ExtractValues(tmp_y2));
           v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
           _mm512_storeu_si512(v_X_pt, v_X);
@@ -252,6 +258,9 @@ void NTT::InverseTransformToBitReverseAVX512(
 
           LATTICE_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
           LATTICE_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
+
+          IVLOG(4, "Wrote v_X " << ExtractValues(v_X));
+          IVLOG(4, "Wrote v_Y " << ExtractValues(v_Y) << "\n");
 
           ++v_X_pt;
           ++v_Y_pt;
@@ -261,6 +270,9 @@ void NTT::InverseTransformToBitReverseAVX512(
     }
     t <<= 1;
   }
+
+  IVLOG(4, "AVX512 intermediate elements "
+               << std::vector<uint64_t>(elements, elements + n));
 
   const uint64_t W_op = inv_root_of_unity_powers[root_index];
   const uint64_t inv_n = InverseUIntMod(n, mod);
@@ -357,6 +369,9 @@ void NTT::InverseTransformToBitReverseAVX512(
       ++v_X_pt;
     }
   }
+
+  IVLOG(5, "AVX512 returning elements "
+               << std::vector<uint64_t>(elements, elements + n));
 }
 
 }  // namespace lattice
