@@ -263,33 +263,5 @@ TEST(NTT, AVX512) {
   }
 }
 
-TEST(NTT, InvAVX512) {
-  uint64_t N = 256;
-  uint64_t prime = 769;
-
-  std::vector<std::uint64_t> input{632, 152, 746, 413, 49,  650, 316, 349,
-                                   208, 385, 386, 259, 718, 717, 97,  406,
-                                   718, 758, 704, 552, 631, 283, 161, 348,
-                                   278, 303, 133, 384, 127, 542, 725, 510};
-  std::vector<std::uint64_t> input2 = input;
-
-  // LOG(INFO) << "Input " << input;
-
-  NTT ntt(N, prime);
-  NTT::InverseTransformToBitReverseAVX512<64>(
-      N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-      ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
-
-  // LOG(INFO) << "AVX512 output " << input;
-
-  NTT::InverseTransformToBitReverse64(
-      N, prime, ntt.GetRootOfUnityPowers().data(),
-      ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
-
-  // LOG(INFO) << "regular output " << input2;
-
-  EXPECT_EQ(input, input2);
-}
-
 }  // namespace lattice
 }  // namespace intel

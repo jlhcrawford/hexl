@@ -167,8 +167,6 @@ void NTT::InverseTransformToBitReverseAVX512(
       "");
   LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
 
-  LOG(INFO) << "InverseTransformToBitReverseAVX512";
-
   uint64_t twice_mod = mod << 1;
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
