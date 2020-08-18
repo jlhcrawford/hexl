@@ -141,6 +141,15 @@ void NTT::InverseTransformToBitReverse64(
     const IntType* scaled_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
+  LOG(INFO) << "InverseTransformToBitReverse64 values "
+            << std::vector<uint64_t>(elements, elements + n);
+  LOG(INFO) << "InverseTransformToBitReverse64 inv_root_of_unity_powers "
+            << std::vector<uint64_t>(inv_root_of_unity_powers,
+                                     inv_root_of_unity_powers + n);
+  LOG(INFO) << "InverseTransformToBitReverse64 scaled_inv_root_of_unity_powers "
+            << std::vector<uint64_t>(scaled_inv_root_of_unity_powers,
+                                     scaled_inv_root_of_unity_powers + n);
+
   uint64_t twice_mod = mod << 1;
   size_t t = 1;
   size_t root_index = 1;
@@ -152,6 +161,9 @@ void NTT::InverseTransformToBitReverse64(
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
       const uint64_t W_op_precon = scaled_inv_root_of_unity_powers[root_index];
 
+      IVLOG(4, "m = " << i << ", i = " << i);
+      IVLOG(4, "j1 = " << j1 << ", j2 = " << j2);
+
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
@@ -161,14 +173,24 @@ void NTT::InverseTransformToBitReverse64(
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
       for (size_t j = j1; j < j2; j++) {
+        IVLOG(4, "Loaded *X " << *X);
+        IVLOG(4, "Loaded *Y " << *Y);
         // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
         // [0, 4p).
         // X', Y' = X + Y (mod p), W(X - Y) (mod p).
         tx = *X + *Y;
         ty = *X + twice_mod - *Y;
-        *X++ = tx - (twice_mod & static_cast<uint64_t>(
-                                     (-static_cast<int64_t>(tx >= twice_mod))));
+        uint64_t write_x =
+            tx - (twice_mod & static_cast<uint64_t>(
+                                  (-static_cast<int64_t>(tx >= twice_mod))));
+        IVLOG(4, "tx " << tx);
+        uint64_t write_y = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);
+
+        *X++ = write_x;
         *Y++ = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);
+
+        IVLOG(4, "Wrote X " << write_x);
+        IVLOG(4, "Wrote Y " << write_y << "\n");
       }
       j1 += (t << 1);
     }
@@ -183,6 +205,9 @@ void NTT::InverseTransformToBitReverse64(
   uint64_t* Y = X + (n >> 1);
   uint64_t tx;
   uint64_t ty;
+
+  LOG(INFO) << "intermediate values "
+            << std::vector<uint64_t>(elements, elements + n);
 
   for (size_t j = (n >> 1); j < n; j++) {
     tx = *X + *Y;
@@ -204,6 +229,9 @@ void NTT::InverseTransformToBitReverse64(
     LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
                                          << elements[i] << " >= " << mod);
   }
+
+  LOG(INFO) << "returing values "
+            << std::vector<uint64_t>(elements, elements + n);
 }
 
 void NTT::InverseTransformToBitReverse(
@@ -227,13 +255,13 @@ void NTT::InverseTransformToBitReverse(
   #endif
   */
 
-#ifdef LATTICE_HAS_AVX512F
-  IVLOG(3, "Calling 64-bit AVX512 invNTT");
-  NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
-      n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-      elements);
-  return;
-#endif
+  // #ifdef LATTICE_HAS_AVX512F
+  //   IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  //   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
+  //       n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+  //       elements);
+  //   return;
+  // #endif
 
   IVLOG(3, "Calling 64-bit default invNTT");
   NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,
