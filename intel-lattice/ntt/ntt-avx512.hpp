@@ -234,8 +234,6 @@ void NTT::InverseTransformToBitReverseAVX512(
           __m512i v_X = _mm512_loadu_si512(v_X_pt);
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-          LOG(INFO) << "j2 - j1 " << (j2 - j1);
-
           IVLOG(4, "Loaded v_X " << ExtractValues(v_X));
           IVLOG(4, "Loaded v_Y " << ExtractValues(v_Y));
 

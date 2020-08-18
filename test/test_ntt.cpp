@@ -238,25 +238,25 @@ TEST(NTT, AVX512) {
 
   for (size_t trial = 0; trial < 1000; ++trial) {
     std::vector<std::uint64_t> input(N, 0);
-    for (int i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
       input[i] = distrib(gen);
     }
     std::vector<std::uint64_t> input2 = input;
 
-    LOG(INFO) << "Input " << input;
+    // LOG(INFO) << "Input " << input;
 
     NTT ntt(N, prime);
     NTT::InverseTransformToBitReverseAVX512<64>(
         N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
         ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
 
-    LOG(INFO) << "AVX512 output " << input;
+    // LOG(INFO) << "AVX512 output " << input;
 
     NTT::InverseTransformToBitReverse64(
         N, prime, ntt.GetRootOfUnityPowers().data(),
         ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
 
-    LOG(INFO) << "regular output " << input2;
+    // LOG(INFO) << "regular output " << input2;
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
@@ -264,7 +264,7 @@ TEST(NTT, AVX512) {
 }
 
 TEST(NTT, InvAVX512) {
-  uint64_t N = 32;
+  uint64_t N = 256;
   uint64_t prime = 769;
 
   std::vector<std::uint64_t> input{632, 152, 746, 413, 49,  650, 316, 349,
@@ -273,23 +273,22 @@ TEST(NTT, InvAVX512) {
                                    278, 303, 133, 384, 127, 542, 725, 510};
   std::vector<std::uint64_t> input2 = input;
 
-  LOG(INFO) << "Input " << input;
+  // LOG(INFO) << "Input " << input;
 
   NTT ntt(N, prime);
   NTT::InverseTransformToBitReverseAVX512<64>(
       N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
       ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
 
-  LOG(INFO) << "AVX512 output " << input;
+  // LOG(INFO) << "AVX512 output " << input;
 
   NTT::InverseTransformToBitReverse64(
       N, prime, ntt.GetRootOfUnityPowers().data(),
       ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
 
-  LOG(INFO) << "regular output " << input2;
+  // LOG(INFO) << "regular output " << input2;
 
   EXPECT_EQ(input, input2);
-  ASSERT_EQ(input, input2);
 }
 
 }  // namespace lattice

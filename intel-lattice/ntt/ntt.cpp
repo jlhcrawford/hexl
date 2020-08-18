@@ -141,14 +141,15 @@ void NTT::InverseTransformToBitReverse64(
     const IntType* scaled_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
-  LOG(INFO) << "InverseTransformToBitReverse64 values "
-            << std::vector<uint64_t>(elements, elements + n);
-  LOG(INFO) << "InverseTransformToBitReverse64 inv_root_of_unity_powers "
-            << std::vector<uint64_t>(inv_root_of_unity_powers,
-                                     inv_root_of_unity_powers + n);
-  LOG(INFO) << "InverseTransformToBitReverse64 scaled_inv_root_of_unity_powers "
-            << std::vector<uint64_t>(scaled_inv_root_of_unity_powers,
-                                     scaled_inv_root_of_unity_powers + n);
+  // LOG(INFO) << "InverseTransformToBitReverse64 values "
+  //           << std::vector<uint64_t>(elements, elements + n);
+  // LOG(INFO) << "InverseTransformToBitReverse64 inv_root_of_unity_powers "
+  //           << std::vector<uint64_t>(inv_root_of_unity_powers,
+  //                                    inv_root_of_unity_powers + n);
+  // LOG(INFO) << "InverseTransformToBitReverse64
+  // scaled_inv_root_of_unity_powers "
+  //           << std::vector<uint64_t>(scaled_inv_root_of_unity_powers,
+  //                                    scaled_inv_root_of_unity_powers + n);
 
   uint64_t twice_mod = mod << 1;
   size_t t = 1;
@@ -206,9 +207,6 @@ void NTT::InverseTransformToBitReverse64(
   uint64_t tx;
   uint64_t ty;
 
-  LOG(INFO) << "intermediate values "
-            << std::vector<uint64_t>(elements, elements + n);
-
   for (size_t j = (n >> 1); j < n; j++) {
     tx = *X + *Y;
     tx -= twice_mod &
@@ -229,9 +227,6 @@ void NTT::InverseTransformToBitReverse64(
     LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
                                          << elements[i] << " >= " << mod);
   }
-
-  LOG(INFO) << "returing values "
-            << std::vector<uint64_t>(elements, elements + n);
 }
 
 void NTT::InverseTransformToBitReverse(
