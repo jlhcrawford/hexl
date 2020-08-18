@@ -171,17 +171,10 @@ void NTT::InverseTransformToBitReverse64(
         // X', Y' = X + Y (mod p), W(X - Y) (mod p).
         tx = *X + *Y;
         ty = *X + twice_mod - *Y;
-        uint64_t write_x =
-            tx - (twice_mod & static_cast<uint64_t>(
-                                  (-static_cast<int64_t>(tx >= twice_mod))));
-        IVLOG(4, "tx " << tx);
-        uint64_t write_y = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);
 
-        *X++ = write_x;
+        *X++ = tx - (twice_mod & static_cast<uint64_t>(
+                                     (-static_cast<int64_t>(tx >= twice_mod))));
         *Y++ = MultiplyUIntModLazy<64>(ty, W_op, W_op_precon, mod);
-
-        IVLOG(4, "Wrote X " << write_x);
-        IVLOG(4, "Wrote Y " << write_y << "\n");
       }
       j1 += (t << 1);
     }
