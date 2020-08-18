@@ -141,16 +141,6 @@ void NTT::InverseTransformToBitReverse64(
     const IntType* scaled_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
-  // LOG(INFO) << "InverseTransformToBitReverse64 values "
-  //           << std::vector<uint64_t>(elements, elements + n);
-  // LOG(INFO) << "InverseTransformToBitReverse64 inv_root_of_unity_powers "
-  //           << std::vector<uint64_t>(inv_root_of_unity_powers,
-  //                                    inv_root_of_unity_powers + n);
-  // LOG(INFO) << "InverseTransformToBitReverse64
-  // scaled_inv_root_of_unity_powers "
-  //           << std::vector<uint64_t>(scaled_inv_root_of_unity_powers,
-  //                                    scaled_inv_root_of_unity_powers + n);
-
   uint64_t twice_mod = mod << 1;
   size_t t = 1;
   size_t root_index = 1;
@@ -250,13 +240,13 @@ void NTT::InverseTransformToBitReverse(
   #endif
   */
 
-  // #ifdef LATTICE_HAS_AVX512F
-  //   IVLOG(3, "Calling 64-bit AVX512 invNTT");
-  //   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
-  //       n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-  //       elements);
-  //   return;
-  // #endif
+#ifdef LATTICE_HAS_AVX512F
+  IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
+      n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+      elements);
+  return;
+#endif
 
   IVLOG(3, "Calling 64-bit default invNTT");
   NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,

@@ -181,12 +181,7 @@ inline uint64_t MultiplyUIntModLazy(uint64_t x, uint64_t y_operand,
   LATTICE_CHECK(x <= MaximumValue(BitShift),
                 "Operand " << x << " exceeds bound " << MaximumValue(BitShift));
 
-  IVLOG(4, "y_barrett_factor " << y_barrett_factor);
   uint64_t Q = MultiplyUInt64Hi<BitShift>(x, y_barrett_factor);
-  IVLOG(4, "Q " << Q);
-  IVLOG(4, "y_operand * x " << y_operand * x);
-  IVLOG(4, "Q * mod " << Q * mod);
-  IVLOG(4, "returning " << y_operand * x - Q * mod);
   return y_operand * x - Q * mod;
 }
 
