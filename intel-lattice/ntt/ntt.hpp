@@ -233,13 +233,14 @@ class NTT {
 
     InverseTransformToBitReverse(m_degree, m_p, inv_root_of_unity_powers.data(),
                                  inv_scaled_root_of_unity_powers.data(),
-                                 elements);
+                                 elements, m_bit_shift);
   }
 
   static void InverseTransformToBitReverse(
       const IntType n, const IntType mod,
       const IntType* inv_root_of_unity_powers,
-      const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
+      const IntType* inv_scaled_root_of_unity_powers, IntType* elements,
+      IntType bit_shift);
   // TODO(skim) Add after invNTT AVX512 IFMA - (bool use_ifma_if_possible =
   // true)
 
