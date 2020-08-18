@@ -210,16 +210,10 @@ void NTT::InverseTransformToBitReverseAVX512(
           // X', Y' = X + Y (mod p), W(X - Y) (mod p).
           tx = *X + *Y;
           ty = *X + twice_mod - *Y;
-          uint64_t write_x =
+          *X++ =
               tx - (twice_mod & static_cast<uint64_t>(
                                     (-static_cast<int64_t>(tx >= twice_mod))));
-          uint64_t write_y =
-              MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
-          *X++ = write_x;
           *Y++ = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
-
-          IVLOG(4, "Wrote X " << write_x);
-          IVLOG(4, "Wrote Y " << write_y << "\n");
         }
       } else {
         __m512i v_W_op = _mm512_set1_epi64(W_op);
