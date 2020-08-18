@@ -114,8 +114,6 @@ void NTT::ForwardTransformToBitReverse(
                    << " or " << s_default_shift_bits);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): Check 50-bit limit more
-  // carefully
   if (bit_shift == s_ifma_shift_bits && (mod < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     NTT::ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
@@ -214,34 +212,32 @@ void NTT::InverseTransformToBitReverse64(
 
 void NTT::InverseTransformToBitReverse(
     const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
-    const IntType* inv_scaled_root_of_unity_powers, IntType* elements) {
-  // TODO(skim): Enable IFMA after investigation where the scaled inverse root
-  // of unity is within 2**52 range - add with (bool use_ifma_if_possible)
+    const IntType* inv_scaled_root_of_unity_powers, IntType* elements,
+    IntType bit_shift) {
+  LATTICE_CHECK(
+      bit_shift == s_ifma_shift_bits || bit_shift == s_default_shift_bits,
+      "Bit shift " << bit_shift << " should be either " << s_ifma_shift_bits
+                   << " or " << s_default_shift_bits);
 
-  /*
-  #ifdef LATTICE_HAS_AVX512IFMA
-    // TODO(fboemer): Check 50-bit limit more carefully
-    constexpr IntType ifma_mod_bound = (1UL << 50);
-    if (use_ifma_if_possible && (mod < ifma_mod_bound)) {
-      IVLOG(3, "Calling 52-bit AVX512-IFMA invNTT");
-
-      NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
-          n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
-          elements);
-      return;
-    }
-  #endif
-  */
+#ifdef LATTICE_HAS_AVX512IFMA
+  if (bit_shift == s_ifma_shift_bits && (mod < s_max_ifma_modulus)) {
+    IVLOG(3, "Calling 52-bit AVX512-IFMA InvNTT");
+    NTT::InverseTransformToBitReverseAVX512<s_ifma_shift_bits>(
+        n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
+        elements);
+    return;
+  }
+#endif
 
 #ifdef LATTICE_HAS_AVX512F
-  IVLOG(3, "Calling 64-bit AVX512 invNTT");
+  IVLOG(3, "Calling 64-bit AVX512 InvNTT");
   NTT::InverseTransformToBitReverseAVX512<s_default_shift_bits>(
       n, mod, inv_root_of_unity_powers, inv_scaled_root_of_unity_powers,
       elements);
   return;
 #endif
 
-  IVLOG(3, "Calling 64-bit default invNTT");
+  IVLOG(3, "Calling 64-bit default InvNTT");
   NTT::InverseTransformToBitReverse64(n, mod, inv_root_of_unity_powers,
                                       inv_scaled_root_of_unity_powers,
                                       elements);

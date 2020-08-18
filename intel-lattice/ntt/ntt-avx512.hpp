@@ -275,11 +275,15 @@ void NTT::InverseTransformToBitReverseAVX512(
                << std::vector<uint64_t>(elements, elements + n));
 
   const uint64_t W_op = inv_root_of_unity_powers[root_index];
-  const uint64_t inv_n = InverseUIntMod(n, mod);
-  const uint64_t inv_n_prime = DivideUInt128UInt64Lo(0, inv_n, mod);
+  MultiplyFactor mf_inv_n(InverseUIntMod(n, mod), BitShift, mod);
+  const uint64_t inv_n = mf_inv_n.Operand();
+  const uint64_t inv_n_prime = mf_inv_n.BarrettFactor();
 
-  const uint64_t inv_n_w = MultiplyUIntMod(inv_n, W_op, mod);
-  const uint64_t inv_n_w_prime = DivideUInt128UInt64Lo(0, inv_n_w, mod);
+  MultiplyFactor mf_inv_n_w(MultiplyUIntMod(inv_n, W_op, mod), BitShift, mod);
+  const uint64_t inv_n_w = mf_inv_n_w.Operand();
+  const uint64_t inv_n_w_prime = mf_inv_n_w.BarrettFactor();
+
+  IVLOG(4, "inv_n_w " << inv_n_w);
 
   uint64_t* X = elements;
   uint64_t* Y = X + (n >> 1);
@@ -322,15 +326,15 @@ void NTT::InverseTransformToBitReverseAVX512(
       // multiply_uint64_hw64(inv_Nprime, tx, &Q);
       __m512i v_Q1 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_prime, v_tx);
       // *X++ = inv_N * tx - Q * modulus;
-      __m512i tmp_x1 = avx512_multiply_uint64_lo<BitShift>(v_inv_n, v_tx);
-      __m512i tmp_x2 = avx512_multiply_uint64_lo<BitShift>(v_Q1, v_modulus);
+      __m512i tmp_x1 = avx512_multiply_uint64_lo<64>(v_inv_n, v_tx);
+      __m512i tmp_x2 = avx512_multiply_uint64_lo<64>(v_Q1, v_modulus);
       v_X = _mm512_sub_epi64(tmp_x1, tmp_x2);
 
       // multiply_uint64_hw64(inv_N_Wprime, ty, &Q);
       __m512i v_Q2 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_w_prime, v_ty);
       // *Y++ = inv_N_W * ty - Q * modulus;
-      __m512i tmp_y1 = avx512_multiply_uint64_lo<BitShift>(v_inv_n_w, v_ty);
-      __m512i tmp_y2 = avx512_multiply_uint64_lo<BitShift>(v_Q2, v_modulus);
+      __m512i tmp_y1 = avx512_multiply_uint64_lo<64>(v_inv_n_w, v_ty);
+      __m512i tmp_y2 = avx512_multiply_uint64_lo<64>(v_Q2, v_modulus);
       v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
       _mm512_storeu_si512(v_X_pt, v_X);
