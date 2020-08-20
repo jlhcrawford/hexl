@@ -44,14 +44,14 @@ NTT::ForwardTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
 template void NTT::InverseTransformToBitReverseAVX512<NTT::s_ifma_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* inv_root_of_unity_powers,
-    const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
+    const IntType* precon_inv_root_of_unity_powers, IntType* elements);
 #endif
 
 template void
 NTT::InverseTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
     const IntType degree, const IntType mod,
     const IntType* inv_root_of_unity_powers,
-    const IntType* inv_scaled_root_of_unity_powers, IntType* elements);
+    const IntType* precon_inv_root_of_unity_powers, IntType* elements);
 
 }  // namespace lattice
 }  // namespace intel
