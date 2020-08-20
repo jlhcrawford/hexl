@@ -25,21 +25,26 @@
 namespace intel {
 namespace lattice {
 
-// Computes floor(2^128 / modulus)
-class Barrett128Factor {
+// Computes floor(2^(2 * BitShift) / modulus)
+template <int BitShift>
+class BarrettFactor {
  public:
-  Barrett128Factor() = delete;
+  BarrettFactor() = delete;
 
-  explicit Barrett128Factor(uint64_t modulus) {
-    constexpr uint128_t two_pow_64 = uint128_t(1) << 64;
-    constexpr uint128_t two_pow_128_minus_1 = uint128_t(-1);
+  explicit BarrettFactor(uint64_t modulus) {
+    LATTICE_CHECK(BitShift == 64 || BitShift == 52,
+                  "Unsupport BitShift " << BitShift);
+    constexpr uint128_t two_pow_bitshift = uint128_t(1) << BitShift;
+    constexpr uint128_t two_pow_twice_bitshift__minus_1 =
+        (BitShift == 64) ? uint128_t(-1) : (uint128_t(1) << (2 * BitShift)) - 1;
 
-    // The Barrett factor is actually floor(2^128 / modulus)
-    // But since modulus should be prime, modulus does not divide 2^128,
-    // hence floor(2^128/modulus) = floor((2^128 - 1) / modulus)
-    uint128_t barrett_factor = (two_pow_128_minus_1 / modulus);
-    m_barrett_hi = barrett_factor >> 64;
-    m_barrett_lo = barrett_factor % two_pow_64;
+    // The Barrett factor is actually floor(2^(2 * BitShift) / modulus)
+    // But since modulus should be prime,
+    // modulus does not divide 2^(2 * BitShift), hence
+    // floor(2^(2 * BitShift)/modulus) = floor((2^(2 * BitShift) - 1) / modulus)
+    uint128_t barrett_factor = (two_pow_twice_bitshift__minus_1 / modulus);
+    m_barrett_hi = barrett_factor >> BitShift;
+    m_barrett_lo = barrett_factor % two_pow_bitshift;
   }
 
   uint64_t Hi() const { return m_barrett_hi; }
