@@ -246,11 +246,11 @@ TEST(NTT, FwdNTT_AVX512) {
     NTT ntt(N, prime);
     NTT::ForwardTransformToBitReverseAVX512<64>(
         N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-        ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
+        ntt.GetPreconInvRootOfUnityPowers().data(), input.data());
 
     NTT::ForwardTransformToBitReverse64(
         N, prime, ntt.GetRootOfUnityPowers().data(),
-        ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
+        ntt.GetPreconInvRootOfUnityPowers().data(), input2.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
@@ -276,11 +276,11 @@ TEST(NTT, InvNTT_AVX512) {
     NTT ntt(N, prime);
     NTT::InverseTransformToBitReverseAVX512<64>(
         N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-        ntt.GetInvScaledRootOfUnityPowers().data(), input.data());
+        ntt.GetPreconInvRootOfUnityPowers().data(), input.data());
 
     NTT::InverseTransformToBitReverse64(
         N, prime, ntt.GetRootOfUnityPowers().data(),
-        ntt.GetInvScaledRootOfUnityPowers().data(), input2.data());
+        ntt.GetPreconInvRootOfUnityPowers().data(), input2.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);

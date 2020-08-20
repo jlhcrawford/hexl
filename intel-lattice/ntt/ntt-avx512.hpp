@@ -160,10 +160,10 @@ void NTT::ForwardTransformToBitReverseAVX512(
 template <int BitShift>
 void NTT::InverseTransformToBitReverseAVX512(
     const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
-    const IntType* inv_scaled_root_of_unity_powers, IntType* elements) {
+    const IntType* precon_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK(
-      CheckBounds(inv_scaled_root_of_unity_powers, n, MaximumValue(BitShift)),
+      CheckBounds(precon_inv_root_of_unity_powers, n, MaximumValue(BitShift)),
       "");
   LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
 
@@ -174,9 +174,9 @@ void NTT::InverseTransformToBitReverseAVX512(
 
   IVLOG(4, "inv_root_of_unity_powers " << std::vector<uint64_t>(
                inv_root_of_unity_powers, inv_root_of_unity_powers + n))
-  IVLOG(4, "inv_scaled_root_of_unity_powers "
-               << std::vector<uint64_t>(inv_scaled_root_of_unity_powers,
-                                        inv_scaled_root_of_unity_powers + n));
+  IVLOG(4, "precon_inv_root_of_unity_powers "
+               << std::vector<uint64_t>(precon_inv_root_of_unity_powers,
+                                        precon_inv_root_of_unity_powers + n));
 
   IVLOG(4, "elements " << std::vector<uint64_t>(elements, elements + n));
 
@@ -188,7 +188,7 @@ void NTT::InverseTransformToBitReverseAVX512(
     for (size_t i = 0; i < m; i++, root_index++) {
       size_t j2 = j1 + t;
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
-      const uint64_t W_precon = inv_scaled_root_of_unity_powers[root_index];
+      const uint64_t W_precon = precon_inv_root_of_unity_powers[root_index];
 
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
