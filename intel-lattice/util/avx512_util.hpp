@@ -109,61 +109,6 @@ inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
 }
 #endif
 
-// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
-// and y to form a 104-bit intermediate result.
-// Returns the low BitShift-bit unsigned integer from the intermediate result
-template <int BitShift>
-inline __m512i avx512_multiply_uint64_lo(__m512i x, __m512i y);
-
-template <>
-inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
-  return _mm512_mullo_epi64(x, y);
-}
-
-#ifdef LATTICE_HAS_AVX512IFMA
-template <>
-inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
-  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
-  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
-  __m512i zero = _mm512_set1_epi64(0);
-  return _mm512_madd52lo_epu64(zero, x, y);
-}
-#endif
-
-// Returns hi[i] = hi  64 bits of x[i] * y[i],
-//         lo[i] = low 64 bits of x[i] * y[i]
-inline void avx512_multiply_uint64(__m512i x, __m512i y, __m512i* hi,
-                                   __m512i* lo) {
-  // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
-  __m512i lomask = _mm512_set1_epi64(0x00000000ffffffff);
-  __m512i xh =
-      _mm512_shuffle_epi32(x, (_MM_PERM_ENUM)0xB1);  // x0l, x0h, x1l, x1h
-  __m512i yh =
-      _mm512_shuffle_epi32(y, (_MM_PERM_ENUM)0xB1);  // y0l, y0h, y1l, y1h
-  __m512i w0 = _mm512_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
-  __m512i w1 = _mm512_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
-  __m512i w2 = _mm512_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
-  __m512i w3 = _mm512_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
-  //  __m512i w0l    = _mm512_and_si512(w0, lomask);     //(*)
-  __m512i w0h = _mm512_srli_epi64(w0, 32);
-  __m512i s1 = _mm512_add_epi64(w1, w0h);
-  __m512i s1l = _mm512_and_si512(s1, lomask);
-  __m512i s1h = _mm512_srli_epi64(s1, 32);
-  __m512i s2 = _mm512_add_epi64(w2, s1l);
-  //  __m512i s2l    = _mm512_slli_epi64(s2, 32);        //(*)
-  __m512i s2h = _mm512_srli_epi64(s2, 32);
-  __m512i hi1 = _mm512_add_epi64(w3, s1h);
-  hi1 = _mm512_add_epi64(hi1, s2h);
-  //  __m512i lo1    = _mm512_add_epi64(w0l, s2l);       //(*)
-
-  // The lines with (*) are an alternative way to compute lo1.
-  // unit-tests yield ~10% speedup using _mm512_mullo_epi64
-  // So we use mullo for now
-  __m512i lo1 = _mm512_mullo_epi64(x, y);
-  *hi = hi1;
-  *lo = lo1;
-}
-
 // Returns x mod p; assumes x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)

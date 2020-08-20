@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
@@ -38,7 +40,7 @@ void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
 
 inline void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
                                  const uint64_t n, const uint64_t modulus) {
-  Barrett128Factor bf(modulus);
+  BarrettFactor<64> bf(modulus);
 
   MultiplyModInPlace64(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
 }
@@ -53,18 +55,20 @@ inline void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
 // modulus)
 // @param modulus Modulus with which to perform modular reduction
 #ifdef LATTICE_HAS_AVX512F
-void MultiplyModInPlace64AVX512(uint64_t* operand1, const uint64_t* operand2,
-                                const uint64_t n, const uint64_t barrett_hi,
-                                const uint64_t barrett_lo,
-                                const uint64_t modulus);
+template <int BitShift>
+void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
+                              const uint64_t n, const uint64_t barrett_hi,
+                              const uint64_t barrett_lo,
+                              const uint64_t modulus);
 
-inline void MultiplyModInPlace64AVX512(uint64_t* operand1,
-                                       const uint64_t* operand2,
-                                       const uint64_t n,
-                                       const uint64_t modulus) {
-  Barrett128Factor bf(modulus);
+template <int BitShift>
+inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
+                                     const uint64_t* operand2, const uint64_t n,
+                                     const uint64_t modulus) {
+  BarrettFactor<BitShift> bf(modulus);
 
-  MultiplyModInPlace64AVX512(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
+  MultiplyModInPlaceAVX512<BitShift>(operand1, operand2, n, bf.Hi(), bf.Lo(),
+                                     modulus);
 }
 #endif
 
@@ -81,10 +85,20 @@ inline void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
                                const uint64_t n, const uint64_t barrett_hi,
                                const uint64_t barrett_lo,
                                const uint64_t modulus) {
+#ifdef LATTICE_HAS_AVX512IFMA
+  // TODO(fboemer): check behavior around 50-52 bits
+  if (modulus < (1UL << 50)) {
+    IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
+    MultiplyModInPlaceAVX512<52>(operand1, operand2, n, barrett_hi, barrett_lo,
+                                 modulus);
+    return;
+  }
+#endif
+
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
-  MultiplyModInPlace64AVX512(operand1, operand2, n, barrett_hi, barrett_lo,
-                             modulus);
+  MultiplyModInPlaceAVX512<64>(operand1, operand2, n, barrett_hi, barrett_lo,
+                               modulus);
   return;
 #endif
 
@@ -99,7 +113,7 @@ inline void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
 // @param modulus Modulus with which to perform modular reductio
 inline void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
                                const uint64_t n, const uint64_t modulus) {
-  Barrett128Factor bf(modulus);
+  BarrettFactor<64> bf(modulus);
 
   MultiplyModInPlace(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
 }

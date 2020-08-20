@@ -105,8 +105,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
 
           // Q = *Y * W - Q * modulus;
           // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
-          __m512i tmp1 = avx512_multiply_uint64_lo<64>(v_Y, v_W_op);
-          __m512i tmp2 = avx512_multiply_uint64_lo<64>(v_Q, v_modulus);
+          __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
+          __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
           v_Q = _mm512_sub_epi64(tmp1, tmp2);
 
           // *X++ = tx + Q;
@@ -247,8 +247,8 @@ void NTT::InverseTransformToBitReverseAVX512(
 
           // *Y++ = ty * W_op - Q * modulus;
           // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
-          __m512i tmp_y1 = avx512_multiply_uint64_lo<64>(v_ty, v_W_op);
-          __m512i tmp_y2 = avx512_multiply_uint64_lo<64>(v_Q, v_modulus);
+          __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+          __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
           IVLOG(4, "tmp_y1 " << ExtractValues(tmp_y1));
           IVLOG(4, "tmp_y2 " << ExtractValues(tmp_y2));
           v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
@@ -326,15 +326,15 @@ void NTT::InverseTransformToBitReverseAVX512(
       // multiply_uint64_hw64(inv_Nprime, tx, &Q);
       __m512i v_Q1 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_prime, v_tx);
       // *X++ = inv_N * tx - Q * modulus;
-      __m512i tmp_x1 = avx512_multiply_uint64_lo<64>(v_inv_n, v_tx);
-      __m512i tmp_x2 = avx512_multiply_uint64_lo<64>(v_Q1, v_modulus);
+      __m512i tmp_x1 = _mm512_mullo_epi64(v_inv_n, v_tx);
+      __m512i tmp_x2 = _mm512_mullo_epi64(v_Q1, v_modulus);
       v_X = _mm512_sub_epi64(tmp_x1, tmp_x2);
 
       // multiply_uint64_hw64(inv_N_Wprime, ty, &Q);
       __m512i v_Q2 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_w_prime, v_ty);
       // *Y++ = inv_N_W * ty - Q * modulus;
-      __m512i tmp_y1 = avx512_multiply_uint64_lo<64>(v_inv_n_w, v_ty);
-      __m512i tmp_y2 = avx512_multiply_uint64_lo<64>(v_Q2, v_modulus);
+      __m512i tmp_y1 = _mm512_mullo_epi64(v_inv_n_w, v_ty);
+      __m512i tmp_y2 = _mm512_mullo_epi64(v_Q2, v_modulus);
       v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
       _mm512_storeu_si512(v_X_pt, v_X);
