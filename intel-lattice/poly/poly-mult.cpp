@@ -58,5 +58,33 @@ void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
   }
 }
 
+void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
+                        const uint64_t n, const uint64_t modulus) {
+#ifdef LATTICE_HAS_AVX512IFMA
+  // TODO(fboemer): check behavior around 50-52 bits
+  if (modulus < (1UL << 50)) {
+    // std::cout << "calling 52-bit AVX512 MultiplyMod\n";
+    IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
+    BarrettFactor<52> bf(modulus);
+    MultiplyModInPlaceAVX512<52>(operand1, operand2, n, bf.Hi(), bf.Lo(),
+                                 modulus);
+    return;
+  }
+#endif
+  BarrettFactor<64> bf(modulus);
+#ifdef LATTICE_HAS_AVX512F
+  // std::cout << "calling 64-bit AVX512 MultiplyMod\n";
+  IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
+
+  MultiplyModInPlaceAVX512<64>(operand1, operand2, n, bf.Hi(), bf.Lo(),
+                               modulus);
+  return;
+#endif
+
+  // std::cout << "calling default MultiplyMod\n";
+  IVLOG(3, "Calling 64-bit default MultiplyMod");
+  MultiplyModInPlace64(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
+}
+
 }  // namespace lattice
 }  // namespace intel

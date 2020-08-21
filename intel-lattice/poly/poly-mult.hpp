@@ -76,47 +76,9 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
 // @param operand1 Vector of elements to multiply; stores result
 // @param operand2 Vector of elements to multiply
 // @param n Number of elements in each vector
-// @param barrett_hi High 64 bits of Barrett precomputation floor(2^128 /
-// modulus)
-// @param barrett_lo Low 64 bits of Barrett precomputation floor(2^128 /
-// modulus)
 // @param modulus Modulus with which to perform modular reductio
-inline void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
-                               const uint64_t n, const uint64_t barrett_hi,
-                               const uint64_t barrett_lo,
-                               const uint64_t modulus) {
-#ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): check behavior around 50-52 bits
-  if (modulus < (1UL << 50)) {
-    IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
-    MultiplyModInPlaceAVX512<52>(operand1, operand2, n, barrett_hi, barrett_lo,
-                                 modulus);
-    return;
-  }
-#endif
-
-#ifdef LATTICE_HAS_AVX512F
-  IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
-  MultiplyModInPlaceAVX512<64>(operand1, operand2, n, barrett_hi, barrett_lo,
-                               modulus);
-  return;
-#endif
-
-  IVLOG(3, "Calling 64-bit default MultiplyMod");
-  MultiplyModInPlace64(operand1, operand2, n, barrett_hi, barrett_lo, modulus);
-}
-
-// @brief Multiplies two vectors elementwise with modular reduction
-// @param operand1 Vector of elements to multiply; stores result
-// @param operand2 Vector of elements to multiply
-// @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reductio
-inline void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
-                               const uint64_t n, const uint64_t modulus) {
-  BarrettFactor<64> bf(modulus);
-
-  MultiplyModInPlace(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
-}
+void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
+                        const uint64_t n, const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel

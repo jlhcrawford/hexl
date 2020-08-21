@@ -114,7 +114,7 @@ message(STATUS "Setting LATTICE_HAS_AVX512IFMA")
 endif()
 
 if (HAS_AVX512F AND HAS_AVX512DQ)
-  message(STATUS "Setting DLATTICE_HAS_AVX512F")
+  message(STATUS "Setting LATTICE_HAS_AVX512F")
   add_definitions(-DLATTICE_HAS_AVX512F)
 endif()
 
