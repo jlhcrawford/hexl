@@ -42,6 +42,8 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
                          uint64_t bound) -> bool {
     for (size_t i = 0; i < op_len; ++i) {
       if (operand[i] >= bound) {
+        LOG(INFO) << "Operand[ " << i << "] = " << operand[i]
+                  << " exceeds bound " << bound;
         return false;
       }
     }
@@ -49,7 +51,7 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
   };
 
   LATTICE_CHECK(check_bounds(operand1, n, modulus),
-                "Value in operand1 exceeds bound " << modulus);
+                "pre-mult value in operand1 exceeds bound " << modulus);
   LATTICE_CHECK(check_bounds(operand2, n, modulus),
                 "Value in operand2 exceeds bound " << modulus);
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
@@ -106,9 +108,24 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     vtmp2_lo = avx512_multiply_uint64_lo<BitShift>(vprod_hi, vbarrett_lo);
 
     // carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
-    // TODO(fboemer): Check 52-bit overflow
-    vtt = avx512_add_uint64(vtmp1, vtmp2_lo, &vtmp1);
-    vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
+    if (BitShift == 52) {
+      vtmp1 = _mm512_add_epi64(vtmp1, vtmp2_lo);
+      // Conditional subtraction
+      // if (vtmp1 >= 2**52) {
+      //   vtmp1 -= 2**52;
+      //   vtt = 1;
+      //   vcarry = tmp2_hi + vtt;
+      // } else {
+      //   vtt = 0;
+      //   vcarry = tmp2_hi;
+      // }
+      vtt = avx512_cmpgteq_epu64(vtmp1, vtwo_pow_52, 1);
+      vtmp1 = avx512_mod_epu64(vtmp1, vtwo_pow_52);
+      vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
+    } else {
+      vtt = avx512_add_uint64(vtmp1, vtmp2_lo, &vtmp1);
+      vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
+    }
 
     // This is all we care about
     // tmp1 = prod_hi * barrett_hi + tmp3 + carry;
@@ -134,6 +151,8 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     ++vp_operand1;
     ++vp_operand2;
   }
+  LATTICE_CHECK(check_bounds(operand1, n, modulus),
+                "post-mult value in operand1 exceeds bound " << modulus);
 }
 
 }  // namespace lattice
