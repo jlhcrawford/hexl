@@ -109,6 +109,27 @@ inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
 }
 #endif
 
+// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
+// and y to form a 104-bit intermediate result.
+// Returns the low BitShift-bit unsigned integer from the intermediate result
+template <int BitShift>
+inline __m512i avx512_multiply_uint64_lo(__m512i x, __m512i y);
+
+template <>
+inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
+  return _mm512_mullo_epi64(x, y);
+}
+
+#ifdef LATTICE_HAS_AVX512IFMA
+template <>
+inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
+  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
+  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  __m512i zero = _mm512_set1_epi64(0);
+  return _mm512_madd52lo_epu64(zero, x, y);
+}
+#endif
+
 // Returns x mod p; assumes x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
