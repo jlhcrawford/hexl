@@ -49,6 +49,7 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     }
     return true;
   };
+  (void)check_bounds;  // Avoid unused variable warning
 
   LATTICE_CHECK(check_bounds(operand1, n, modulus),
                 "pre-mult value in operand1 exceeds bound " << modulus);
@@ -65,7 +66,9 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
   __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
 
-  for (size_t i = 0; i < n; i += 8) {
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
+  for (size_t i = n / 8; i > 0; --i) {
     __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
     __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
 
