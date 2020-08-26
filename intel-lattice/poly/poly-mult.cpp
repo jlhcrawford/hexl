@@ -34,16 +34,31 @@ void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
     uint64_t prod_lo;
     uint64_t tmp2_hi;
     uint64_t tmp2_lo;
+    uint64_t carry;
+    uint64_t tmp3;
 
     // Multiply inputs
     MultiplyUInt64(*operand1, *operand2, &prod_hi, &prod_lo);
 
-    // Round 1
-    uint64_t carry = MultiplyUInt64Hi<64>(prod_lo, barrett_lo);
-    MultiplyUInt64(prod_lo, barrett_hi, &tmp2_hi, &tmp2_lo);
-    uint64_t tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
+    // Reduce product using Barrett reduction
+    // Each | indicates 64-bit chunks
+    //                        | barr_hi | barr_lo |
+    //      X                 | prod_hi | prod_lo |
+    // --------------------------------------------
+    //                        | prod_lo x barr_lo | // Round 1
+    // +            | prod_lo x barr_hi |           // Round 2
+    // +            | prod_hi x barr_lo |           // Round 3
+    // +  | barr_hi x prod_hi |
+    //               \-------/
+    //                   \- The only 64-bit chunk we care about
 
+    // Round 1
+    carry = MultiplyUInt64Hi<64>(prod_lo, barrett_lo);
     // Round 2
+    MultiplyUInt64(prod_lo, barrett_hi, &tmp2_hi, &tmp2_lo);
+    tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
+
+    // Round 3
     MultiplyUInt64(prod_hi, barrett_lo, &tmp2_hi, &tmp2_lo);
     carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
     tmp1 = prod_hi * barrett_hi + tmp3 + carry;
