@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "logging/logging.hpp"
+#include "number-theory/number-theory.hpp"
 #include "poly/poly-mult.hpp"
 
 namespace intel {
@@ -27,19 +28,36 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
-// state[1] is approximately the number of bits in the coefficient modulus
-// We distinguish between above and below 50 bits, since optimized
-// AVX512-IFMA implementations exist for < 50 bits
-static void BM_PolyMult(benchmark::State& state) {  //  NOLINT
+static void BM_PolyMultNative(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
+  uint64_t modulus = 0xffffffffffc0001ULL;
 
-  size_t modulus_bits = state.range(1);
-  size_t modulus = 1;
-  if (modulus_bits < 50) {
-    modulus = 0xffffee001;
-  } else {
-    modulus = 0xffffffffffc0001ULL;
+  std::vector<uint64_t> input1(poly_size, 1);
+  std::vector<uint64_t> input2(poly_size, 2);
+
+  for (auto _ : state) {
+    MultiplyModInPlace64(input1.data(), input2.data(), poly_size, modulus);
   }
+}
+
+BENCHMARK(BM_PolyMultNative)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(3.0)
+    ->Args({512})
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384})
+    ->Args({32768});
+
+//=================================================================
+
+// state[0] is the degree
+// state[1] is the number of bits in the modulus
+
+static void BM_PolyMultAVX512(benchmark::State& state) {  //  NOLINT
+  size_t poly_size = state.range(0);
+  uint64_t modulus = MaximumValue(state.range(1)) - 10;
 
   std::vector<uint64_t> input1(poly_size, 1);
   std::vector<uint64_t> input2(poly_size, 2);
@@ -49,13 +67,23 @@ static void BM_PolyMult(benchmark::State& state) {  //  NOLINT
   }
 }
 
-BENCHMARK(BM_PolyMult)
+BENCHMARK(BM_PolyMultAVX512)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
+    ->Args({512, 49})
+    ->Args({512, 62})
     ->Args({1024, 49})
-    ->Args({1024, 64})
+    ->Args({1024, 62})
+    ->Args({2048, 49})
+    ->Args({2048, 62})
     ->Args({4096, 49})
-    ->Args({4096, 64});
+    ->Args({4096, 62})
+    ->Args({8192, 49})
+    ->Args({8192, 62})
+    ->Args({16384, 49})
+    ->Args({16384, 62})
+    ->Args({32768, 49})
+    ->Args({32768, 62});
 
 }  // namespace lattice
 }  // namespace intel
