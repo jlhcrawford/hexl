@@ -58,7 +58,6 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
                 "Invalid bitshift " << BitShift << "; need 52 or 64");
 
-  __m512i vtwo_pow_52 = _mm512_set1_epi64(1UL << 52);
   __m512i vbarrett_hi = _mm512_set1_epi64(barrett_hi);
   __m512i vbarrett_lo = _mm512_set1_epi64(barrett_lo);
 
@@ -72,59 +71,45 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
     __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
 
-    __m512i vprod_hi, vprod_lo, vcarry, vtmp2_hi, vtmp2_lo, vtmp3, vtmp1;
+    __m512i vprod_hi, vprod_lo, vcarry, vtmp2_hi, vtmp2_lo, vtmp3, vtmp1, vtt,
+        vtt1, vexceeded, vr;
 
+    // Compute product
     vprod_hi = _mm512_il_mulhi_epi<BitShift>(v_operand1, v_operand2);
     vprod_lo = _mm512_il_mullo_epi<BitShift>(v_operand1, v_operand2);
 
     // Reduces product using base 2^BitShift Barrett reduction
+    // Each | indicates BitShift-bit chunks
 
-    // Multiply input and barrett
+    //                        | barr_hi | barr_lo |
+    //      X                 | prod_hi | prod_lo |
+    // --------------------------------------------
+    //                        | prod_lo x barr_lo | // Round 1
+    // +            | prod_lo x barr_hi |           // Round 2
+    // +            | prod_hi x barr_lo |           // Round 3
+    // +  | barr_hi x prod_hi |
+    //               \-------/
+    //                   \- The only 64-bit chunk we care about
+
     // Round 1
     vcarry = _mm512_il_mulhi_epi<BitShift>(vprod_lo, vbarrett_lo);
+    // Round 2
     vtmp2_hi = _mm512_il_mulhi_epi<BitShift>(vprod_lo, vbarrett_hi);
     vtmp2_lo = _mm512_il_mullo_epi<BitShift>(vprod_lo, vbarrett_hi);
 
-    // uint64_t tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
-    __m512i vtt;
-    if (BitShift == 52) {
-      // Addition mod 2**52
-      vtmp1 = _mm512_add_epi64(vtmp2_lo, vcarry);
-      // vtt = (vtmp1 >= 2**52) ? 1 : 0
-      // vtmp1 = vtmp1 mod 2**52
-      // vtmp3 = tmp2_hi + vtt
-      vtt = _mm512_il_cmpge_epu64(vtmp1, vtwo_pow_52, 1);
-      vtmp1 = _mm512_il_mod_epi64(vtmp1, vtwo_pow_52);
-      vtmp3 = _mm512_add_epi64(vtmp2_hi, vtt);
-    } else {
-      vtt = _mm512_il_add_epu64(vtmp2_lo, vcarry, &vtmp1);
-      vtmp3 = _mm512_add_epi64(vtmp2_hi, vtt);
-    }
+    vtt = _mm512_il_add_epu<BitShift>(vtmp2_lo, vcarry, &vtmp1);
+    vtmp3 = _mm512_add_epi64(vtmp2_hi, vtt);
 
-    // Round 2
+    // Round 3
     vtmp2_hi = _mm512_il_mulhi_epi<BitShift>(vprod_hi, vbarrett_lo);
     vtmp2_lo = _mm512_il_mullo_epi<BitShift>(vprod_hi, vbarrett_lo);
 
-    // carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
-    if (BitShift == 52) {
-      // Addition mod 2**52
-      vtmp1 = _mm512_add_epi64(vtmp1, vtmp2_lo);
-      // vtt = (vtmp1 >= 2**52) ? 1 : 0
-      // vtmp1 = vtmp1 mod 2**52
-      // vcarry = tmp2_hi + vtt
-      vtt = _mm512_il_cmpge_epu64(vtmp1, vtwo_pow_52, 1);
-      vtmp1 = _mm512_il_mod_epi64(vtmp1, vtwo_pow_52);
-      vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
-    } else {
-      vtt = _mm512_il_add_epu64(vtmp1, vtmp2_lo, &vtmp1);
-      vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
-    }
+    vtt = _mm512_il_add_epu<BitShift>(vtmp1, vtmp2_lo, &vtmp1);
+    vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
 
     // This is all we care about
-    // tmp1 = prod_hi * barrett_hi + tmp3 + carry;
     vtt = _mm512_il_mullo_epi<BitShift>(vprod_hi, vbarrett_hi);
-    __m512i vtt1 = _mm512_add_epi64(vtmp3, vcarry);
-
+    vtt1 = _mm512_add_epi64(vtmp3, vcarry);
     vtmp1 = _mm512_add_epi64(vtt, vtt1);
 
     // Barrett subtraction
@@ -136,8 +121,8 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     vtmp3 = _mm512_sub_epi64(vprod_lo, vtt);
 
     // Conditional subtraction
-    __m512i exceeded = _mm512_il_cmpge_epu64(vtmp3, vmodulus, modulus);
-    __m512i vr = _mm512_sub_epi64(vtmp3, exceeded);
+    vexceeded = _mm512_il_cmpge_epu64(vtmp3, vmodulus, modulus);
+    vr = _mm512_sub_epi64(vtmp3, vexceeded);
 
     _mm512_storeu_si512(vp_operand1, vr);
 

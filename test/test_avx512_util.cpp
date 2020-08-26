@@ -49,7 +49,7 @@ TEST(AVX512, _mm512_il_add_epu64) {
     __m512i expected_carry = _mm512_set_epi64(0, 0, 0, 0, 0, 0, 0, 0);
 
     __m512i c;
-    __m512i carry = _mm512_il_add_epu64(a, b, &c);
+    __m512i carry = _mm512_il_add_epu<64>(a, b, &c);
 
     CheckEqual(carry, expected_carry);
     CheckEqual(c, expected_out);
@@ -84,7 +84,7 @@ TEST(AVX512, _mm512_il_add_epu64) {
     __m512i expected_carry = _mm512_set_epi64(0, 1, 1, 1, 0, 0, 0, 0);
 
     __m512i c;
-    __m512i carry = _mm512_il_add_epu64(a, b, &c);
+    __m512i carry = _mm512_il_add_epu<64>(a, b, &c);
 
     CheckEqual(carry, expected_carry);
     CheckEqual(c, expected_out);

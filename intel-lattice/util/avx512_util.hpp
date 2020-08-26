@@ -151,10 +151,24 @@ inline __m512i _mm512_il_cmplt_epu64(__m512i a, __m512i b,
   return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
 }
 
-// Returns c[i] = low 64 bits of x[i] + y[i]
-inline __m512i _mm512_il_add_epu64(__m512i x, __m512i y, __m512i* c) {
+// Computes x + y mod 2^BitShift and stores the result in c.
+// Returns the overflow bit
+template <int BitShift>
+inline __m512i _mm512_il_add_epu(__m512i x, __m512i y, __m512i* c);
+
+template <>
+inline __m512i _mm512_il_add_epu<64>(__m512i x, __m512i y, __m512i* c) {
   *c = _mm512_add_epi64(x, y);
   return _mm512_il_cmplt_epu64(*c, x, 1);
+}
+
+template <>
+inline __m512i _mm512_il_add_epu<52>(__m512i x, __m512i y, __m512i* c) {
+  __m512i vtwo_pow_52 = _mm512_set1_epi64(1UL << 52);
+  __m512i sum = _mm512_add_epi64(x, y);
+  __m512i carry = _mm512_il_cmpge_epu64(sum, vtwo_pow_52, 1);
+  *c = _mm512_il_mod_epi64(sum, vtwo_pow_52);
+  return carry;
 }
 
 }  // namespace lattice
