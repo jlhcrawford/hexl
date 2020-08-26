@@ -98,10 +98,10 @@ void NTT::ForwardTransformToBitReverseAVX512(
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
           // tx = X >= twice_mod ? X - twice_mod : X
-          __m512i v_tx = avx512_mod_epu64(v_X, v_twice_mod);
+          __m512i v_tx = _mm512_il_mod_epi64(v_X, v_twice_mod);
 
           // multiply_uint64_hw64(Wprime, *Y, &Q);
-          __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_precon, v_Y);
+          __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
 
           // Q = *Y * W - Q * modulus;
           // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
@@ -147,8 +147,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
     for (size_t i = 0; i < n; i += 8) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
-      v_X = avx512_mod_epu64(v_X, v_twice_mod);
-      v_X = avx512_mod_epu64(v_X, v_modulus);
+      v_X = _mm512_il_mod_epi64(v_X, v_twice_mod);
+      v_X = _mm512_il_mod_epi64(v_X, v_modulus);
 
       _mm512_storeu_si512(v_X_pt, v_X);
 
@@ -237,11 +237,11 @@ void NTT::InverseTransformToBitReverseAVX512(
           __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
 
           // *X++ = tx >= twice_mod ? tx - twice_mod : tx
-          v_X = avx512_mod_epu64(v_tx, v_twice_mod);
+          v_X = _mm512_il_mod_epi64(v_tx, v_twice_mod);
 
           // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
           // multiply_uint64_hw64(W_precon, *Y, &Q);
-          __m512i v_Q = avx512_multiply_uint64_hi<BitShift>(v_W_precon, v_ty);
+          __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
           IVLOG(4, "v_W_precon " << ExtractValues(v_W_precon));
           IVLOG(4, "v_Q " << ExtractValues(v_Q));
 
@@ -317,21 +317,21 @@ void NTT::InverseTransformToBitReverseAVX512(
 
       // tx = tx >= twice_mod ? tx - twice_mod : tx
       __m512i tmp_tx = _mm512_add_epi64(v_X, v_Y);
-      __m512i v_tx = avx512_mod_epu64(tmp_tx, v_twice_mod);
+      __m512i v_tx = _mm512_il_mod_epi64(tmp_tx, v_twice_mod);
 
       // ty = *X + twice_mod - *Y
       __m512i v_tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
       __m512i v_ty = _mm512_sub_epi64(v_tmp_ty, v_Y);
 
       // multiply_uint64_hw64(inv_Nprime, tx, &Q);
-      __m512i v_Q1 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_prime, v_tx);
+      __m512i v_Q1 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_prime, v_tx);
       // *X++ = inv_N * tx - Q * modulus;
       __m512i tmp_x1 = _mm512_mullo_epi64(v_inv_n, v_tx);
       __m512i tmp_x2 = _mm512_mullo_epi64(v_Q1, v_modulus);
       v_X = _mm512_sub_epi64(tmp_x1, tmp_x2);
 
       // multiply_uint64_hw64(inv_N_Wprime, ty, &Q);
-      __m512i v_Q2 = avx512_multiply_uint64_hi<BitShift>(v_inv_n_w_prime, v_ty);
+      __m512i v_Q2 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_w_prime, v_ty);
       // *Y++ = inv_N_W * ty - Q * modulus;
       __m512i tmp_y1 = _mm512_mullo_epi64(v_inv_n_w, v_ty);
       __m512i tmp_y2 = _mm512_mullo_epi64(v_Q2, v_modulus);
@@ -365,8 +365,8 @@ void NTT::InverseTransformToBitReverseAVX512(
     for (size_t i = 0; i < n; i += 8) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
-      v_X = avx512_mod_epu64(v_X, v_twice_mod);
-      v_X = avx512_mod_epu64(v_X, v_modulus);
+      v_X = _mm512_il_mod_epi64(v_X, v_twice_mod);
+      v_X = _mm512_il_mod_epi64(v_X, v_modulus);
 
       _mm512_storeu_si512(v_X_pt, v_X);
 
