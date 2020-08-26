@@ -75,10 +75,10 @@ inline bool CheckBounds(__m512i x, uint64_t bound) {
 // and y to form a 2*BitShift-bit intermediate result.
 // Returns the high BitShift-bit unsigned integer from the intermediate result
 template <int BitShift>
-inline __m512i avx512_multiply_uint64_hi(__m512i x, __m512i y);
+inline __m512i _mm512_il_mulhi_epi(__m512i x, __m512i y);
 
 template <>
-inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
+inline __m512i _mm512_il_mulhi_epi<64>(__m512i x, __m512i y) {
   // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
   __m512i lomask = _mm512_set1_epi64(0x00000000ffffffff);
   __m512i xh =
@@ -101,7 +101,7 @@ inline __m512i avx512_multiply_uint64_hi<64>(__m512i x, __m512i y) {
 
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
-inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
+inline __m512i _mm512_il_mulhi_epi<52>(__m512i x, __m512i y) {
   LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
   LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
   __m512i zero = _mm512_set1_epi64(0);
@@ -113,16 +113,16 @@ inline __m512i avx512_multiply_uint64_hi<52>(__m512i x, __m512i y) {
 // and y to form a 104-bit intermediate result.
 // Returns the low BitShift-bit unsigned integer from the intermediate result
 template <int BitShift>
-inline __m512i avx512_multiply_uint64_lo(__m512i x, __m512i y);
+inline __m512i _mm512_il_mullo_epi(__m512i x, __m512i y);
 
 template <>
-inline __m512i avx512_multiply_uint64_lo<64>(__m512i x, __m512i y) {
+inline __m512i _mm512_il_mullo_epi<64>(__m512i x, __m512i y) {
   return _mm512_mullo_epi64(x, y);
 }
 
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
-inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
+inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
   LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
   LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
   __m512i zero = _mm512_set1_epi64(0);
@@ -133,27 +133,28 @@ inline __m512i avx512_multiply_uint64_lo<52>(__m512i x, __m512i y) {
 // Returns x mod p; assumes x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
-inline __m512i avx512_mod_epu64(__m512i x, __m512i p) {
+inline __m512i _mm512_il_mod_epi64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
 // Returns c[i] = a[i] >= b[i] ? match_value : 0
-inline __m512i avx512_cmpgteq_epu64(__m512i a, __m512i b,
-                                    uint64_t match_value) {
+inline __m512i _mm512_il_cmpge_epu64(__m512i a, __m512i b,
+                                     uint64_t match_value) {
   __mmask8 mask = _mm512_cmpge_epu64_mask(a, b);
   return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
 }
 
 // Returns c[i] = a[i] < b[i] ? match_value : 0
-inline __m512i avx512_cmplt_epu64(__m512i a, __m512i b, uint64_t match_value) {
+inline __m512i _mm512_il_cmplt_epu64(__m512i a, __m512i b,
+                                     uint64_t match_value) {
   __mmask8 mask = _mm512_cmplt_epu64_mask(a, b);
   return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
 }
 
 // Returns c[i] = low 64 bits of x[i] + y[i]
-inline __m512i avx512_add_uint64(__m512i x, __m512i y, __m512i* c) {
+inline __m512i _mm512_il_add_epu64(__m512i x, __m512i y, __m512i* c) {
   *c = _mm512_add_epi64(x, y);
-  return avx512_cmplt_epu64(*c, x, 1);
+  return _mm512_il_cmplt_epu64(*c, x, 1);
 }
 
 }  // namespace lattice

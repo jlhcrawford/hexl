@@ -74,79 +74,69 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
 
     __m512i vprod_hi, vprod_lo, vcarry, vtmp2_hi, vtmp2_lo, vtmp3, vtmp1;
 
-    vprod_hi = avx512_multiply_uint64_hi<BitShift>(v_operand1, v_operand2);
-    vprod_lo = avx512_multiply_uint64_lo<BitShift>(v_operand1, v_operand2);
+    vprod_hi = _mm512_il_mulhi_epi<BitShift>(v_operand1, v_operand2);
+    vprod_lo = _mm512_il_mullo_epi<BitShift>(v_operand1, v_operand2);
 
     // Reduces product using base 2^BitShift Barrett reduction
 
     // Multiply input and barrett
     // Round 1
-    vcarry = avx512_multiply_uint64_hi<BitShift>(vprod_lo, vbarrett_lo);
-    vtmp2_hi = avx512_multiply_uint64_hi<BitShift>(vprod_lo, vbarrett_hi);
-    vtmp2_lo = avx512_multiply_uint64_lo<BitShift>(vprod_lo, vbarrett_hi);
+    vcarry = _mm512_il_mulhi_epi<BitShift>(vprod_lo, vbarrett_lo);
+    vtmp2_hi = _mm512_il_mulhi_epi<BitShift>(vprod_lo, vbarrett_hi);
+    vtmp2_lo = _mm512_il_mullo_epi<BitShift>(vprod_lo, vbarrett_hi);
 
     // uint64_t tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
     __m512i vtt;
     if (BitShift == 52) {
+      // Addition mod 2**52
       vtmp1 = _mm512_add_epi64(vtmp2_lo, vcarry);
-      // Conditional subtraction
-      // if (vtmp1 >= 2**52) {
-      //   vtmp1 -= 2**52;
-      //   vtt = 1;
-      //   tmp3 = tmp2_hi + vtt;
-      // } else {
-      //   vtt = 0;
-      //   tmp3 = tmp2_hi;
-      // }
-      vtt = avx512_cmpgteq_epu64(vtmp1, vtwo_pow_52, 1);
-      vtmp1 = avx512_mod_epu64(vtmp1, vtwo_pow_52);
+      // vtt = (vtmp1 >= 2**52) ? 1 : 0
+      // vtmp1 = vtmp1 mod 2**52
+      // vtmp3 = tmp2_hi + vtt
+      vtt = _mm512_il_cmpge_epu64(vtmp1, vtwo_pow_52, 1);
+      vtmp1 = _mm512_il_mod_epi64(vtmp1, vtwo_pow_52);
       vtmp3 = _mm512_add_epi64(vtmp2_hi, vtt);
     } else {
-      vtt = avx512_add_uint64(vtmp2_lo, vcarry, &vtmp1);
+      vtt = _mm512_il_add_epu64(vtmp2_lo, vcarry, &vtmp1);
       vtmp3 = _mm512_add_epi64(vtmp2_hi, vtt);
     }
 
     // Round 2
-    vtmp2_hi = avx512_multiply_uint64_hi<BitShift>(vprod_hi, vbarrett_lo);
-    vtmp2_lo = avx512_multiply_uint64_lo<BitShift>(vprod_hi, vbarrett_lo);
+    vtmp2_hi = _mm512_il_mulhi_epi<BitShift>(vprod_hi, vbarrett_lo);
+    vtmp2_lo = _mm512_il_mullo_epi<BitShift>(vprod_hi, vbarrett_lo);
 
     // carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
     if (BitShift == 52) {
+      // Addition mod 2**52
       vtmp1 = _mm512_add_epi64(vtmp1, vtmp2_lo);
-      // Conditional subtraction
-      // if (vtmp1 >= 2**52) {
-      //   vtmp1 -= 2**52;
-      //   vtt = 1;
-      //   vcarry = tmp2_hi + vtt;
-      // } else {
-      //   vtt = 0;
-      //   vcarry = tmp2_hi;
-      // }
-      vtt = avx512_cmpgteq_epu64(vtmp1, vtwo_pow_52, 1);
-      vtmp1 = avx512_mod_epu64(vtmp1, vtwo_pow_52);
+      // vtt = (vtmp1 >= 2**52) ? 1 : 0
+      // vtmp1 = vtmp1 mod 2**52
+      // vcarry = tmp2_hi + vtt
+      vtt = _mm512_il_cmpge_epu64(vtmp1, vtwo_pow_52, 1);
+      vtmp1 = _mm512_il_mod_epi64(vtmp1, vtwo_pow_52);
       vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
     } else {
-      vtt = avx512_add_uint64(vtmp1, vtmp2_lo, &vtmp1);
+      vtt = _mm512_il_add_epu64(vtmp1, vtmp2_lo, &vtmp1);
       vcarry = _mm512_add_epi64(vtmp2_hi, vtt);
     }
 
     // This is all we care about
     // tmp1 = prod_hi * barrett_hi + tmp3 + carry;
-    vtt = avx512_multiply_uint64_lo<BitShift>(vprod_hi, vbarrett_hi);
+    vtt = _mm512_il_mullo_epi<BitShift>(vprod_hi, vbarrett_hi);
     __m512i vtt1 = _mm512_add_epi64(vtmp3, vcarry);
 
     vtmp1 = _mm512_add_epi64(vtt, vtt1);
 
     // Barrett subtraction
     // tmp3 = prod_lo - tmp1 * modulus;
-    vtt = avx512_multiply_uint64_lo<64>(vtmp1, vmodulus);
+    vtt = _mm512_il_mullo_epi<64>(vtmp1, vmodulus);
     if (BitShift == 52) {
-      vprod_lo = avx512_multiply_uint64_lo<64>(v_operand1, v_operand2);
+      vprod_lo = _mm512_il_mullo_epi<64>(v_operand1, v_operand2);
     }
     vtmp3 = _mm512_sub_epi64(vprod_lo, vtt);
 
     // Conditional subtraction
-    __m512i exceeded = avx512_cmpgteq_epu64(vtmp3, vmodulus, modulus);
+    __m512i exceeded = _mm512_il_cmpge_epu64(vtmp3, vmodulus, modulus);
     __m512i vr = _mm512_sub_epi64(vtmp3, exceeded);
 
     _mm512_storeu_si512(vp_operand1, vr);
