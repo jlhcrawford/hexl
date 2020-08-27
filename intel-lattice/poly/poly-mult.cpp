@@ -23,52 +23,53 @@ namespace intel {
 namespace lattice {
 
 void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
-                          const uint64_t n, const uint64_t barrett_hi,
-                          const uint64_t barrett_lo, const uint64_t modulus) {
+                          const uint64_t n, const uint64_t barr_hi,
+                          const uint64_t barr_lo, const uint64_t modulus) {
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 0; i < n; ++i) {
     // Reduces z using base 2^64 Barrett reduction
-    uint64_t tmp1;
-    uint64_t prod_hi;
-    uint64_t prod_lo;
-    uint64_t tmp2_hi;
-    uint64_t tmp2_lo;
-    uint64_t carry;
-    uint64_t tmp3;
+
+    uint64_t prod_hi, prod_lo, rnd1_hi, rnd2_hi, rnd2_lo, rnd3_hi, rnd3_lo,
+        rnd4_lo, floor_lo, floor_hi, result, carry;
 
     // Multiply inputs
     MultiplyUInt64(*operand1, *operand2, &prod_hi, &prod_lo);
 
-    // Reduce product using Barrett reduction
-    // Each | indicates 64-bit chunks
+    // Reduces product using base 2^BitShift Barrett reduction
+    // Each | indicates BitShift-bit chunks
+    //
     //                        | barr_hi | barr_lo |
     //      X                 | prod_hi | prod_lo |
     // --------------------------------------------
     //                        | prod_lo x barr_lo | // Round 1
     // +            | prod_lo x barr_hi |           // Round 2
     // +            | prod_hi x barr_lo |           // Round 3
-    // +  | barr_hi x prod_hi |
+    // +  | barr_hi x prod_hi |                     // Round 4
+    // --------------------------------------------
+    //              |floor_hi | floor_lo|
     //               \-------/
-    //                   \- The only 64-bit chunk we care about
+    //                   \- The only BitShift-bit chunk we care about: vfloor_hi
 
     // Round 1
-    carry = MultiplyUInt64Hi<64>(prod_lo, barrett_lo);
+    rnd1_hi = MultiplyUInt64Hi<64>(prod_lo, barr_lo);
     // Round 2
-    MultiplyUInt64(prod_lo, barrett_hi, &tmp2_hi, &tmp2_lo);
-    tmp3 = tmp2_hi + AddUInt64(tmp2_lo, carry, &tmp1);
+    MultiplyUInt64(prod_lo, barr_hi, &rnd2_hi, &rnd2_lo);
+    floor_hi = rnd2_hi + AddUInt64(rnd2_lo, rnd1_hi, &floor_lo);
 
     // Round 3
-    MultiplyUInt64(prod_hi, barrett_lo, &tmp2_hi, &tmp2_lo);
-    carry = tmp2_hi + AddUInt64(tmp1, tmp2_lo, &tmp1);
-    tmp1 = prod_hi * barrett_hi + tmp3 + carry;
+    MultiplyUInt64(prod_hi, barr_lo, &rnd3_hi, &rnd3_lo);
+    floor_hi += rnd3_hi + AddUInt64(floor_lo, rnd3_lo, &floor_lo);
+
+    // Round 4
+    floor_hi += prod_hi * barr_hi;
 
     // Barrett subtraction
-    tmp3 = prod_lo - tmp1 * modulus;
+    result = prod_lo - floor_hi * modulus;
 
     // Conditional subtraction
-    *operand1 = tmp3 - (modulus & static_cast<uint64_t>(
-                                      -static_cast<int64_t>(tmp3 >= modulus)));
+    *operand1 = result - (modulus & static_cast<uint64_t>(-static_cast<int64_t>(
+                                        result >= modulus)));
 
     ++operand1;
     ++operand2;
