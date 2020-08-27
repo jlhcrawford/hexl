@@ -30,7 +30,7 @@ add_library(intel_lattice SHARED ${SRC})
 
 target_include_directories(intel_lattice PUBLIC ${LATTICE_SRC_ROOT_DIR})
 target_link_libraries(intel_lattice PUBLIC libgflags logging libgflags Threads::Threads)
-target_compile_options(intel_lattice PRIVATE -Wall -Wextra -march=native)
+target_compile_options(intel_lattice PRIVATE -Wall -Wextra -march=native -O3)
 
 message("CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
 
