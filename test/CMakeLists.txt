@@ -18,6 +18,7 @@ set(SRC main.cpp
     test_number_theory.cpp
     test_ntt.cpp
     test_poly_mult.cpp
+    test_poly_fma.cpp
 )
 
 if (${HAS_AVX512F})

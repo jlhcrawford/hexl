@@ -18,9 +18,7 @@
 
 #include <functional>
 
-#include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "util/check.hpp"
 
 namespace intel {
 namespace lattice {
@@ -75,7 +73,7 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
 // @param operand1 Vector of elements to multiply; stores result
 // @param operand2 Vector of elements to multiply
 // @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reductio
+// @param modulus Modulus with which to perform modular reduction
 void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
                         const uint64_t n, const uint64_t modulus);
 

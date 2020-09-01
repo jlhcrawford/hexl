@@ -14,20 +14,22 @@
 // limitations under the License.
 //*****************************************************************************
 
-#pragma once
+#include "poly/poly-fma-avx512.hpp"
 
-__extension__ typedef __int128 int128_t;
-__extension__ typedef unsigned __int128 uint128_t;
+namespace intel {
+namespace lattice {
 
-#ifdef LATTICE_DEBUG
-#include "logging/logging.hpp"
-
-#define LATTICE_CHECK(cond, expr)                        \
-  if (!(cond)) {                                         \
-    LOG(ERROR) << expr;                                  \
-    throw std::runtime_error("Error. Check log output"); \
-  }
-#else
-#define LATTICE_CHECK(cond, expr) \
-  {}
+#ifdef LATTICE_HAS_AVX512IFMA
+template void FMAModScalarAVX512<52>(const uint64_t* arg1, const uint64_t arg2,
+                                     const uint64_t* arg3, uint64_t* out,
+                                     const uint64_t b_barr, const uint64_t n,
+                                     const uint64_t modulus);
 #endif
+
+template void FMAModScalarAVX512<64>(const uint64_t* arg1, const uint64_t arg2,
+                                     const uint64_t* arg3, uint64_t* out,
+                                     const uint64_t b_barr, const uint64_t n,
+                                     const uint64_t modulus);
+
+}  // namespace lattice
+}  // namespace intel
