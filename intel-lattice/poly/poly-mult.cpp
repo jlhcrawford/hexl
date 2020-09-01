@@ -16,6 +16,7 @@
 
 #include "poly/poly-mult.hpp"
 
+#include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
 
@@ -28,10 +29,8 @@ void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 0; i < n; ++i) {
-    // Reduces z using base 2^64 Barrett reduction
-
     uint64_t prod_hi, prod_lo, rnd1_hi, rnd2_hi, rnd2_lo, rnd3_hi, rnd3_lo,
-        rnd4_lo, floor_lo, floor_hi, result, carry;
+        floor_lo, floor_hi, result;
 
     // Multiply inputs
     MultiplyUInt64(*operand1, *operand2, &prod_hi, &prod_lo);

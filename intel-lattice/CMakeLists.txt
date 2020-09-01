@@ -19,11 +19,14 @@ set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SRC ntt/ntt.cpp
         number-theory/number-theory.cpp
         poly/poly-mult.cpp
+        poly/poly-fma.cpp
 )
 
 if (${HAS_AVX512F})
     list(APPEND SRC ntt/ntt-avx512.cpp
-        poly/poly-mult-avx512.cpp)
+        poly/poly-mult-avx512.cpp
+        poly/poly-fma-avx512.cpp
+        )
 endif()
 
 add_library(intel_lattice SHARED ${SRC})

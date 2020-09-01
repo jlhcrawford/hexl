@@ -72,6 +72,13 @@ uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, uint64_t modulus) {
   return BarrettReduce128(z, modulus);
 }
 
+uint64_t MultiplyMod(uint64_t x, uint64_t y, uint64_t y_precon,
+                     uint64_t modulus) {
+  uint64_t q = MultiplyUInt64Hi<64>(x, y_precon);
+  q = x * y - q * modulus;
+  return q > modulus ? q - modulus : q;
+}
+
 uint64_t AddUIntMod(uint64_t x, uint64_t y, uint64_t modulus) {
   LATTICE_CHECK(x < modulus, "x " << x << " >= modulus " << modulus);
   LATTICE_CHECK(y < modulus, "y " << y << " >= modulus " << modulus);

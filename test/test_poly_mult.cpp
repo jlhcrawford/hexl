@@ -20,7 +20,6 @@
 
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
-#include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
 #include "poly/poly-mult.hpp"
 #include "test/test_util.hpp"
@@ -86,6 +85,7 @@ TEST(PolyMult, avx512_mult2) {
 
   CheckEqual(op1, exp_out);
 }
+
 #endif
 
 #ifdef LATTICE_HAS_AVX512IFMA

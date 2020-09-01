@@ -73,6 +73,48 @@ TEST(NumberTheory, MultiplyUIntMod) {
                                   2305843009211596800ULL, mod));
 }
 
+TEST(NumberTheory, MultiplyModPreCon) {
+  uint64_t mod(2);
+  MultiplyFactor mf0(0, 64, mod);
+  MultiplyFactor mf1(1, 64, mod);
+  ASSERT_EQ(0ULL, MultiplyMod(0, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(0, 1, mf1.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(1, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(1ULL, MultiplyMod(1, 1, mf1.BarrettFactor(), mod));
+
+  mod = 10;
+  MultiplyFactor mf6(6, 64, mod);
+  MultiplyFactor mf7(7, 64, mod);
+  ASSERT_EQ(0ULL, MultiplyMod(0, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(0, 1, mf1.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(1, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(1ULL, MultiplyMod(1, 1, mf1.BarrettFactor(), mod));
+  ASSERT_EQ(9ULL, MultiplyMod(7, 7, mf7.BarrettFactor(), mod));
+  ASSERT_EQ(2ULL, MultiplyMod(6, 7, mf7.BarrettFactor(), mod));
+  ASSERT_EQ(2ULL, MultiplyMod(7, 6, mf6.BarrettFactor(), mod));
+
+  mod = 2305843009211596801ULL;
+  ASSERT_EQ(0ULL, MultiplyMod(0, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(0, 1, mf1.BarrettFactor(), mod));
+  ASSERT_EQ(0ULL, MultiplyMod(1, 0, mf0.BarrettFactor(), mod));
+  ASSERT_EQ(1ULL, MultiplyMod(1, 1, mf1.BarrettFactor(), mod));
+
+  MultiplyFactor mf1152921504605798401(1152921504605798401ULL, 64, mod);
+  MultiplyFactor mf1152921504605798400(1152921504605798400ULL, 64, mod);
+  MultiplyFactor mf2305843009211596800(2305843009211596800ULL, 64, mod);
+  ASSERT_EQ(576460752302899200ULL,
+            MultiplyMod(1152921504605798400ULL, 1152921504605798401ULL,
+                        mf1152921504605798401.BarrettFactor(), mod));
+  ASSERT_EQ(576460752302899200ULL,
+            MultiplyMod(1152921504605798401ULL, 1152921504605798400ULL,
+                        mf1152921504605798400.BarrettFactor(), mod));
+  ASSERT_EQ(1729382256908697601ULL,
+            MultiplyMod(1152921504605798401ULL, 1152921504605798401ULL,
+                        mf1152921504605798401.BarrettFactor(), mod));
+  ASSERT_EQ(1ULL, MultiplyMod(2305843009211596800ULL, 2305843009211596800ULL,
+                              mf2305843009211596800.BarrettFactor(), mod));
+}
+
 TEST(NumberTheory, PowMod) {
   uint64_t mod = 5;
   ASSERT_EQ(1ULL, PowMod(1, 0, mod));

@@ -16,10 +16,11 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include <limits>
 #include <vector>
 
-#include "logging/logging.hpp"
 #include "util/check.hpp"
 
 namespace intel {
@@ -148,6 +149,11 @@ inline uint64_t MultiplyUInt64Hi(uint64_t x, uint64_t y) {
 // Returns (x * y) mod modulus
 // Assumes x, y < modulus
 uint64_t MultiplyUIntMod(uint64_t x, uint64_t y, uint64_t modulus);
+
+// Returns (x * y) mod modulus
+// @param y_precon floor(2**64 / modulus)
+uint64_t MultiplyMod(uint64_t x, uint64_t y, uint64_t y_precon,
+                     uint64_t modulus);
 
 // Returns (x + y) mod modulus
 // Assumes x, y < modulus
