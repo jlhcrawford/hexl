@@ -17,6 +17,7 @@
 #include <immintrin.h>
 
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -175,14 +176,14 @@ TEST(AVX512, _mm512_il_cmpge_epu64) {
   }
 }
 
-TEST(AVX512, _mm512_il_mod_epi64) {
+TEST(AVX512, _mm512_il_small_mod_epi64) {
   // Small
   {
     __m512i a = _mm512_set_epi64(0, 2, 4, 6, 8, 10, 11, 12);
     __m512i mods = _mm512_set_epi64(1, 2, 3, 4, 5, 6, 7, 8);
     __m512i expected_out = _mm512_set_epi64(0, 0, 1, 2, 3, 4, 4, 4);
 
-    __m512i c = _mm512_il_mod_epi64(a, mods);
+    __m512i c = _mm512_il_small_mod_epi64(a, mods);
 
     CheckEqual(c, expected_out);
   }
@@ -208,9 +209,61 @@ TEST(AVX512, _mm512_il_mod_epi64) {
     __m512i expected_out =
         _mm512_set_epi64(0, 0, 1, (1UL << 63) + 10, 0, 0, 0, 0);
 
-    __m512i c = _mm512_il_mod_epi64(a, mods);
+    __m512i c = _mm512_il_small_mod_epi64(a, mods);
 
     CheckEqual(c, expected_out);
+  }
+}
+
+TEST(AVX512, _mm512_il_barrett_reduce64) {
+  // Small
+  {
+    __m512i a = _mm512_set_epi64(0, 2, 4, 6, 8, 10, 11, 12);
+
+    std::vector<uint64_t> mods{1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector<uint64_t> barrs(mods.size());
+    for (size_t i = 0; i < barrs.size(); ++i) {
+      barrs[i] = MultiplyFactor(1, 64, mods[i]).BarrettFactor();
+    }
+
+    __m512i vmods = _mm512_set_epi64(mods[0], mods[1], mods[2], mods[3],
+                                     mods[4], mods[5], mods[6], mods[7]);
+    __m512i vbarrs = _mm512_set_epi64(barrs[0], barrs[1], barrs[2], barrs[3],
+                                      barrs[4], barrs[5], barrs[6], barrs[7]);
+
+    __m512i expected_out = _mm512_set_epi64(0, 0, 1, 2, 3, 4, 4, 4);
+
+    __m512i c = _mm512_il_barrett_reduce64(a, vmods, vbarrs);
+
+    CheckEqual(c, expected_out);
+  }
+
+  // Random
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    uint64_t modulus = 75;
+    std::uniform_int_distribution<> distrib(50, modulus * modulus - 1);
+    __m512i vmod = _mm512_set1_epi64(modulus);
+    __m512i vbarr =
+        _mm512_set1_epi64(MultiplyFactor(1, 64, modulus).BarrettFactor());
+
+    for (size_t trial = 0; trial < 1000; ++trial) {
+      std::vector<uint64_t> arg1(8, 0);
+      std::vector<uint64_t> exp(8, 0);
+      for (size_t i = 0; i < 8; ++i) {
+        arg1[i] = distrib(gen);
+        exp[i] = arg1[i] % modulus;
+      }
+      __m512i varg1 = _mm512_set_epi64(arg1[7], arg1[6], arg1[5], arg1[4],
+                                       arg1[3], arg1[2], arg1[1], arg1[0]);
+
+      __m512i c = _mm512_il_barrett_reduce64(varg1, vmod, vbarr);
+      std::vector<uint64_t> result = ExtractValues(c);
+
+      ASSERT_EQ(result, exp);
+    }
   }
 }
 
