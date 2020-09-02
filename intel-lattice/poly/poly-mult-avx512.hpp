@@ -123,7 +123,7 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
 
     // Conditional subtraction
     // result = (result >= modulus) ? result - modulus : result
-    vresult = _mm512_il_mod_epi64(vresult, vmodulus);
+    vresult = _mm512_il_small_mod_epi64(vresult, vmodulus);
     _mm512_storeu_si512(vp_operand1, vresult);
 
     ++vp_operand1;

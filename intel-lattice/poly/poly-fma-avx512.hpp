@@ -81,11 +81,11 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
       // q = arg1 * arg2 - q * modulus;
       vq = _mm512_sub_epi64(va_times_b, vq_times_mod);
       // Conditional Barrett subtraction
-      vq = _mm512_il_mod_epi64(vq, vmodulus);
+      vq = _mm512_il_small_mod_epi64(vq, vmodulus);
 
       // result = AddUIntMod(*arg1, *arg3, modulus);
       vq = _mm512_add_epi64(vq, varg3);
-      vq = _mm512_il_mod_epi64(vq, vmodulus);
+      vq = _mm512_il_small_mod_epi64(vq, vmodulus);
 
       _mm512_storeu_si512(vp_out, vq);
 
@@ -108,7 +108,7 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
     // q = arg1 * arg2 - q * modulus;
     vq = _mm512_sub_epi64(va_times_b, vq_times_mod);
     // Conditional Barrett subtraction
-    vq = _mm512_il_mod_epi64(vq, vmodulus);
+    vq = _mm512_il_small_mod_epi64(vq, vmodulus);
     _mm512_storeu_si512(vp_out, vq);
 
     ++vp_arg1;

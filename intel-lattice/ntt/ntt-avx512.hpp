@@ -98,7 +98,7 @@ void NTT::ForwardTransformToBitReverseAVX512(
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
           // tx = X >= twice_mod ? X - twice_mod : X
-          __m512i v_tx = _mm512_il_mod_epi64(v_X, v_twice_mod);
+          __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
 
           // multiply_uint64_hw64(Wprime, *Y, &Q);
           __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
@@ -147,8 +147,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
     for (size_t i = 0; i < n; i += 8) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
-      v_X = _mm512_il_mod_epi64(v_X, v_twice_mod);
-      v_X = _mm512_il_mod_epi64(v_X, v_modulus);
+      v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+      v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
 
       _mm512_storeu_si512(v_X_pt, v_X);
 
@@ -237,7 +237,7 @@ void NTT::InverseTransformToBitReverseAVX512(
           __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
 
           // *X++ = tx >= twice_mod ? tx - twice_mod : tx
-          v_X = _mm512_il_mod_epi64(v_tx, v_twice_mod);
+          v_X = _mm512_il_small_mod_epi64(v_tx, v_twice_mod);
 
           // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
           // multiply_uint64_hw64(W_precon, *Y, &Q);
@@ -317,7 +317,7 @@ void NTT::InverseTransformToBitReverseAVX512(
 
       // tx = tx >= twice_mod ? tx - twice_mod : tx
       __m512i tmp_tx = _mm512_add_epi64(v_X, v_Y);
-      __m512i v_tx = _mm512_il_mod_epi64(tmp_tx, v_twice_mod);
+      __m512i v_tx = _mm512_il_small_mod_epi64(tmp_tx, v_twice_mod);
 
       // ty = *X + twice_mod - *Y
       __m512i v_tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
@@ -365,8 +365,8 @@ void NTT::InverseTransformToBitReverseAVX512(
     for (size_t i = 0; i < n; i += 8) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
-      v_X = _mm512_il_mod_epi64(v_X, v_twice_mod);
-      v_X = _mm512_il_mod_epi64(v_X, v_modulus);
+      v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+      v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
 
       _mm512_storeu_si512(v_X_pt, v_X);
 

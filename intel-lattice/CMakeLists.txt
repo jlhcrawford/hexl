@@ -20,6 +20,8 @@ set(SRC ntt/ntt.cpp
         number-theory/number-theory.cpp
         poly/poly-mult.cpp
         poly/poly-fma.cpp
+        poly/poly-cmp-add.cpp
+        poly/poly-cmp-sub-mod.cpp
 )
 
 if (${HAS_AVX512F})

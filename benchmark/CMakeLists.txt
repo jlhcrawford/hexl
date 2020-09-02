@@ -18,6 +18,8 @@ set(SRC main.cpp
     bench_ntt.cpp
     bench_poly_fma.cpp
     bench_poly_mult.cpp
+    bench_poly_cmp_add.cpp
+    bench_poly_cmp_sub_mod.cpp
     )
 
 add_executable(bench_lattice ${SRC})

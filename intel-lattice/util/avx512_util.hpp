@@ -133,22 +133,78 @@ inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
 // Returns x mod p; assumes x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
-inline __m512i _mm512_il_mod_epi64(__m512i x, __m512i p) {
+inline __m512i _mm512_il_small_mod_epi64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
+}
+
+enum class CMPINT_ENUM {
+  EQ = 0,
+  LT = 1,
+  LE = 2,
+  FALSE = 3,
+  NE = 4,
+  NLT = 5,
+  NLE = 6,
+  TRUE = 7
+};
+
+// Returns c[i] = a[i] CMP b[i] ? match_value : 0
+inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, CMPINT_ENUM cmp,
+                                   uint64_t match_value) {
+  __mmask8 mask;
+  switch (cmp) {
+    case CMPINT_ENUM::EQ:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::EQ);
+      break;
+    case CMPINT_ENUM::LT:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::LT);
+      break;
+    case CMPINT_ENUM::LE:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::LE);
+      break;
+    case CMPINT_ENUM::FALSE:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::FALSE);
+      break;
+    case CMPINT_ENUM::NE:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NE);
+      break;
+    case CMPINT_ENUM::NLT:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NLT);
+      break;
+    case CMPINT_ENUM::NLE:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NLE);
+      break;
+    case CMPINT_ENUM::TRUE:
+      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::TRUE);
+      break;
+  }
+
+  // __mmask8 mask = _mm512_cmp_epu64_mask(a, b, cmp);
+  return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
+}
+
+// Returns c[i] = a[i] CMP b[i] ? match_value : 0
+inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, int cmp,
+                                   uint64_t match_value) {
+  return _mm512_il_cmp_epi64(a, b, static_cast<CMPINT_ENUM>(cmp), match_value);
 }
 
 // Returns c[i] = a[i] >= b[i] ? match_value : 0
 inline __m512i _mm512_il_cmpge_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
-  __mmask8 mask = _mm512_cmpge_epu64_mask(a, b);
-  return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
+  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::NLT, match_value);
 }
 
 // Returns c[i] = a[i] < b[i] ? match_value : 0
 inline __m512i _mm512_il_cmplt_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
-  __mmask8 mask = _mm512_cmplt_epu64_mask(a, b);
-  return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
+  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::LT, match_value);
+}
+
+// Returns c[i] = a[i] <= b[i] ? match_value : 0
+inline __m512i _mm512_il_cmple_epu64(__m512i a, __m512i b,
+                                     uint64_t match_value) {
+  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::LE, match_value);
 }
 
 // Computes x + y mod 2^BitShift and stores the result in c.
@@ -167,8 +223,23 @@ inline __m512i _mm512_il_add_epu<52>(__m512i x, __m512i y, __m512i* c) {
   __m512i vtwo_pow_52 = _mm512_set1_epi64(1UL << 52);
   __m512i sum = _mm512_add_epi64(x, y);
   __m512i carry = _mm512_il_cmpge_epu64(sum, vtwo_pow_52, 1);
-  *c = _mm512_il_mod_epi64(sum, vtwo_pow_52);
+  *c = _mm512_il_small_mod_epi64(sum, vtwo_pow_52);
   return carry;
+}
+
+// returns x mod p, computed via Barrett reduction
+// @param p_barr floor(2^64 / p)
+inline __m512i _mm512_il_barrett_reduce64(__m512i x, __m512i p,
+                                          __m512i p_barr) {
+  __m512i rnd1_hi = _mm512_il_mulhi_epi<64>(x, p_barr);
+
+  // // Barrett subtraction
+  // tmp[0] = input - tmp[1] * modulus.value();
+  __m512i tmp1_times_mod = _mm512_il_mullo_epi<64>(rnd1_hi, p);
+  x = _mm512_sub_epi64(x, tmp1_times_mod);
+  // Correction
+  x = _mm512_il_small_mod_epi64(x, p);
+  return x;
 }
 
 }  // namespace lattice
