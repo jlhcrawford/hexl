@@ -45,30 +45,10 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
   return xs;
 }
 
-// Checks all values in a vector are strictly less than bound
-// Returns true
-template <typename T>
-inline bool CheckBounds(const T* values, size_t num_values, T bound) {
-  // Avoid unused variable warnings
-  (void)values;
-  (void)num_values;
-  (void)bound;
-  LATTICE_CHECK(
-      [&]() {
-        for (size_t i = 0; i < num_values; ++i) {
-          if (values[i] >= bound) return false;
-        }
-        return true;
-      }(),
-      "Value in " << std::vector<T>(values, values + num_values)
-                  << " exceeds bound " << bound);
-  return true;
-}
-
 // Checks all 64-bit values in x are less than bound
 // Returns true
-inline bool CheckBounds(__m512i x, uint64_t bound) {
-  return CheckBounds(ExtractValues(x).data(), 512 / 64, bound);
+inline void CheckBounds(__m512i x, uint64_t bound) {
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 512 / 64, bound);
 }
 
 // Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
@@ -102,8 +82,8 @@ inline __m512i _mm512_il_mulhi_epi<64>(__m512i x, __m512i y) {
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i _mm512_il_mulhi_epi<52>(__m512i x, __m512i y) {
-  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
-  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, MaximumValue(52));
+  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
   __m512i zero = _mm512_set1_epi64(0);
   return _mm512_madd52hi_epu64(zero, x, y);
 }
@@ -123,8 +103,8 @@ inline __m512i _mm512_il_mullo_epi<64>(__m512i x, __m512i y) {
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
-  LATTICE_CHECK(CheckBounds(x, MaximumValue(52)), "");
-  LATTICE_CHECK(CheckBounds(y, MaximumValue(52)), "");
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, MaximumValue(52));
+  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
   __m512i zero = _mm512_set1_epi64(0);
   return _mm512_madd52lo_epu64(zero, x, y);
 }

@@ -34,11 +34,10 @@ void NTT::ForwardTransformToBitReverseAVX512(
     const IntType n, const IntType mod, const IntType* root_of_unity_powers,
     const IntType* precon_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
-  LATTICE_CHECK(
-      CheckBounds(precon_root_of_unity_powers, n, MaximumValue(BitShift)),
-      "precon_root_of_unity_powers too large");
-  LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)),
-                "elements too large");
+  LATTICE_CHECK_BOUNDS(precon_root_of_unity_powers, n, MaximumValue(BitShift),
+                       "precon_root_of_unity_powers too large");
+  LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift),
+                       "elements too large");
 
   uint64_t twice_mod = mod << 1;
 
@@ -119,9 +118,6 @@ void NTT::ForwardTransformToBitReverseAVX512(
           _mm512_storeu_si512(v_X_pt, v_X);
           _mm512_storeu_si512(v_Y_pt, v_Y);
 
-          LATTICE_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
-          LATTICE_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
-
           ++v_X_pt;
           ++v_Y_pt;
         }
@@ -150,6 +146,8 @@ void NTT::ForwardTransformToBitReverseAVX512(
       v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
       v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
 
+      LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8, mod);
+
       _mm512_storeu_si512(v_X_pt, v_X);
 
       ++v_X_pt;
@@ -162,23 +160,14 @@ void NTT::InverseTransformToBitReverseAVX512(
     const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
     const IntType* precon_inv_root_of_unity_powers, IntType* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
-  LATTICE_CHECK(
-      CheckBounds(precon_inv_root_of_unity_powers, n, MaximumValue(BitShift)),
-      "");
-  LATTICE_CHECK(CheckBounds(elements, n, MaximumValue(BitShift)), "");
+  LATTICE_CHECK_BOUNDS(precon_inv_root_of_unity_powers, n,
+                       MaximumValue(BitShift));
+  LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift));
 
   uint64_t twice_mod = mod << 1;
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
-
-  IVLOG(4, "inv_root_of_unity_powers " << std::vector<uint64_t>(
-               inv_root_of_unity_powers, inv_root_of_unity_powers + n))
-  IVLOG(4, "precon_inv_root_of_unity_powers "
-               << std::vector<uint64_t>(precon_inv_root_of_unity_powers,
-                                        precon_inv_root_of_unity_powers + n));
-
-  IVLOG(4, "elements " << std::vector<uint64_t>(elements, elements + n));
 
   size_t t = 1;
   size_t root_index = 1;
@@ -255,9 +244,6 @@ void NTT::InverseTransformToBitReverseAVX512(
 
           _mm512_storeu_si512(v_X_pt, v_X);
           _mm512_storeu_si512(v_Y_pt, v_Y);
-
-          LATTICE_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
-          LATTICE_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
 
           IVLOG(4, "Wrote v_X " << ExtractValues(v_X));
           IVLOG(4, "Wrote v_Y " << ExtractValues(v_Y) << "\n");
@@ -340,9 +326,6 @@ void NTT::InverseTransformToBitReverseAVX512(
       _mm512_storeu_si512(v_X_pt, v_X);
       _mm512_storeu_si512(v_Y_pt, v_Y);
 
-      LATTICE_CHECK(CheckBounds(v_X, MaximumValue(BitShift)), "");
-      LATTICE_CHECK(CheckBounds(v_Y, MaximumValue(BitShift)), "");
-
       ++v_X_pt;
       ++v_Y_pt;
     }
@@ -367,6 +350,8 @@ void NTT::InverseTransformToBitReverseAVX512(
 
       v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
       v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
+
+      LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8, mod);
 
       _mm512_storeu_si512(v_X_pt, v_X);
 

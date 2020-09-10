@@ -154,12 +154,20 @@ void NTT::ForwardTransformToBitReverse64(
         // [0, 4p).
         // See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
         // X', Y' = X + WY, X - WY (mod p).
+        LATTICE_CHECK(*X <= (mod * 4), "input X " << (tx + Q) << " too large");
+        LATTICE_CHECK(*Y <= (mod * 4), "input Y " << (tx + Q) << " too large");
+
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
         Q = MultiplyUIntModLazy<64>(*Y, W_op, W_precon, mod);
 
         *X++ = tx + Q;
         *Y++ = tx + twice_mod - Q;
+
+        LATTICE_CHECK(tx + Q <= (mod * 4),
+                      "ouput X " << (tx + Q) << " too large");
+        LATTICE_CHECK(tx + twice_mod - Q <= (mod * 4),
+                      "output Y " << (tx + twice_mod - Q) << " too large");
       }
       j1 += (t << 1);
     }
@@ -172,7 +180,7 @@ void NTT::ForwardTransformToBitReverse64(
     if (elements[i] >= mod) {
       elements[i] -= mod;
     }
-    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
+    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in NTT "
                                          << elements[i] << " >= " << mod);
   }
 }
@@ -305,7 +313,7 @@ void NTT::InverseTransformToBitReverse64(
     if (elements[i] >= mod) {
       elements[i] -= mod;
     }
-    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction "
+    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in InvNTT"
                                          << elements[i] << " >= " << mod);
   }
 }

@@ -43,7 +43,7 @@ void CmpGtSubMod(uint64_t* operand1, uint64_t cmp, uint64_t diff,
 
 void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(diff < modulus, "Diff " << diff < " >= modulus " << modulus);
+  LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
   for (size_t i = 0; i < n; ++i) {
     uint64_t op = operand1[i];
     bool op_le_cmp = op <= cmp;
@@ -65,7 +65,6 @@ void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
     // } else {
     //   op %= modulus;
     // }
-    // LOG(INFO) << "result " << op;
     operand1[i] = op;
   }
 }
@@ -75,7 +74,7 @@ void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
   LATTICE_CHECK(n % 8 == 0,
                 "CmpGtSubModAVX512 supports n % 8 == 0; got n = " << n);
-  LATTICE_CHECK(diff < modulus, "Diff " << diff < " >= modulus " << modulus);
+  LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
 
   __m512i* v_op_ptr = reinterpret_cast<__m512i*>(operand1);
   __m512i v_diff = _mm512_set1_epi64(diff);

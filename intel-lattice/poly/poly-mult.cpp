@@ -26,6 +26,9 @@ namespace lattice {
 void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
                           const uint64_t n, const uint64_t barr_hi,
                           const uint64_t barr_lo, const uint64_t modulus) {
+  LATTICE_CHECK_BOUNDS(operand1, n, modulus);
+  LATTICE_CHECK_BOUNDS(operand2, n, modulus);
+
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 0; i < n; ++i) {
