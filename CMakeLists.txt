@@ -104,9 +104,12 @@ function(check_flag FLAG OUTPUT_FLAG)
 endfunction()
 
 # Check for AVX512 support
-check_flag("avx512f" HAS_AVX512F)
-check_flag("avx512dq" HAS_AVX512DQ)
-check_flag("avx512ifma" HAS_AVX512IFMA)
+# TODO(fboemer): Support avx512 on macOS
+if (NOT APPLE)
+  check_flag("avx512f" HAS_AVX512F)
+  check_flag("avx512dq" HAS_AVX512DQ)
+  check_flag("avx512ifma" HAS_AVX512IFMA)
+endif()
 
 if (HAS_AVX512IFMA)
 message(STATUS "Setting LATTICE_HAS_AVX512IFMA")

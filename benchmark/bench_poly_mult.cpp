@@ -52,9 +52,9 @@ BENCHMARK(BM_PolyMultNative)
 
 //=================================================================
 
+#ifdef LATTICE_HAS_AVX512F
 // state[0] is the degree
 // state[1] is the number of bits in the modulus
-
 static void BM_PolyMultAVX512(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
   uint64_t modulus = MaximumValue(state.range(1)) - 10;
@@ -84,6 +84,7 @@ BENCHMARK(BM_PolyMultAVX512)
     ->Args({16384, 62})
     ->Args({32768, 49})
     ->Args({32768, 62});
+#endif
 
 }  // namespace lattice
 }  // namespace intel

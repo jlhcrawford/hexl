@@ -227,6 +227,7 @@ INSTANTIATE_TEST_SUITE_P(
                       std::make_tuple(1 << 8, 49)));
 #endif
 
+#ifdef LATTICE_HAS_AVX512F
 // Checks AVX512 and native forward NTT implementations match
 TEST(NTT, FwdNTT_AVX512) {
   uint64_t N = 512;
@@ -286,6 +287,7 @@ TEST(NTT, InvNTT_AVX512) {
     ASSERT_EQ(input, input2);
   }
 }
+#endif
 
 }  // namespace lattice
 }  // namespace intel
