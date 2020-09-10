@@ -54,6 +54,7 @@ BENCHMARK(BM_PolyFMANative)
 
 //=================================================================
 
+#ifdef LATTICE_HAS_AVX512F
 // state[0] is the degree
 // state[1] is the number of bits in the modulus
 static void BM_PolyFMAAVX512(benchmark::State& state) {  //  NOLINT
@@ -89,6 +90,7 @@ BENCHMARK(BM_PolyFMAAVX512)
     ->Args({16384, 62})
     ->Args({32768, 49})
     ->Args({32768, 62});
+#endif
 
 }  // namespace lattice
 }  // namespace intel

@@ -60,6 +60,7 @@ BENCHMARK(BM_PolyCmpSubModNative)
 
 //=================================================================
 
+#ifdef LATTICE_HAS_AVX512F
 // state[0] is the degree
 static void BM_PolyCmpSubModAVX512(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
@@ -90,6 +91,7 @@ BENCHMARK(BM_PolyCmpSubModAVX512)
     ->Args({8192})
     ->Args({16384})
     ->Args({32768});
+#endif
 
 }  // namespace lattice
 }  // namespace intel
