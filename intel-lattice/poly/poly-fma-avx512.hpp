@@ -39,23 +39,9 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
 
-  auto check_bounds = [](const uint64_t* arg, uint64_t op_len,
-                         uint64_t bound) -> bool {
-    for (size_t i = 0; i < op_len; ++i) {
-      if (arg[i] >= bound) {
-        LOG(INFO) << "Arg[ " << i << "] = " << arg[i] << " exceeds bound "
-                  << bound;
-        return false;
-      }
-    }
-    return true;
-  };
-  (void)check_bounds;  // Avoid unused variable warning
-
-  LATTICE_CHECK(check_bounds(arg1, n, modulus),
-                "pre-mult value in arg1 exceeds bound " << modulus);
-  LATTICE_CHECK(check_bounds(arg2, n, modulus),
-                "Value in arg2 exceeds bound " << modulus);
+  LATTICE_CHECK_BOUNDS(arg1, n, modulus,
+                       "pre-mult value in arg1 exceeds bound " << modulus);
+  LATTICE_CHECK_BOUNDS(&arg2, 1, modulus, "arg2 exceeds bound " << modulus);
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
                 "Invalid bitshift " << BitShift << "; need 52 or 64");
 

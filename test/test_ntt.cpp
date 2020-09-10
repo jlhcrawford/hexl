@@ -231,7 +231,7 @@ INSTANTIATE_TEST_SUITE_P(
 // Checks AVX512 and native forward NTT implementations match
 TEST(NTT, FwdNTT_AVX512) {
   uint64_t N = 512;
-  uint64_t prime = GeneratePrimes(1, 15, N)[0];
+  uint64_t prime = GeneratePrimes(1, 55, N)[0];
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -245,13 +245,13 @@ TEST(NTT, FwdNTT_AVX512) {
     std::vector<std::uint64_t> input2 = input;
 
     NTT ntt(N, prime);
-    NTT::ForwardTransformToBitReverseAVX512<64>(
-        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconInvRootOfUnityPowers().data(), input.data());
-
     NTT::ForwardTransformToBitReverse64(
         N, prime, ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconInvRootOfUnityPowers().data(), input2.data());
+        ntt.GetPreconRootOfUnityPowers().data(), input2.data());
+
+    NTT::ForwardTransformToBitReverseAVX512<64>(
+        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
+        ntt.GetPreconRootOfUnityPowers().data(), input.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
@@ -261,7 +261,7 @@ TEST(NTT, FwdNTT_AVX512) {
 // Checks AVX512 and native InvNTT implementations match
 TEST(NTT, InvNTT_AVX512) {
   uint64_t N = 512;
-  uint64_t prime = GeneratePrimes(1, 15, N)[0];
+  uint64_t prime = GeneratePrimes(1, 55, N)[0];
 
   std::random_device rd;
   std::mt19937 gen(rd());

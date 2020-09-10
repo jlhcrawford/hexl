@@ -17,6 +17,7 @@
 #pragma once
 
 #include <immintrin.h>
+#include <stdint.h>
 
 #include "number-theory/number-theory.hpp"
 #include "poly/poly-mult.hpp"
@@ -37,23 +38,10 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
 
-  auto check_bounds = [](const uint64_t* operand, uint64_t op_len,
-                         uint64_t bound) -> bool {
-    for (size_t i = 0; i < op_len; ++i) {
-      if (operand[i] >= bound) {
-        LOG(INFO) << "Operand[ " << i << "] = " << operand[i]
-                  << " exceeds bound " << bound;
-        return false;
-      }
-    }
-    return true;
-  };
-  (void)check_bounds;  // Avoid unused variable warning
-
-  LATTICE_CHECK(check_bounds(operand1, n, modulus),
-                "pre-mult value in operand1 exceeds bound " << modulus);
-  LATTICE_CHECK(check_bounds(operand2, n, modulus),
-                "Value in operand2 exceeds bound " << modulus);
+  LATTICE_CHECK_BOUNDS(operand1, n, modulus,
+                       "pre-mult value in operand1 exceeds bound " << modulus);
+  LATTICE_CHECK_BOUNDS(operand2, n, modulus,
+                       "Value in operand2 exceeds bound " << modulus);
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
                 "Invalid bitshift " << BitShift << "; need 52 or 64");
 
@@ -129,8 +117,8 @@ void MultiplyModInPlaceAVX512(uint64_t* operand1, const uint64_t* operand2,
     ++vp_operand1;
     ++vp_operand2;
   }
-  LATTICE_CHECK(check_bounds(operand1, n, modulus),
-                "post-mult value in operand1 exceeds bound " << modulus);
+  LATTICE_CHECK_BOUNDS(operand1, n, modulus,
+                       "post-mult value in operand1 exceeds bound " << modulus);
 }
 
 }  // namespace lattice
