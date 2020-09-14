@@ -48,6 +48,8 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p, uint64_t root_of_unity)
 
   m_degree_bits = Log2(m_degree);
   m_winv = InverseUIntMod(m_w, m_p);
+  m_key = std::make_tuple(m_degree, m_p, m_w);
+  m_key_inv = std::make_tuple(m_degree, m_p, m_winv);
   ComputeRootOfUnityPowers();
 }
 
@@ -56,59 +58,14 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p)
 
 NTT::NTTImpl::~NTTImpl() = default;
 
-std::vector<uint64_t> NTT::NTTImpl::GetPreconRootOfUnityPowers() {
-  std::tuple<uint64_t, uint64_t, uint64_t> key{m_degree, m_p, m_w};
-  auto it = GetStaticPreconRootOfUnityPowers().find(key);
-  LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
-                "Could not find pre-conditioned root of unity power");
-  return it->second;
-}
-
-std::vector<uint64_t> NTT::NTTImpl::GetRootOfUnityPowers() {
-  std::tuple<uint64_t, uint64_t, uint64_t> key{m_degree, m_p, m_w};
-  auto it = GetStaticRootOfUnityPowers().find(key);
-  LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
-                "Could not find root of unity power");
-  return it->second;
-}
-
-uint64_t NTT::NTTImpl::GetRootOfUnityPower(size_t i) {
-  return GetRootOfUnityPowers()[i];
-}
-
-std::vector<uint64_t> NTT::NTTImpl::GetPreconInvRootOfUnityPowers() {
-  std::tuple<uint64_t, uint64_t, uint64_t> key{m_degree, m_p, m_winv};
-  auto it = GetStaticPreconInvRootOfUnityPowers().find(key);
-  LATTICE_CHECK(it != GetStaticPreconInvRootOfUnityPowers().end(),
-                "Could not find pre-conditioned inverse root of unity power");
-  return it->second;
-}
-
-std::vector<uint64_t> NTT::NTTImpl::GetInvRootOfUnityPowers() {
-  std::tuple<uint64_t, uint64_t, uint64_t> key{m_degree, m_p, m_winv};
-  auto it = GetStaticInvRootOfUnityPowers().find(key);
-  LATTICE_CHECK(it != GetStaticInvRootOfUnityPowers().end(),
-                "Could not find inversed root of unity power");
-  return it->second;
-}
-
-uint64_t NTT::NTTImpl::GetInvRootOfUnityPower(size_t i) {
-  return GetInvRootOfUnityPowers()[i];
-}
-
 void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   {
-    std::tuple<uint64_t, uint64_t, uint64_t> key =
-        std::make_tuple(m_degree, m_p, m_w);
-    std::tuple<uint64_t, uint64_t, uint64_t> key_inv =
-        std::make_tuple(m_degree, m_p, m_winv);
-
-    auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(key);
+    auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(m_key);
     if (it != NTT::NTTImpl::GetStaticRootOfUnityPowers().end()) {
       return;
     }
 
-    auto it_inv = NTT::NTTImpl::GetStaticInvRootOfUnityPowers().find(key_inv);
+    auto it_inv = NTT::NTTImpl::GetStaticInvRootOfUnityPowers().find(m_key_inv);
     if (it_inv != NTT::NTTImpl::GetStaticInvRootOfUnityPowers().end()) {
       return;
     }
@@ -167,21 +124,21 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     }
     precon_inv_root_of_unity_powers = std::move(temp);
 
-    NTT::NTTImpl::GetStaticRootOfUnityPowers()[key] =
+    NTT::NTTImpl::GetStaticRootOfUnityPowers()[m_key] =
         std::move(root_of_unity_powers);
-    NTT::NTTImpl::GetStaticPreconRootOfUnityPowers()[key] =
+    NTT::NTTImpl::GetStaticPreconRootOfUnityPowers()[m_key] =
         std::move(precon_root_of_unity_powers);
 
-    NTT::NTTImpl::GetStaticInvRootOfUnityPowers()[key_inv] =
+    NTT::NTTImpl::GetStaticInvRootOfUnityPowers()[m_key_inv] =
         std::move(inv_root_of_unity_powers);
-    NTT::NTTImpl::GetStaticPreconInvRootOfUnityPowers()[key_inv] =
+    NTT::NTTImpl::GetStaticPreconInvRootOfUnityPowers()[m_key_inv] =
         std::move(precon_inv_root_of_unity_powers);
   }
 }
 
 void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
-  const auto& root_of_unity_powers = GetRootOfUnityPowers();
-  const auto& precon_root_of_unity_powers = GetPreconRootOfUnityPowers();
+  const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
+  const uint64_t* precon_root_of_unity_powers = GetPreconRootOfUnityPowersPtr();
 
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
@@ -192,8 +149,8 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
   if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
-        m_degree, m_p, root_of_unity_powers.data(),
-        precon_root_of_unity_powers.data(), elements);
+        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+        elements);
     return;
   }
 #endif
@@ -201,19 +158,20 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 NTT");
   ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-      m_degree, m_p, root_of_unity_powers.data(),
-      precon_root_of_unity_powers.data(), elements);
+      m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+      elements);
   return;
 #endif
 
   IVLOG(3, "Calling 64-bit default NTT");
-  ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers.data(),
-                                 precon_root_of_unity_powers.data(), elements);
+  ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers,
+                                 precon_root_of_unity_powers, elements);
 }
 
 void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
-  const auto& inv_root_of_unity_powers = GetInvRootOfUnityPowers();
-  const auto& precon_inv_root_of_unity_powers = GetPreconInvRootOfUnityPowers();
+  const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
+  const uint64_t* precon_inv_root_of_unity_powers =
+      GetPreconInvRootOfUnityPowersPtr();
 
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
@@ -224,8 +182,8 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
   if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA InvNTT");
     InverseTransformFromBitReverseAVX512<s_ifma_shift_bits>(
-        m_degree, m_p, inv_root_of_unity_powers.data(),
-        precon_inv_root_of_unity_powers.data(), elements);
+        m_degree, m_p, inv_root_of_unity_powers,
+        precon_inv_root_of_unity_powers, elements);
     return;
   }
 #endif
@@ -233,15 +191,14 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
 #ifdef LATTICE_HAS_AVX512F
   IVLOG(3, "Calling 64-bit AVX512 InvNTT");
   InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
-      m_degree, m_p, inv_root_of_unity_powers.data(),
-      precon_inv_root_of_unity_powers.data(), elements);
+      m_degree, m_p, inv_root_of_unity_powers, precon_inv_root_of_unity_powers,
+      elements);
   return;
 #endif
 
   IVLOG(3, "Calling 64-bit default InvNTT");
-  InverseTransformFromBitReverse64(
-      m_degree, m_p, inv_root_of_unity_powers.data(),
-      precon_inv_root_of_unity_powers.data(), elements);
+  InverseTransformFromBitReverse64(m_degree, m_p, inv_root_of_unity_powers,
+                                   precon_inv_root_of_unity_powers, elements);
 }
 
 // NTT API

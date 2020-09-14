@@ -46,22 +46,72 @@ class NTT::NTTImpl {
 
   uint64_t GetBitShift() const { return m_bit_shift; }
 
-  std::vector<uint64_t> GetPreconRootOfUnityPowers();
+  uint64_t* GetPreconRootOfUnityPowersPtr() {
+    auto it = GetStaticPreconRootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
+                  "Could not find pre-conditioned root of unity power");
+    return it->second.data();
+  }
 
-  // Returns the vector of pre-computed root of unity powers for the modulus and
-  // root of unity.
-  std::vector<uint64_t> GetRootOfUnityPowers();
+  uint64_t* GetRootOfUnityPowersPtr() {
+    auto it = GetStaticRootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
+                  "Could not find root of unity power");
+    return it->second.data();
+  }
+
+  std::vector<uint64_t> GetPreconRootOfUnityPowers() {
+    auto it = GetStaticPreconRootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
+                  "Could not find pre-conditioned root of unity power");
+    return it->second;
+  }
+
+  // Returns the vector of pre-computed root of unity powers for the modulus
+  // and root of unity.
+  std::vector<uint64_t> GetRootOfUnityPowers() {
+    auto it = GetStaticRootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
+                  "Could not find root of unity power");
+    return it->second;
+  }
 
   // Returns the root of unity at index i.
-  uint64_t GetRootOfUnityPower(size_t i);
+  uint64_t GetRootOfUnityPower(size_t i) { return GetRootOfUnityPowers()[i]; }
 
   // Returns the vector of pre-conditioned pre-computed root of unity powers for
   // the modulus and root of unity.
-  std::vector<uint64_t> GetPreconInvRootOfUnityPowers();
+  std::vector<uint64_t> GetPreconInvRootOfUnityPowers() {
+    auto it = GetStaticPreconInvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(it != GetStaticPreconInvRootOfUnityPowers().end(),
+                  "Could not find pre-conditioned inverse root of unity power");
+    return it->second;
+  }
 
-  std::vector<uint64_t> GetInvRootOfUnityPowers();
+  uint64_t* GetPreconInvRootOfUnityPowersPtr() {
+    auto it = GetStaticPreconInvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(it != GetStaticPreconInvRootOfUnityPowers().end(),
+                  "Could not find pre-conditioned inverse root of unity power");
+    return it->second.data();
+  }
 
-  uint64_t GetInvRootOfUnityPower(size_t i);
+  std::vector<uint64_t> GetInvRootOfUnityPowers() {
+    auto it = GetStaticInvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(it != GetStaticInvRootOfUnityPowers().end(),
+                  "Could not find inversed root of unity power");
+    return it->second;
+  }
+
+  uint64_t* GetInvRootOfUnityPowersPtr() {
+    auto it = GetStaticInvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(it != GetStaticInvRootOfUnityPowers().end(),
+                  "Could not find inversed root of unity power");
+    return it->second.data();
+  }
+
+  uint64_t GetInvRootOfUnityPower(size_t i) {
+    return GetInvRootOfUnityPowers()[i];
+  }
 
   // Returns the map of pre-computed root of unity powers
   // Access via s_root_of_unity_powers[<degree, prime modulus, root of
@@ -146,6 +196,12 @@ class NTT::NTTImpl {
 
   uint64_t m_winv;  // Inverse of minimal root of unity
   uint64_t m_w;     // A 2N'th root of unity
+
+  // Key for pre-computed root of unity maps <m_degree, m_p, m_w>
+  std::tuple<uint64_t, uint64_t, uint64_t> m_key;
+
+  // Key for pre-computed inverse root of unity maps <m_degree, m_p, m_winv>
+  std::tuple<uint64_t, uint64_t, uint64_t> m_key_inv;
 };
 
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
