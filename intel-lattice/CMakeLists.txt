@@ -14,7 +14,6 @@
 # the License.
 # *****************************************************************************
 
-set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SRC ntt/ntt.cpp
         number-theory/number-theory.cpp
@@ -25,7 +24,8 @@ set(SRC ntt/ntt.cpp
 )
 
 if (${HAS_AVX512F})
-    list(APPEND SRC ntt/ntt-avx512.cpp
+    list(APPEND SRC
+        ntt/ntt-avx512.cpp
         poly/poly-mult-avx512.cpp
         poly/poly-fma-avx512.cpp
         )
@@ -33,7 +33,10 @@ endif()
 
 add_library(intel_lattice SHARED ${SRC})
 
-target_include_directories(intel_lattice PUBLIC ${LATTICE_SRC_ROOT_DIR})
+target_include_directories(intel_lattice PUBLIC
+        ${LATTICE_SRC_ROOT_DIR}
+        ${LATTICE_INC_ROOT_DIR}/intel-lattice
+        ${LATTICE_INC_ROOT_DIR})
 target_link_libraries(intel_lattice PUBLIC libgflags logging libgflags Threads::Threads)
 target_compile_options(intel_lattice PRIVATE -Wall -Wextra -march=native -O3)
 
@@ -42,8 +45,11 @@ message("CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
 
 install(TARGETS intel_lattice LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 
-install(DIRECTORY ${LATTICE_SRC_ROOT_DIR}/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/intel-lattice
+message("LATTICE_INC_ROOT_DIR ${LATTICE_INC_ROOT_DIR}")
+message("CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/
         FILES_MATCHING
         PATTERN "*.hpp"
         PATTERN "*.h")

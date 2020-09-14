@@ -21,8 +21,13 @@
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "poly/poly-mult-internal.hpp"
 #include "poly/poly-mult.hpp"
-#include "test/test_util.hpp"
+#include "test/test-util.hpp"
+
+#ifdef LATTICE_HAS_AVX512F
+#include "poly/poly-mult-avx512.hpp"
+#endif
 
 namespace intel {
 namespace lattice {

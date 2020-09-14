@@ -21,11 +21,12 @@
 
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
+#include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
-#include "test/test_util.hpp"
+#include "test/test-util.hpp"
 
-#ifdef LATTICE_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512F
 #include "ntt/ntt-avx512.hpp"
 #endif
 
@@ -36,20 +37,20 @@ TEST(NTT, Powers) {
   uint64_t modulus = 0xffffffffffc0001ULL;
   {
     uint64_t N = 2;
-    NTT ntt(N, modulus);
+    NTT::NTTImpl ntt_impl(N, modulus);
 
-    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0));
-    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1));
+    ASSERT_EQ(1ULL, ntt_impl.GetRootOfUnityPower(0));
+    ASSERT_EQ(288794978602139552ULL, ntt_impl.GetRootOfUnityPower(1));
   }
 
   {
     uint64_t N = 4;
-    NTT ntt(N, modulus);
+    NTT::NTTImpl ntt_impl(N, modulus);
 
-    ASSERT_EQ(1ULL, ntt.GetRootOfUnityPower(0));
-    ASSERT_EQ(288794978602139552ULL, ntt.GetRootOfUnityPower(1));
-    ASSERT_EQ(178930308976060547ULL, ntt.GetRootOfUnityPower(2));
-    ASSERT_EQ(748001537669050592ULL, ntt.GetRootOfUnityPower(3));
+    ASSERT_EQ(1ULL, ntt_impl.GetRootOfUnityPower(0));
+    ASSERT_EQ(288794978602139552ULL, ntt_impl.GetRootOfUnityPower(1));
+    ASSERT_EQ(178930308976060547ULL, ntt_impl.GetRootOfUnityPower(2));
+    ASSERT_EQ(748001537669050592ULL, ntt_impl.GetRootOfUnityPower(3));
   }
 }
 
@@ -75,18 +76,19 @@ TEST_P(NTTAPITest, Fwd) {
   std::vector<uint64_t> input3 = input;
   std::vector<uint64_t> exp_output = std::get<3>(GetParam());
 
+  NTT::NTTImpl ntt_impl(N, prime);
   NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
+  ntt.ComputeForward(input.data());
 
   // Compute reference
-  NTT::ReferenceForwardTransformToBitReverse(
-      N, prime, ntt.GetRootOfUnityPowers().data(), input2.data());
+  ReferenceForwardTransformToBitReverse(
+      N, prime, ntt_impl.GetRootOfUnityPowers().data(), input2.data());
 
   CheckEqual(input, exp_output);
   CheckEqual(input2, exp_output);
 
   // Test round-trip
-  ntt.InverseTransformToBitReverse(input.data());
+  ntt.ComputeInverse(input.data());
 
   CheckEqual(input, input3);
 }
@@ -160,7 +162,7 @@ TEST_P(NTTZerosTest, Zeros) {
   std::vector<uint64_t> exp_output(N, 0);
 
   NTT ntt(N, prime);
-  ntt.ForwardTransformToBitReverse(input.data());
+  ntt.ComputeForward(input.data());
 
   CheckEqual(input, exp_output);
 }
@@ -205,13 +207,13 @@ TEST_P(NTTPrimesTest, IFMAPrimes) {
   std::vector<uint64_t> exp_output(N, 0);
 
   // Compute reference
-  NTT ntt64(N, prime);
-  NTT::ReferenceForwardTransformToBitReverse(
+  NTT::NTTImpl ntt64(N, prime);
+  ReferenceForwardTransformToBitReverse(
       N, prime, ntt64.GetRootOfUnityPowers().data(), input64.data());
 
   // Compute with s_ifma_shift_bits-bit bit shift
-  NTT ntt_ifma(N, prime);
-  NTT::ForwardTransformToBitReverseAVX512<52>(
+  NTT::NTTImpl ntt_ifma(N, prime);
+  ForwardTransformToBitReverseAVX512<52>(
       N, ntt_ifma.GetModulus(), ntt_ifma.GetRootOfUnityPowers().data(),
       ntt_ifma.GetPreconRootOfUnityPowers().data(), input_ifma.data());
 
@@ -244,14 +246,14 @@ TEST(NTT, FwdNTT_AVX512) {
     }
     std::vector<std::uint64_t> input2 = input;
 
-    NTT ntt(N, prime);
-    NTT::ForwardTransformToBitReverse64(
-        N, prime, ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconRootOfUnityPowers().data(), input2.data());
+    NTT::NTTImpl ntt_impl(N, prime);
+    ForwardTransformToBitReverse64(
+        N, prime, ntt_impl.GetRootOfUnityPowers().data(),
+        ntt_impl.GetPreconRootOfUnityPowers().data(), input2.data());
 
-    NTT::ForwardTransformToBitReverseAVX512<64>(
-        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconRootOfUnityPowers().data(), input.data());
+    ForwardTransformToBitReverseAVX512<64>(
+        N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
+        ntt_impl.GetPreconRootOfUnityPowers().data(), input.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
@@ -274,14 +276,14 @@ TEST(NTT, InvNTT_AVX512) {
     }
     std::vector<std::uint64_t> input2 = input;
 
-    NTT ntt(N, prime);
-    NTT::InverseTransformToBitReverseAVX512<64>(
-        N, ntt.GetModulus(), ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconInvRootOfUnityPowers().data(), input.data());
+    NTT::NTTImpl ntt_impl(N, prime);
+    InverseTransformFromBitReverseAVX512<64>(
+        N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
+        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
 
-    NTT::InverseTransformToBitReverse64(
-        N, prime, ntt.GetRootOfUnityPowers().data(),
-        ntt.GetPreconInvRootOfUnityPowers().data(), input2.data());
+    InverseTransformFromBitReverse64(
+        N, prime, ntt_impl.GetRootOfUnityPowers().data(),
+        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input2.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);

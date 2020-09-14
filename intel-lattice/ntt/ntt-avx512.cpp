@@ -21,37 +21,40 @@
 #include <iostream>
 
 #include "logging/logging.hpp"
+#include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
-#include "util/avx512_util.hpp"
+#include "util/avx512-util.hpp"
 
 namespace intel {
 namespace lattice {
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void NTT::ForwardTransformToBitReverseAVX512<NTT::s_ifma_shift_bits>(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements);
+template void
+ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
+    const uint64_t degree, const uint64_t mod,
+    const uint64_t* root_of_unity_powers,
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
 #endif
 
 template void
-NTT::ForwardTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
-    const IntType degree, const IntType mod,
-    const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements);
+ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
+    const uint64_t degree, const uint64_t mod,
+    const uint64_t* root_of_unity_powers,
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void NTT::InverseTransformToBitReverseAVX512<NTT::s_ifma_shift_bits>(
-    const IntType degree, const IntType mod,
-    const IntType* inv_root_of_unity_powers,
-    const IntType* precon_inv_root_of_unity_powers, IntType* elements);
+template void
+InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
+    const uint64_t degree, const uint64_t mod,
+    const uint64_t* inv_root_of_unity_powers,
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements);
 #endif
 
 template void
-NTT::InverseTransformToBitReverseAVX512<NTT::s_default_shift_bits>(
-    const IntType degree, const IntType mod,
-    const IntType* inv_root_of_unity_powers,
-    const IntType* precon_inv_root_of_unity_powers, IntType* elements);
+InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
+    const uint64_t degree, const uint64_t mod,
+    const uint64_t* inv_root_of_unity_powers,
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements);
 
 }  // namespace lattice
 }  // namespace intel

@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <functional>
-
-#include "number-theory/number-theory.hpp"
+#include <stdint.h>
 
 namespace intel {
 namespace lattice {
@@ -28,26 +26,8 @@ namespace lattice {
 // @param cmp Scalar to compare against
 // @param diff Scalar to increment by
 // @param n Number of elements in operand1
-void CmpGtAdd(uint64_t* operand1, uint64_t cmp, uint64_t diff, uint64_t n);
-
-// @brief Computes element-wise: if (operand1 > cmp) operand1 += diff
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Scalar to compare against
-// @param diff Scalar to increment by
-// @param n Number of elements in operand1
 void CmpGtAddNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                     uint64_t n);
-
-#ifdef LATTICE_HAS_AVX512F
-// @brief Computes element-wise: if (operand1 > cmp) operand1 += diff
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Scalar to compare against
-// @param diff Scalar to increment by
-// @param n Number of elements in operand1
-void CmpGtAddAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
-                    uint64_t n);
-
-#endif
 
 }  // namespace lattice
 }  // namespace intel

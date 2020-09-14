@@ -145,6 +145,9 @@ if(ENABLE_ADDRESS_SANITIZER OR ENABLE_THREAD_SANITIZER OR ENABLE_UB_SANITIZER)
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -g -fno-omit-frame-pointer")
 endif()
 
+set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/intel-lattice)
+set(LATTICE_INC_ROOT_DIR ${LATTICE_SRC_ROOT_DIR}/include)
+
 
 # ------------------------------------------------------------------------------
 # Installation logic...

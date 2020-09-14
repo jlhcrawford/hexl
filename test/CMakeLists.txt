@@ -15,16 +15,16 @@
 # *****************************************************************************
 
 set(SRC main.cpp
-    test_number_theory.cpp
-    test_ntt.cpp
-    test_poly_mult.cpp
-    test_poly_fma.cpp
-    test_poly_cmp_add.cpp
-    test_poly_cmp_sub_mod.cpp
+    test-number-theory.cpp
+    test-ntt.cpp
+    test-poly-mult.cpp
+    test-poly-fma.cpp
+    test-poly-cmp-add.cpp
+    test-poly-cmp-sub-mod.cpp
 )
 
 if (${HAS_AVX512F})
-    list(APPEND SRC test_avx512_util.cpp)
+    list(APPEND SRC test-avx512-util.cpp)
 endif()
 
 add_executable(unit-test ${SRC})
@@ -35,3 +35,10 @@ target_include_directories(unit-test PRIVATE ".")
 target_link_libraries(unit-test PRIVATE libgtest intel_lattice)
 target_link_libraries(unit-test PRIVATE Threads::Threads)
 target_link_libraries(unit-test PRIVATE logging)
+
+message("LATTICE_INC_ROOT_DIR ${LATTICE_INC_ROOT_DIR}")
+
+# Make sure that public include folder doesn't use private headers
+# and that public headers are self-contained
+add_executable(test-public-api test-public-api.cpp)
+target_include_directories(test-public-api PRIVATE ${LATTICE_INC_ROOT_DIR})

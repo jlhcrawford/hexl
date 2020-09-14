@@ -18,10 +18,12 @@
 
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "poly/poly-cmp-add-internal.hpp"
 #include "util/check.hpp"
 
 #ifdef LATTICE_HAS_AVX512F
-#include "util/avx512_util.hpp"
+#include "poly/poly-cmp-add-avx512.hpp"
+#include "util/avx512-util.hpp"
 #endif
 
 namespace intel {

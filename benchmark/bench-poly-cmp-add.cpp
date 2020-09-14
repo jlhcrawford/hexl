@@ -16,11 +16,16 @@
 
 #include <benchmark/benchmark.h>
 
+#include <random>
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "number-theory/number-theory.hpp"
-#include "poly/poly-mult.hpp"
+#include "poly/poly-cmp-add-internal.hpp"
+#include "poly/poly-cmp-add.hpp"
+
+#ifdef LATTICE_HAS_AVX512F
+#include "poly/poly-cmp-add-avx512.hpp"
+#endif
 
 namespace intel {
 namespace lattice {
@@ -28,22 +33,29 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
-static void BM_PolyMultNative(benchmark::State& state) {  //  NOLINT
+static void BM_PolyCmpAddNative(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
-  uint64_t modulus = 0xffffffffffc0001ULL;
 
-  std::vector<uint64_t> input1(poly_size, 1);
-  std::vector<uint64_t> input2(poly_size, 2);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+
+  std::uniform_int_distribution<> distrib(0, 100);
+
+  uint64_t cmp = distrib(gen);
+  uint64_t diff = distrib(gen);
+  std::vector<uint64_t> input1(poly_size);
+  for (size_t i = 0; i < poly_size; ++i) {
+    input1[i] = distrib(gen);
+  }
 
   for (auto _ : state) {
-    MultiplyModInPlace64(input1.data(), input2.data(), poly_size, modulus);
+    CmpGtAddNative(input1.data(), cmp, diff, poly_size);
   }
 }
 
-BENCHMARK(BM_PolyMultNative)
+BENCHMARK(BM_PolyCmpAddNative)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
-    ->Args({512})
     ->Args({1024})
     ->Args({4096})
     ->Args({8192})
@@ -54,36 +66,34 @@ BENCHMARK(BM_PolyMultNative)
 
 #ifdef LATTICE_HAS_AVX512F
 // state[0] is the degree
-// state[1] is the number of bits in the modulus
-static void BM_PolyMultAVX512(benchmark::State& state) {  //  NOLINT
+static void BM_PolyCmpAddAVX512(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
-  uint64_t modulus = MaximumValue(state.range(1)) - 10;
 
-  std::vector<uint64_t> input1(poly_size, 1);
-  std::vector<uint64_t> input2(poly_size, 2);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+
+  std::uniform_int_distribution<> distrib(0, 100);
+
+  uint64_t cmp = distrib(gen);
+  uint64_t diff = distrib(gen);
+  std::vector<uint64_t> input1(poly_size);
+  for (size_t i = 0; i < poly_size; ++i) {
+    input1[i] = distrib(gen);
+  }
 
   for (auto _ : state) {
-    MultiplyModInPlace(input1.data(), input2.data(), poly_size, modulus);
+    CmpGtAddAVX512(input1.data(), cmp, diff, poly_size);
   }
 }
 
-BENCHMARK(BM_PolyMultAVX512)
+BENCHMARK(BM_PolyCmpAddAVX512)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
-    ->Args({512, 49})
-    ->Args({512, 62})
-    ->Args({1024, 49})
-    ->Args({1024, 62})
-    ->Args({2048, 49})
-    ->Args({2048, 62})
-    ->Args({4096, 49})
-    ->Args({4096, 62})
-    ->Args({8192, 49})
-    ->Args({8192, 62})
-    ->Args({16384, 49})
-    ->Args({16384, 62})
-    ->Args({32768, 49})
-    ->Args({32768, 62});
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384})
+    ->Args({32768});
 #endif
 
 }  // namespace lattice

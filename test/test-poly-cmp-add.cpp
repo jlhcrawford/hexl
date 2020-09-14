@@ -21,63 +21,59 @@
 #include "gtest/gtest.h"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-cmp-sub-mod.hpp"
-#include "test/test_util.hpp"
+#include "poly/poly-cmp-add-internal.hpp"
+#include "poly/poly-cmp-add.hpp"
+#include "test/test-util.hpp"
+
+#ifdef LATTICE_HAS_AVX512F
+#include "poly/poly-cmp-add-avx512.hpp"
+#endif
 
 namespace intel {
 namespace lattice {
 
-TEST(PolyCmpGtSubMod, small) {
-  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7};
-  uint64_t cmp = 4;
+TEST(PolyCmpGtAdd, small) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 1, 0};
+  uint64_t cmp = 1;
   uint64_t diff = 5;
-  std::vector<uint64_t> exp_out{1, 2, 3, 4, 0, 1, 2};
+  std::vector<uint64_t> exp_out{1, 7, 8, 9, 10, 1, 0};
 
-  uint64_t modulus = 10;
-
-  CmpGtSubMod(op1.data(), cmp, diff, modulus, op1.size());
+  CmpGtAdd(op1.data(), cmp, diff, op1.size());
   CheckEqual(op1, exp_out);
 }
 
-TEST(PolyCmpGtSubMod, small8) {
+TEST(PolyCmpGtAdd, small8) {
   std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
   uint64_t cmp = 4;
   uint64_t diff = 5;
-  std::vector<uint64_t> exp_out{1, 2, 3, 4, 0, 1, 2, 3};
+  std::vector<uint64_t> exp_out{1, 2, 3, 4, 10, 11, 12, 13};
 
-  uint64_t modulus = 10;
-
-  CmpGtSubMod(op1.data(), cmp, diff, modulus, op1.size());
+  CmpGtAdd(op1.data(), cmp, diff, op1.size());
   CheckEqual(op1, exp_out);
 }
 
 // Checks AVX512 and native implementations match
-#ifdef LATTICE_HAS_AVX512IFMA
-TEST(PolyCmpGtSubMod, AVX512) {
-  uint64_t length = 128;
+#ifdef LATTICE_HAS_AVX512F
+TEST(PolyCmpGtAdd, AVX512) {
+  uint64_t length = 1024;
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  for (size_t bits = 48; bits <= 51; ++bits) {
-    uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
-    std::uniform_int_distribution<> distrib(0, prime - 1);
+  std::uniform_int_distribution<> distrib(0, 100);
 
-    for (size_t trial = 0; trial < 1000; ++trial) {
-      std::vector<uint64_t> arg1(length, 0);
-      uint64_t cmp = distrib(gen);
-      uint64_t diff = distrib(gen);
-      std::vector<uint64_t> arg3(length, 0);
-      for (size_t i = 0; i < length; ++i) {
-        arg1[i] = distrib(gen);
-        arg3[i] = distrib(gen);
-      }
-      std::vector<uint64_t> arg1a = arg1;
-
-      CmpGtSubModNative(arg1.data(), cmp, diff, prime, arg1.size());
-      CmpGtSubModAVX512(arg1a.data(), cmp, diff, prime, arg1a.size());
-
-      ASSERT_EQ(arg1, arg1a);
+  for (size_t trial = 0; trial < 1000; ++trial) {
+    std::vector<uint64_t> op1(length, 0);
+    uint64_t cmp = distrib(gen);
+    uint64_t diff = distrib(gen);
+    for (size_t i = 0; i < length; ++i) {
+      op1[i] = distrib(gen);
     }
+    std::vector<uint64_t> op1a = op1;
+
+    CmpGtAddNative(op1.data(), cmp, diff, op1.size());
+    CmpGtAddAVX512(op1a.data(), cmp, diff, op1a.size());
+
+    ASSERT_EQ(op1, op1a);
   }
 }
 #endif

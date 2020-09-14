@@ -21,7 +21,7 @@
 
 #include "number-theory/number-theory.hpp"
 #include "poly/poly-fma.hpp"
-#include "util/avx512_util.hpp"
+#include "util/avx512-util.hpp"
 #include "util/check.hpp"
 
 namespace intel {
@@ -101,6 +101,16 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
     ++vp_out;
   }
   return;
+}
+
+template <int BitShift>
+inline void FMAModScalarAVX512(const uint64_t* arg1, uint64_t arg2,
+                               const uint64_t* arg3, uint64_t* out, uint64_t n,
+                               uint64_t modulus) {
+  MultiplyFactor mf(arg2, BitShift, modulus);
+
+  FMAModScalarAVX512<BitShift>(arg1, arg2, arg3, out, mf.BarrettFactor(), n,
+                               modulus);
 }
 
 }  // namespace lattice
