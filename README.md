@@ -55,3 +55,7 @@ Before contributing, please run
 make check
 ```
 and make sure all unit-test pass and the pre-commit checks pass.
+
+## Repository layout
+Public headers reside in the `intel-lattice/include` folder.
+Private headers, e.g. those containing AVX512 code should not be put in this folder.

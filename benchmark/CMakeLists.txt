@@ -15,11 +15,11 @@
 # *****************************************************************************
 
 set(SRC main.cpp
-    bench_ntt.cpp
-    bench_poly_fma.cpp
-    bench_poly_mult.cpp
-    bench_poly_cmp_add.cpp
-    bench_poly_cmp_sub_mod.cpp
+    bench-ntt.cpp
+    bench-poly-fma.cpp
+    bench-poly-mult.cpp
+    bench-poly-cmp-add.cpp
+    bench-poly-cmp-sub-mod.cpp
     )
 
 add_executable(bench_lattice ${SRC})
@@ -28,3 +28,5 @@ target_include_directories(bench_lattice PRIVATE ".")
 target_link_libraries(bench_lattice PRIVATE intel_lattice)
 target_link_libraries(bench_lattice PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
 target_link_libraries(bench_lattice PRIVATE logging)
+
+target_compile_options(bench_lattice PRIVATE -Wall -Wextra -march=native -O3)

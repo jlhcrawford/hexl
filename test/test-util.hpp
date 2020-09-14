@@ -25,7 +25,7 @@
 #ifdef LATTICE_HAS_AVX512F
 #include <immintrin.h>
 
-#include "util/avx512_util.hpp"
+#include "util/avx512-util.hpp"
 #endif
 
 namespace intel {

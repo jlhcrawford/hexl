@@ -22,17 +22,18 @@
 #include <vector>
 
 #include "logging/logging.hpp"
+#include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
-#include "util/avx512_util.hpp"
+#include "util/avx512-util.hpp"
 
 namespace intel {
 namespace lattice {
 
 template <int BitShift>
-void NTT::ForwardTransformToBitReverseAVX512(
-    const IntType n, const IntType mod, const IntType* root_of_unity_powers,
-    const IntType* precon_root_of_unity_powers, IntType* elements) {
+void ForwardTransformToBitReverseAVX512(
+    const uint64_t n, const uint64_t mod, const uint64_t* root_of_unity_powers,
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK_BOUNDS(precon_root_of_unity_powers, n, MaximumValue(BitShift),
                        "precon_root_of_unity_powers too large");
@@ -156,9 +157,10 @@ void NTT::ForwardTransformToBitReverseAVX512(
 }
 
 template <int BitShift>
-void NTT::InverseTransformToBitReverseAVX512(
-    const IntType n, const IntType mod, const IntType* inv_root_of_unity_powers,
-    const IntType* precon_inv_root_of_unity_powers, IntType* elements) {
+void InverseTransformFromBitReverseAVX512(
+    const uint64_t n, const uint64_t mod,
+    const uint64_t* inv_root_of_unity_powers,
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK_BOUNDS(precon_inv_root_of_unity_powers, n,
                        MaximumValue(BitShift));

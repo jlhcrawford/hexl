@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "test/test_util.hpp"
-#include "util/avx512_util.hpp"
+#include "test/test-util.hpp"
+#include "util/avx512-util.hpp"
 
 namespace intel {
 namespace lattice {

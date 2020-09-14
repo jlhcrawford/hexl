@@ -18,7 +18,12 @@
 
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "poly/poly-mult-internal.hpp"
 #include "util/check.hpp"
+
+#ifdef LATTICE_HAS_AVX512F
+#include "poly/poly-mult-avx512.hpp"
+#endif
 
 namespace intel {
 namespace lattice {

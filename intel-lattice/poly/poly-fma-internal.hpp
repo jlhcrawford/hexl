@@ -16,23 +16,10 @@
 
 #pragma once
 
-#include <functional>
-
 #include "number-theory/number-theory.hpp"
 
 namespace intel {
 namespace lattice {
-
-// @brief Computes fused multiply-add (arg1 * arg2 + arg3) mod modulus
-// element-wise, broadcasting scalars to vectors.
-// @param arg1 Vector to multiply
-// @param arg2 Scalar to multiply
-// @param arg3 Vector to add
-// @param out Stores the output
-// @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reduction
-void FMAModScalar(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
-                  uint64_t* out, uint64_t n, uint64_t modulus);
 
 // @brief Computes fused multiply-add (arg1 * arg2 + arg3) mod modulus
 // element-wise, broadcasting scalars to vectors
@@ -53,24 +40,6 @@ inline void FMAModScalar64(const uint64_t* arg1, uint64_t arg2,
   MultiplyFactor mf(arg2, 64, modulus);
   FMAModScalar64(arg1, arg2, arg3, out, mf.BarrettFactor(), n, modulus);
 }
-
-#ifdef LATTICE_HAS_AVX512F
-
-template <int BitShift>
-void FMAModScalarAVX512(const uint64_t* arg1, uint64_t arg2,
-                        const uint64_t* arg3, uint64_t* out, uint64_t b_barr,
-                        uint64_t n, uint64_t modulus);
-
-template <int BitShift>
-inline void FMAModScalarAVX512(const uint64_t* arg1, uint64_t arg2,
-                               const uint64_t* arg3, uint64_t* out, uint64_t n,
-                               uint64_t modulus) {
-  MultiplyFactor mf(arg2, BitShift, modulus);
-
-  FMAModScalarAVX512<BitShift>(arg1, arg2, arg3, out, mf.BarrettFactor(), n,
-                               modulus);
-}
-#endif
 
 }  // namespace lattice
 }  // namespace intel

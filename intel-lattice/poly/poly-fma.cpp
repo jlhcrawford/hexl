@@ -16,6 +16,12 @@
 
 #include "poly/poly-fma.hpp"
 
+#include "poly/poly-fma-internal.hpp"
+
+#ifdef LATTICE_HAS_AVX512F
+#include "poly/poly-fma-avx512.hpp"
+#endif
+
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"

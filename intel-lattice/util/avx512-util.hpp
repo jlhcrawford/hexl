@@ -48,6 +48,8 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
 // Checks all 64-bit values in x are less than bound
 // Returns true
 inline void CheckBounds(__m512i x, uint64_t bound) {
+  (void)x;      // Ignore unused parameter warning
+  (void)bound;  // Ignore unused parameter warning
   LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 512 / 64, bound);
 }
 

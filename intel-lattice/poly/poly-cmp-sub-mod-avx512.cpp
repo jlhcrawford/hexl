@@ -14,64 +14,17 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "poly/poly-cmp-sub-mod.hpp"
+#include "poly/poly-cmp-sub-mod-avx512.hpp"
 
 #include "logging/logging.hpp"
-#include "number-theory/number-theory.hpp"
 #include "poly/poly-cmp-sub-mod-internal.hpp"
-#include "util/check.hpp"
-
-#ifdef LATTICE_HAS_AVX512F
-#include "poly/poly-cmp-sub-mod-avx512.hpp"
+#include "poly/poly-cmp-sub-mod.hpp"
 #include "util/avx512-util.hpp"
-#endif
+#include "util/check.hpp"
 
 namespace intel {
 namespace lattice {
 
-void CmpGtSubMod(uint64_t* operand1, uint64_t cmp, uint64_t diff,
-                 uint64_t modulus, uint64_t n) {
-#ifdef LATTICE_HAS_AVX512F
-  if (n % 8 == 0) {
-    IVLOG(3, "Calling 64-bit CmpGtSubModAVX512");
-    CmpGtSubModAVX512(operand1, cmp, diff, modulus, n);
-    return;
-  }
-#endif
-
-  IVLOG(3, "Calling 64-bit default CmpGtSubModNative");
-  CmpGtSubModNative(operand1, cmp, diff, modulus, n);
-}
-
-void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
-                       uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
-  for (size_t i = 0; i < n; ++i) {
-    uint64_t op = operand1[i];
-    bool op_le_cmp = op <= cmp;
-    op %= modulus;
-    uint64_t to_add = (op < diff) ? modulus : 0;
-    to_add -= diff;
-    to_add = op_le_cmp ? 0 : to_add;
-    op += to_add;
-
-    // Alternative implementation
-    // if (op > cmp) {
-    //   // ModSub
-    //   op %= modulus;
-    //   if (op >= diff) {
-    //     op -= diff;
-    //   } else {
-    //     op += (modulus - diff);
-    //   }
-    // } else {
-    //   op %= modulus;
-    // }
-    operand1[i] = op;
-  }
-}
-
-#ifdef LATTICE_HAS_AVX512F
 void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
   LATTICE_CHECK(n % 8 == 0,
@@ -102,7 +55,6 @@ void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
     ++v_op_ptr;
   }
 }
-#endif
 
 }  // namespace lattice
 }  // namespace intel

@@ -21,7 +21,7 @@
 #include <limits>
 #include <vector>
 
-#include "util/check.hpp"
+#include "intel-lattice/util/check.hpp"
 
 namespace intel {
 namespace lattice {
