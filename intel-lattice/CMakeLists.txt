@@ -38,15 +38,9 @@ target_include_directories(intel_lattice PUBLIC
         ${LATTICE_INC_ROOT_DIR}/intel-lattice
         ${LATTICE_INC_ROOT_DIR})
 target_link_libraries(intel_lattice PUBLIC libgflags logging libgflags Threads::Threads)
-target_compile_options(intel_lattice PRIVATE -Wall -Wextra -march=native -O3)
-
-message("CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
-
+target_compile_options(intel_lattice PRIVATE -Wall -Wextra -march=native -O3 -Wno-unknown-pragmas)
 
 install(TARGETS intel_lattice LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
-
-message("LATTICE_INC_ROOT_DIR ${LATTICE_INC_ROOT_DIR}")
-message("CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}")
 
 install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/

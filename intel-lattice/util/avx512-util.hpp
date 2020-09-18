@@ -136,28 +136,28 @@ inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, CMPINT_ENUM cmp,
   __mmask8 mask;
   switch (cmp) {
     case CMPINT_ENUM::EQ:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::EQ);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::EQ));
       break;
     case CMPINT_ENUM::LT:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::LT);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::LT));
       break;
     case CMPINT_ENUM::LE:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::LE);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::LE));
       break;
     case CMPINT_ENUM::FALSE:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::FALSE);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::FALSE));
       break;
     case CMPINT_ENUM::NE:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NE);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NE));
       break;
     case CMPINT_ENUM::NLT:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NLT);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NLT));
       break;
     case CMPINT_ENUM::NLE:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::NLE);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NLE));
       break;
     case CMPINT_ENUM::TRUE:
-      mask = _mm512_cmp_epu64_mask(a, b, CMPINT_ENUM::TRUE);
+      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::TRUE));
       break;
   }
 
