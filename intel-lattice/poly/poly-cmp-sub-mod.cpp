@@ -88,12 +88,13 @@ void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
 
   for (size_t i = n / 8; i > 0; --i) {
     __m512i v_op = _mm512_loadu_si512(v_op_ptr);
-    __mmask8 op_le_cmp = _mm512_cmp_epu64_mask(v_op, v_cmp, CMPINT_ENUM::LE);
+    __mmask8 op_le_cmp =
+        _mm512_cmp_epu64_mask(v_op, v_cmp, static_cast<int>(CMPINT_ENUM::LE));
 
     v_op = _mm512_il_barrett_reduce64(v_op, v_modulus, v_mu);
 
-    __m512i v_to_add =
-        _mm512_il_cmp_epi64(v_op, v_diff, CMPINT_ENUM::LT, modulus);
+    __m512i v_to_add = _mm512_il_cmp_epi64(
+        v_op, v_diff, static_cast<int>(CMPINT_ENUM::LT), modulus);
     v_to_add = _mm512_sub_epi64(v_to_add, v_diff);
     v_to_add = _mm512_mask_set1_epi64(v_to_add, op_le_cmp, 0);
 
