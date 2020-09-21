@@ -41,8 +41,8 @@ TEST(FMAModScalar, small) {
 
   MultiplyFactor mf(arg2, 64, modulus);
 
-  FMAModScalar64(arg1.data(), arg2, arg3.data(), arg1.data(),
-                 mf.BarrettFactor(), arg1.size(), modulus);
+  FMAModScalarNative(arg1.data(), arg2, arg3.data(), arg1.data(),
+                     mf.BarrettFactor(), arg1.size(), modulus);
 
   CheckEqual(arg1, exp_out);
 }
@@ -147,8 +147,8 @@ TEST(FMAModScalar, AVX512) {
 
       uint64_t* arg3_data = (trial % 2 == 0) ? arg3.data() : nullptr;
 
-      FMAModScalar64(arg1.data(), arg2, arg3_data, arg1.data(), arg1.size(),
-                     prime);
+      FMAModScalarNative(arg1.data(), arg2, arg3_data, arg1.data(), arg1.size(),
+                         prime);
       FMAModScalarAVX512<52>(arg1a.data(), arg2, arg3_data, arg1a.data(),
                              arg1.size(), prime);
       FMAModScalarAVX512<64>(arg1b.data(), arg2, arg3_data, arg1b.data(),

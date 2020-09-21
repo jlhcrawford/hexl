@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "number-theory/number-theory.hpp"
+#include "poly/poly-mult-internal.hpp"
 #include "poly/poly-mult.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
@@ -38,13 +39,10 @@ namespace lattice {
 // @param modulus Modulus with which to perform modular reduction
 template <int BitShift>
 inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
-                                     const uint64_t* operand2, const uint64_t n,
+                                     const uint64_t* operand2, uint64_t n,
                                      const uint64_t barr_hi,
                                      const uint64_t barr_lo,
                                      const uint64_t modulus) {
-  // TODO(fboemer): Support n % 8 != 0
-  LATTICE_CHECK(n % 8 == 0,
-                "MultiplyModInPlaceAVX512 supports n % 8 == 0; got n = " << n);
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
@@ -55,6 +53,15 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
                        "Value in operand2 exceeds bound " << modulus);
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
                 "Invalid bitshift " << BitShift << "; need 52 or 64");
+
+  uint64_t n_mod_8 = n % 8;
+  if (n_mod_8 != 0) {
+    MultiplyModInPlaceNative(operand1, operand2, n_mod_8, barr_hi, barr_lo,
+                             modulus);
+    operand1 += n_mod_8;
+    operand2 += n_mod_8;
+    n -= n_mod_8;
+  }
 
   __m512i vbarr_hi = _mm512_set1_epi64(barr_hi);
   __m512i vbarr_lo = _mm512_set1_epi64(barr_lo);

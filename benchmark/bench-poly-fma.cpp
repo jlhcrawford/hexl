@@ -42,8 +42,8 @@ static void BM_PolyFMANative(benchmark::State& state) {  //  NOLINT
   std::vector<uint64_t> op3(poly_size, 2);
 
   for (auto _ : state) {
-    FMAModScalar64(op1.data(), op2, op3.data(), op1.data(), op1.size(),
-                   modulus);
+    FMAModScalarNative(op1.data(), op2, op3.data(), op1.data(), op1.size(),
+                       modulus);
   }
 }
 

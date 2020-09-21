@@ -16,7 +16,7 @@
 
 set(SRC logging.cpp)
 
-add_library(logging SHARED ${SRC})
+add_library(logging STATIC ${SRC})
 
 set_target_properties(logging PROPERTIES LINKER_LANGUAGE CXX)
 

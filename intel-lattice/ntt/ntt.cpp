@@ -24,6 +24,7 @@
 #include "ntt/ntt-internal.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
+#include "util/cpu-features.hpp"
 
 #ifdef LATTICE_HAS_AVX512F
 #include "ntt/ntt-avx512.hpp"
@@ -146,7 +147,8 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
                    << " or " << s_default_shift_bits);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus)) {
+  if (has_avx512_ifma && m_bit_shift == s_ifma_shift_bits &&
+      (m_p < s_max_ifma_modulus)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
@@ -156,11 +158,13 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 #endif
 
 #ifdef LATTICE_HAS_AVX512F
-  IVLOG(3, "Calling 64-bit AVX512 NTT");
-  ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-      m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-      elements);
-  return;
+  if (has_avx512_dq) {
+    IVLOG(3, "Calling 64-bit AVX512 NTT");
+    ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
+        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+        elements);
+    return;
+  }
 #endif
 
   IVLOG(3, "Calling 64-bit default NTT");

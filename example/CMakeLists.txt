@@ -14,19 +14,20 @@
 # the License.
 # *****************************************************************************
 
-set(SRC main.cpp
-    bench-ntt.cpp
-    bench-poly-fma.cpp
-    bench-poly-mult.cpp
-    bench-poly-cmp-add.cpp
-    bench-poly-cmp-sub-mod.cpp
-    )
+project(intel_lattice_example)
+cmake_minimum_required(VERSION 3.12)
 
-add_executable(bench_lattice ${SRC})
+if (NOT INTEL_LATTICE_LIBRARY)
+    message(FATAL_ERROR "INTEL_LATTICE_LIBRARY must be defined")
+endif()
 
-target_include_directories(bench_lattice PRIVATE ".")
-target_link_libraries(bench_lattice PRIVATE intel_lattice_internal)
-target_link_libraries(bench_lattice PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
-target_link_libraries(bench_lattice PRIVATE logging)
+if (NOT INTEL_LATTICE_HEADER)
+    message(FATAL_ERROR "INTEL_LATTICE_HEADER must be defined")
+endif()
 
-target_compile_options(bench_lattice PRIVATE -Wall -Wextra -march=native -O3)
+add_library(libintel_lattice STATIC IMPORTED)
+set_property(TARGET libintel_lattice PROPERTY IMPORTED_LOCATION ${INTEL_LATTICE_LIBRARY})
+include_directories(${INTEL_LATTICE_HEADER})
+
+add_executable(example example.cpp)
+target_link_libraries(example libintel_lattice)

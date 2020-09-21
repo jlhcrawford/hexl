@@ -3,12 +3,20 @@ image: ubuntu:18.04
 variables:
   http_proxy: http://10.7.211.16:911
   https_proxy: http://10.7.211.16:912
-  no_proxy: docker:2375,docker:2376,intel.com,.intel.com,10.0.0.0/8,192.168.0.0/16,localhost,127.0.0.0/8,134.134.0.0/16
+
+before_script:
+  - whoami
+  - export DEFAULT_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=clang++-10 -DCMAKE_C_COMPILER=clang-10"
+  - export DEBUG_COMPILER_FLAGS="${DEFAULT_COMPILER_FLAGS} -DLATTICE_DEBUG=ON"
+  - export DEFAULT_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
+  - export DEBUG_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice_debug.a -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
+  - cmake --version
 
 stages:
   - format
   - build
   - test
+  - example
   - benchmark
 
 format:
@@ -34,14 +42,23 @@ default_build:
     - echo $CI_COMMIT_REF_NAME
     - pwd
 
-    # Build repo
+    # Build library
     - mkdir -p build
     - cd build
-    - cmake .. -DCMAKE_CXX_COMPILER=clang++-10 -DCMAKE_C_COMPILER=clang-10
+    - cmake .. ${DEFAULT_COMPILER_FLAGS}
     - make -j all
+    # Build example
+    - cd ../example
+    - mkdir -p build
+    - cd build
+    - echo "DEFAULT_EXAMPLE_FLAGS"
+    - echo ${DEFAULT_EXAMPLE_FLAGS}
+    - cmake .. ${DEFAULT_COMPILER_FLAGS} ${DEFAULT_EXAMPLE_FLAGS}
+    - make -j
   artifacts:
     paths:
         - build/
+        - example/build
     expire_in: 1 day
 
 debug_build:
@@ -60,12 +77,49 @@ debug_build:
     # Build repo
     - mkdir -p build
     - cd build
-    - cmake .. -DCMAKE_CXX_COMPILER=clang++-10 -DCMAKE_C_COMPILER=clang-10 -DLATTICE_DEBUG=ON
+    - cmake .. ${DEBUG_COMPILER_FLAGS}
     - make -j all
+    # Build example
+    - cd ../example
+    - mkdir -p build
+    - cd build
+    - cmake .. ${DEBUG_COMPILER_FLAGS} ${DEBUG_EXAMPLE_FLAGS}
+    - make -j
   artifacts:
     paths:
         - build/
+        - example/build
     expire_in: 1 day
+
+default_example:
+  stage: example
+  only:
+    refs:
+      - merge_requests
+      - master
+  script:
+    - example/build/example
+  artifacts:
+    paths:
+        - example/build
+    expire_in: 1 day
+  dependencies:
+    - default_build
+
+debug_example:
+  stage: example
+  only:
+    refs:
+      - merge_requests
+      - master
+  script:
+    - example/build/example
+  artifacts:
+    paths:
+        - example/build
+    expire_in: 1 day
+  dependencies:
+    - debug_build
 
 test:
   stage: test
@@ -77,6 +131,7 @@ test:
     - pwd
     - ls
     - build/test/unit-test
+    - example/build/example
   dependencies:
     - default_build
 
@@ -90,6 +145,7 @@ debug_test:
     - pwd
     - ls
     - build/test/unit-test
+    - example/build/example
   dependencies:
     - debug_build
 
