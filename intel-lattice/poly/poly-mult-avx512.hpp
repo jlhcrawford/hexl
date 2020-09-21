@@ -56,8 +56,7 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
 
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
-    MultiplyModInPlaceNative(operand1, operand2, n_mod_8, barr_hi, barr_lo,
-                             modulus);
+    MultiplyModInPlaceNative(operand1, operand2, n_mod_8, modulus);
     operand1 += n_mod_8;
     operand2 += n_mod_8;
     n -= n_mod_8;

@@ -233,19 +233,7 @@ TEST(PolyMult, 8big) {
   CheckEqual(op1, exp_out);
 }
 
-TEST(PolyMult, 8big3) {
-  uint64_t modulus = GeneratePrimes(1, 48, 1024)[0];
-
-  std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
-  std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
-  std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
-
-  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), modulus);
-
-  CheckEqual(op1, exp_out);
-}
-
-TEST(PolyMult, 8big4) {
+TEST(PolyMult, 8big2) {
   uint64_t p = 281474976749569;
 
   std::vector<uint64_t> op1{(p - 1) / 2, 1, 1, 1, 1, 1, 1, 1};
@@ -257,7 +245,7 @@ TEST(PolyMult, 8big4) {
   CheckEqual(op1, exp_out);
 }
 
-TEST(PolyMult, 8big6) {
+TEST(PolyMult, 8big3) {
   uint64_t p = 1125891450734593;
 
   std::vector<uint64_t> op1{1078888294739028, 1, 1, 1, 1, 1, 1, 1};
@@ -281,6 +269,18 @@ TEST(PolyMult, 8_bounds) {
 }
 #endif
 
+TEST(PolyMult, 9) {
+  uint64_t modulus = GeneratePrimes(1, 48, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> op2{modulus - 4, 8, 7, 6, 5, 4, 3, 2, 1};
+  std::vector<uint64_t> exp_out{12, 8, 14, 18, 20, 20, 18, 14, 8};
+
+  MultiplyModInPlace(op1.data(), op2.data(), op1.size(), modulus);
+
+  CheckEqual(op1, exp_out);
+}
+
 // Checks AVX512 and native poly mult implementations match
 #ifdef LATTICE_HAS_AVX512IFMA
 TEST(PolyMult, AVX512) {
@@ -292,7 +292,7 @@ TEST(PolyMult, AVX512) {
     uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
     std::uniform_int_distribution<> distrib(0, prime - 1);
 
-    for (size_t trial = 0; trial < 1000; ++trial) {
+    for (size_t trial = 0; trial < 200; ++trial) {
       std::vector<std::uint64_t> op1(length, 0);
       std::vector<std::uint64_t> op2(length, 0);
       for (size_t i = 0; i < length; ++i) {

@@ -3,24 +3,21 @@ image: ubuntu:18.04
 variables:
   http_proxy: http://10.7.211.16:911
   https_proxy: http://10.7.211.16:912
-
-before_script:
-  - whoami
-  - export DEFAULT_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=clang++-10
+  DEFAULT_COMPILER_FLAGS: "-DCMAKE_CXX_COMPILER=clang++-10
       -DCMAKE_C_COMPILER=clang-10
       -DLATTICE_BENCHMARK=ON
       -DLATTICE_TESTING=ON
       -DLATTICE_COVERAGE=OFF"
-  - export DEBUG_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=g++-7
+  DEBUG_COMPILER_FLAGS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo
+      -DCMAKE_CXX_COMPILER=g++-7
       -DCMAKE_C_COMPILER=gcc-7
       -DLATTICE_DEBUG=ON
       -DLATTICE_BENCHMARK=ON
       -DLATTICE_TESTING=ON
       -DLATTICE_COVERAGE=ON"
-  - export GCOV_BIN="/usr/bin/gcov-7"
-  - export DEFAULT_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a
-                                  -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
-  - cmake --version
+  GCOV_BIN: "/usr/bin/gcov-7"
+  DEFAULT_EXAMPLE_FLAGS: "-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a
+      -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
 
 stages:
   - format
@@ -29,29 +26,33 @@ stages:
   - example
   - benchmark
 
-format:
-  stage: format
+.only-default:
   only:
     refs:
       - merge_requests
       - master
+
+.build:
+  extends: .only-default
+  before_script:
+    - whoami
+    - echo "Testing from branch:"
+    - echo $CI_COMMIT_REF_NAME
+    - cmake --version
+    - pwd
+    - ls
+
+format:
+  extends: .only-default
+  stage: format
   script:
     # Run formatting
     - pre-commit run --all-files
 
 default_build:
   stage: build
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .build
   script:
-    - whoami
-    - echo $HOME
-    - echo "Testing from branch:"
-    - echo $CI_COMMIT_REF_NAME
-    - pwd
-
     # Build library
     - mkdir -p build
     - cd build
@@ -71,17 +72,8 @@ default_build:
 
 debug_build:
   stage: build
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .build
   script:
-    - whoami
-    - echo $HOME
-    - echo "Testing from branch:"
-    - echo $CI_COMMIT_REF_NAME
-    - pwd
-
     # Build repo
     - mkdir -p build
     - cd build
@@ -94,10 +86,7 @@ debug_build:
 
 default_example:
   stage: example
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .only-default
   script:
     - example/build/example
   artifacts:
@@ -109,13 +98,8 @@ default_example:
 
 test:
   stage: test
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .only-default
   script:
-    - pwd
-    - ls
     - build/test/unit-test
     - example/build/example
   dependencies:
@@ -123,24 +107,27 @@ test:
 
 debug_test:
   stage: test
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .only-default
   script:
     - pwd
     - ls
+    - echo ${CI_PROJECT_DIR}
     # Generate initial baseline
-    - lcov --no-external --capture --initial --directory build/test/CMakeFiles/unit-test.dir --gcov-tool /usr/bin/gcov-7 --output-file test_cov.info
-    - build/test/unit-test
+    - lcov --capture --initial --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_base.info
+    - lcov --list cov_base.info
+    - build/test/unit-test --v=3
     # Run lcov again
-    - lcov --capture --directory build/test/CMakeFiles/unit-test.dir --gcov-tool /usr/bin/gcov-7 --output-file test_cov.info
+    - lcov --capture --rc lcov_branch_coverage=1 --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_test.info
+    - lcov --list cov_test.info
+    # Combine two trace files
+    - lcov --add-tracefile  cov_base.info --add-tracefile cov_test.info --output-file cov_total.info
+    - lcov --list cov_total.info
      # Remove unwanted directories
-    - lcov --remove test_cov.info '/usr/include/*' '/usr/lib/*' '${CI_PROJECT_DIR}/build/*' -o test_cov.info
+    - lcov --remove cov_total.info '/usr/include/*' '/usr/lib/*' '*/test/*' '*/build/*' '*/benchmark/*' -o cov_filter.info
     # report overall summary to be parsed by gitlab CI
-    - lcov --list test_cov.info
+    - lcov --list cov_filter.info
     # Generate coverage html
-    - genhtml test_cov.info --output-directory coverage
+    - genhtml --branch-coverage cov_filter.info --output-directory coverage
 
   dependencies:
     - debug_build
@@ -151,10 +138,7 @@ debug_test:
 
 benchmark:
   stage: benchmark
-  only:
-    refs:
-      - merge_requests
-      - master
+  extends: .only-default
   script:
     - build/benchmark/bench_lattice --benchmark_out="${CI_JOB_NAME}_${CI_COMMIT_SHA}" --benchmark_out_format=csv
   dependencies:
