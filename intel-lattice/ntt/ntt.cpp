@@ -26,7 +26,7 @@
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "ntt/ntt-avx512.hpp"
 #endif
 
@@ -157,7 +157,7 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
   }
 #endif
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     IVLOG(3, "Calling 64-bit AVX512 NTT");
     ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
@@ -192,7 +192,7 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
   }
 #endif
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   IVLOG(3, "Calling 64-bit AVX512 InvNTT");
   InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
       m_degree, m_p, inv_root_of_unity_powers, precon_inv_root_of_unity_powers,
@@ -254,8 +254,8 @@ void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
         // in [0, 4p). See Algorithm 4 of
         // https://arxiv.org/pdf/1205.2926.pdf
         // X', Y' = X + WY, X - WY (mod p).
-        LATTICE_CHECK(*X <= (mod * 4), "input X " << (tx + Q) << " too large");
-        LATTICE_CHECK(*Y <= (mod * 4), "input Y " << (tx + Q) << " too large");
+        LATTICE_CHECK(*X <= (mod * 4), "input X " << (*X) << " too large");
+        LATTICE_CHECK(*Y <= (mod * 4), "input Y " << (*Y) << " too large");
 
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));

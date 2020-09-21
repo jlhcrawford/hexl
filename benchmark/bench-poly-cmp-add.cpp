@@ -23,7 +23,7 @@
 #include "poly/poly-cmp-add-internal.hpp"
 #include "poly/poly-cmp-add.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-add-avx512.hpp"
 #endif
 
@@ -58,13 +58,11 @@ BENCHMARK(BM_PolyCmpAddNative)
     ->MinTime(3.0)
     ->Args({1024})
     ->Args({4096})
-    ->Args({8192})
-    ->Args({16384})
-    ->Args({32768});
+    ->Args({16384});
 
 //=================================================================
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
 static void BM_PolyCmpAddAVX512(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
@@ -91,9 +89,7 @@ BENCHMARK(BM_PolyCmpAddAVX512)
     ->MinTime(3.0)
     ->Args({1024})
     ->Args({4096})
-    ->Args({8192})
-    ->Args({16384})
-    ->Args({32768});
+    ->Args({16384});
 #endif
 
 }  // namespace lattice

@@ -69,7 +69,7 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
       // uint64_t q = MultiplyUInt64Hi<64>(arg1, arg2_precon);
       __m512i vq = _mm512_il_mulhi_epi<BitShift>(varg1, varg2_barr);
       __m512i vq_times_mod = _mm512_mullo_epi64(vq, vmodulus);
-      __m512 va_times_b = _mm512_il_mullo_epi<64>(varg1, varg2);
+      __m512i va_times_b = _mm512_il_mullo_epi<64>(varg1, varg2);
       // q = arg1 * arg2 - q * modulus;
       vq = _mm512_sub_epi64(va_times_b, vq_times_mod);
       // Conditional Barrett subtraction
@@ -96,7 +96,7 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
     // uint64_t q = MultiplyUInt64Hi<64>(arg1, arg2_precon);
     __m512i vq = _mm512_il_mulhi_epi<BitShift>(varg1, varg2_barr);
     __m512i vq_times_mod = _mm512_mullo_epi64(vq, vmodulus);
-    __m512 va_times_b = _mm512_il_mullo_epi<64>(varg1, varg2);
+    __m512i va_times_b = _mm512_il_mullo_epi<64>(varg1, varg2);
     // q = arg1 * arg2 - q * modulus;
     vq = _mm512_sub_epi64(va_times_b, vq_times_mod);
     // Conditional Barrett subtraction

@@ -22,7 +22,7 @@
 #include "logging/logging.hpp"
 #include "util/check.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include <immintrin.h>
 
 #include "util/avx512-util.hpp"
@@ -51,7 +51,7 @@ inline void AssertEqual(const std::vector<uint64_t>& x,
   }
 }
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 inline void CheckEqual(const __m512i a, const __m512i b) {
   std::vector<uint64_t> as = ExtractValues(a);
   std::vector<uint64_t> bs = ExtractValues(b);

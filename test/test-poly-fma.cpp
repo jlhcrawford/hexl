@@ -25,7 +25,7 @@
 #include "poly/poly-fma.hpp"
 #include "test/test-util.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-fma-avx512.hpp"
 #endif
 
@@ -74,7 +74,7 @@ TEST(FMAModScalar, mult2) {
   CheckEqual(arg1, exp_out);
 }
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 TEST(FMAModScalar, avx512_small) {
   std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8};
   uint64_t arg2 = 2;

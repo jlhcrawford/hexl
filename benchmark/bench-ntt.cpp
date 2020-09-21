@@ -22,7 +22,7 @@
 #include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "ntt/ntt-avx512.hpp"
 #endif
 
@@ -84,7 +84,7 @@ BENCHMARK(BM_NTT_AVX512IFMA)
 
 //=================================================================
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
 // state[1] is approximately the number of bits in the coefficient modulus
 static void BM_NTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
@@ -138,11 +138,9 @@ BENCHMARK(BM_invNTTNative)
 
 #ifdef LATTICE_HAS_AVX512IFMA
 // state[0] is the degree
-// state[1] is approximately the number of bits in the coefficient modulus
 static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
-  size_t prime_bits = state.range(1);
-  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
+  size_t prime = GeneratePrimes(1, 49, ntt_size)[0];
 
   std::vector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
@@ -157,20 +155,18 @@ static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_InvNTT_AVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024, 49})
-    ->Args({4096, 49})
-    ->Args({16384, 49});
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({16384});
 #endif
 
 //=================================================================
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
-// state[1] is approximately the number of bits in the coefficient modulus
 static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
-  size_t prime_bits = state.range(1);
-  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
+  size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
 
   std::vector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
@@ -185,9 +181,9 @@ static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_InvNTT_AVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024, 62})
-    ->Args({4096, 62})
-    ->Args({16384, 62});
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({16384});
 #endif
 
 }  // namespace lattice

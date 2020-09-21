@@ -22,7 +22,7 @@
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-add-avx512.hpp"
 #include "util/avx512-util.hpp"
 #endif
@@ -31,7 +31,7 @@ namespace intel {
 namespace lattice {
 
 void CmpGtAdd(uint64_t* operand1, uint64_t cmp, uint64_t diff, uint64_t n) {
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     CmpGtAddAVX512(operand1, cmp, diff, n);
     return;
@@ -49,7 +49,7 @@ void CmpGtAddNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
   }
 }
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 void CmpGtAddAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                     uint64_t n) {
   uint64_t n_mod_8 = n % 8;

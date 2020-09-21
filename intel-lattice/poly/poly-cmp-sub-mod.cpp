@@ -22,7 +22,7 @@
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-sub-mod-avx512.hpp"
 #include "util/avx512-util.hpp"
 #endif
@@ -32,7 +32,7 @@ namespace lattice {
 
 void CmpGtSubMod(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                  uint64_t modulus, uint64_t n) {
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     IVLOG(3, "Calling CmpGtSubModAVX512");
 
@@ -73,7 +73,7 @@ void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
   }
 }
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
   uint64_t n_mod_8 = n % 8;

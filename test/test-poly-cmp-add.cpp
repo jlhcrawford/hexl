@@ -25,7 +25,7 @@
 #include "poly/poly-cmp-add.hpp"
 #include "test/test-util.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-add-avx512.hpp"
 #endif
 
@@ -53,7 +53,7 @@ TEST(PolyCmpGtAdd, small8) {
 }
 
 // Checks AVX512 and native implementations match
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 TEST(PolyCmpGtAdd, AVX512) {
   uint64_t length = 1024;
   std::random_device rd;

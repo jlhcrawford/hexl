@@ -25,7 +25,7 @@
 #include "poly/poly-mult.hpp"
 #include "test/test-util.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-mult-avx512.hpp"
 #endif
 
@@ -60,7 +60,7 @@ TEST(PolyMult, native_mult2) {
   CheckEqual(op1, exp_out);
 }
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 TEST(PolyMult, avx512_small) {
   std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
   std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
