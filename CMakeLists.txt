@@ -14,15 +14,11 @@
 # the License.
 # *****************************************************************************
 
-project(ntt-avx CXX)
-cmake_minimum_required(VERSION 3.12)
-
-# Global project name
 project(intel_lattice LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.12)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-include(CheckCXXSourceCompiles)
 
 # set directory where the custom finders live
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -54,14 +50,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_INSTALL_MESSAGE LAZY)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if (NOT ${CMAKE_INSTALL_PREFIX})
-  set(${CMAKE_INSTALL_PREFIX} ./)
-endif()
-
 # Create compilation database compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 
@@ -72,15 +62,6 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 
 option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
 option(LATTICE_BENCHMARK "Enable benchmarking" ON)
-
-message(STATUS "CMAKE_C_COMPILER:         ${CMAKE_C_COMPILER}")
-message(STATUS "CMAKE_CXX_COMPILER:       ${CMAKE_CXX_COMPILER}")
-message(STATUS "LATTICE_DEBUG:            ${LATTICE_DEBUG}")
-message(STATUS "LATTICE_BENCHMARK:        ${LATTICE_BENCHMARK}")
-message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
-message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
-message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
-
 # Sanitizers
 option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
 option(ENABLE_THREAD_SANITIZER "Compiles and links with Thread Sanitizer" OFF)
@@ -153,6 +134,11 @@ set(LATTICE_INC_ROOT_DIR ${LATTICE_SRC_ROOT_DIR}/include)
 # Installation logic...
 # ------------------------------------------------------------------------------
 
+if(NOT CMAKE_INSTALL_PREFIX)
+  message("CMAKE_INSTALL_PREFIX not defined")
+  set(CMAKE_INSTALL_PREFIX_CACHE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
 if(LINUX)
   include(GNUInstallDirs)
 else()
@@ -162,10 +148,15 @@ else()
   set(CMAKE_INSTALL_LIBDIR "lib")
 endif()
 
-if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-endif()
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_CACHE})
 
+message(STATUS "CMAKE_C_COMPILER:         ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER:       ${CMAKE_CXX_COMPILER}")
+message(STATUS "LATTICE_DEBUG:            ${LATTICE_DEBUG}")
+message(STATUS "LATTICE_BENCHMARK:        ${LATTICE_BENCHMARK}")
+message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
+message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
+message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
 message(STATUS "CMAKE_INSTALL_LIBDIR:     ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "CMAKE_INSTALL_PREFIX:     ${CMAKE_INSTALL_PREFIX}")
@@ -198,6 +189,7 @@ if (${LATTICE_BENCHMARK})
 endif()
 include(cmake/easylogging.cmake)
 include(cmake/gflags.cmake)
+include(cmake/cpu_features.cmake)
 
 #------------------------------------------------------------------------------
 # Subfolders...

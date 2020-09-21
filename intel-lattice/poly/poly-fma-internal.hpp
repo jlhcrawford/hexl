@@ -30,15 +30,15 @@ namespace lattice {
 // @param b_barr floor(2**64 / modulus)
 // @param n Number of elements in each vector
 // @param modulus Modulus with which to perform modular reduction
-void FMAModScalar64(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
-                    uint64_t* out, uint64_t b_barr, uint64_t n,
-                    uint64_t modulus);
+void FMAModScalarNative(const uint64_t* arg1, uint64_t arg2,
+                        const uint64_t* arg3, uint64_t* out, uint64_t b_barr,
+                        uint64_t n, uint64_t modulus);
 
-inline void FMAModScalar64(const uint64_t* arg1, uint64_t arg2,
-                           const uint64_t* arg3, uint64_t* out, uint64_t n,
-                           uint64_t modulus) {
+inline void FMAModScalarNative(const uint64_t* arg1, uint64_t arg2,
+                               const uint64_t* arg3, uint64_t* out, uint64_t n,
+                               uint64_t modulus) {
   MultiplyFactor mf(arg2, 64, modulus);
-  FMAModScalar64(arg1, arg2, arg3, out, mf.BarrettFactor(), n, modulus);
+  FMAModScalarNative(arg1, arg2, arg3, out, mf.BarrettFactor(), n, modulus);
 }
 
 }  // namespace lattice

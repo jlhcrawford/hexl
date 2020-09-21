@@ -37,7 +37,7 @@ static void BM_PolyMultNative(benchmark::State& state) {  //  NOLINT
   std::vector<uint64_t> input2(poly_size, 2);
 
   for (auto _ : state) {
-    MultiplyModInPlace64(input1.data(), input2.data(), poly_size, modulus);
+    MultiplyModInPlaceNative(input1.data(), input2.data(), poly_size, modulus);
   }
 }
 

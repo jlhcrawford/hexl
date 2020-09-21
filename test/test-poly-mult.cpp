@@ -32,7 +32,7 @@
 namespace intel {
 namespace lattice {
 
-TEST(PolyMult, small) {
+TEST(PolyMult, native_small) {
   std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1};
   std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0};
   std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0};
@@ -40,13 +40,13 @@ TEST(PolyMult, small) {
   uint64_t modulus = 769;
   BarrettFactor<64> bf(modulus);
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), bf.Hi(), bf.Lo(),
-                       modulus);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), bf.Hi(), bf.Lo(),
+                           modulus);
 
   CheckEqual(op1, exp_out);
 }
 
-TEST(PolyMult, mult2) {
+TEST(PolyMult, native_mult2) {
   std::vector<uint64_t> op1{1, 2,  3,  4,  5,  6,  7,  8,
                             9, 10, 11, 12, 13, 14, 15, 16};
   std::vector<uint64_t> op2{17, 18, 19, 20, 21, 22, 23, 24,
@@ -55,16 +55,16 @@ TEST(PolyMult, mult2) {
                                 23, 58, 95, 33, 74, 16, 61, 7};
   uint64_t modulus = 101;
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), modulus);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
 
 #ifdef LATTICE_HAS_AVX512F
 TEST(PolyMult, avx512_small) {
-  std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1};
-  std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0};
-  std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0};
+  std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
+  std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
+  std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
 
   uint64_t modulus = 769;
   BarrettFactor<64> bf(modulus);
@@ -228,7 +228,7 @@ TEST(PolyMult, 8big) {
   std::vector<uint64_t> op2{modulus - 1, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{1, 1, 1, 1, 1, 1, 1, 1};
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), modulus);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -240,7 +240,7 @@ TEST(PolyMult, 8big3) {
   std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), modulus);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -252,7 +252,7 @@ TEST(PolyMult, 8big4) {
   std::vector<uint64_t> op2{(p + 1) / 2, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{70368744187392, 1, 1, 1, 1, 1, 1, 1};
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), p);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), p);
 
   CheckEqual(op1, exp_out);
 }
@@ -264,7 +264,7 @@ TEST(PolyMult, 8big6) {
   std::vector<uint64_t> op2{1114802337613200, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{13344071208410, 1, 1, 1, 1, 1, 1, 1};
 
-  MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), p);
+  MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), p);
 
   CheckEqual(op1, exp_out);
 }
@@ -301,7 +301,7 @@ TEST(PolyMult, AVX512) {
       }
       std::vector<std::uint64_t> op1a = op1;
 
-      MultiplyModInPlace64(op1.data(), op2.data(), op1.size(), prime);
+      MultiplyModInPlaceNative(op1.data(), op2.data(), op1.size(), prime);
       MultiplyModInPlaceAVX512<52>(op1a.data(), op2.data(), op1.size(), prime);
 
       ASSERT_EQ(op1, op1a);

@@ -20,6 +20,7 @@
 #include "number-theory/number-theory.hpp"
 #include "poly/poly-cmp-add-internal.hpp"
 #include "util/check.hpp"
+#include "util/cpu-features.hpp"
 
 #ifdef LATTICE_HAS_AVX512F
 #include "poly/poly-cmp-add-avx512.hpp"
@@ -31,14 +32,11 @@ namespace lattice {
 
 void CmpGtAdd(uint64_t* operand1, uint64_t cmp, uint64_t diff, uint64_t n) {
 #ifdef LATTICE_HAS_AVX512F
-  if (n % 8 == 0) {
-    IVLOG(3, "Calling 64-bit CmpGtAddAVX512");
+  if (has_avx512_dq) {
     CmpGtAddAVX512(operand1, cmp, diff, n);
     return;
   }
 #endif
-
-  IVLOG(3, "Calling 64-bit default CmpGtAddNative");
   CmpGtAddNative(operand1, cmp, diff, n);
 }
 
@@ -54,8 +52,12 @@ void CmpGtAddNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
 #ifdef LATTICE_HAS_AVX512F
 void CmpGtAddAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                     uint64_t n) {
-  LATTICE_CHECK(n % 8 == 0,
-                "CmpGtAddAVX512 supports n % 8 == 0; got n = " << n);
+  uint64_t n_mod_8 = n % 8;
+  if (n_mod_8 != 0) {
+    CmpGtAddNative(operand1, cmp, diff, n_mod_8);
+    operand1 += n_mod_8;
+    n -= n_mod_8;
+  }
 
   __m512i v_cmp = _mm512_set1_epi64(cmp);
   __m512i* v_op_ptr = reinterpret_cast<__m512i*>(operand1);

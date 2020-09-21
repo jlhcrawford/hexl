@@ -20,6 +20,7 @@
 #include "number-theory/number-theory.hpp"
 #include "poly/poly-cmp-sub-mod-internal.hpp"
 #include "util/check.hpp"
+#include "util/cpu-features.hpp"
 
 #ifdef LATTICE_HAS_AVX512F
 #include "poly/poly-cmp-sub-mod-avx512.hpp"
@@ -32,14 +33,15 @@ namespace lattice {
 void CmpGtSubMod(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                  uint64_t modulus, uint64_t n) {
 #ifdef LATTICE_HAS_AVX512F
-  if (n % 8 == 0) {
-    IVLOG(3, "Calling 64-bit CmpGtSubModAVX512");
+  if (has_avx512_dq) {
+    IVLOG(3, "Calling CmpGtSubModAVX512");
+
     CmpGtSubModAVX512(operand1, cmp, diff, modulus, n);
     return;
   }
 #endif
 
-  IVLOG(3, "Calling 64-bit default CmpGtSubModNative");
+  IVLOG(3, "Calling CmpGtSubModNative");
   CmpGtSubModNative(operand1, cmp, diff, modulus, n);
 }
 
@@ -74,8 +76,12 @@ void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
 #ifdef LATTICE_HAS_AVX512F
 void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(n % 8 == 0,
-                "CmpGtSubModAVX512 supports n % 8 == 0; got n = " << n);
+  uint64_t n_mod_8 = n % 8;
+  if (n_mod_8 != 0) {
+    CmpGtSubModNative(operand1, cmp, diff, modulus, n_mod_8);
+    operand1 += n_mod_8;
+    n -= n_mod_8;
+  }
   LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
 
   __m512i* v_op_ptr = reinterpret_cast<__m512i*>(operand1);

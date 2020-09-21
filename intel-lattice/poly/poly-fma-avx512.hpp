@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "number-theory/number-theory.hpp"
+#include "poly/poly-fma-internal.hpp"
 #include "poly/poly-fma.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
@@ -30,11 +31,16 @@ namespace lattice {
 template <int BitShift>
 void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
                         const uint64_t* arg3, uint64_t* out,
-                        const uint64_t arg2_barr, const uint64_t n,
+                        const uint64_t arg2_barr, uint64_t n,
                         const uint64_t modulus) {
-  // TODO(fboemer): Support n % 8 != 0
-  LATTICE_CHECK(n % 8 == 0,
-                "FMAModScalarAVX512 supports n % 8 == 0; got n = " << n);
+  uint64_t n_mod_8 = n % 8;
+  if (n_mod_8 != 0) {
+    FMAModScalarNative(arg1, arg2, arg3, out, arg2_barr, n_mod_8, modulus);
+    arg1 += n_mod_8;
+    arg3 += n_mod_8;
+    // out += n -= n_mod_8;
+    n -= n_mod_8;
+  }
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));

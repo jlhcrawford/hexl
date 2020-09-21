@@ -30,15 +30,16 @@ namespace lattice {
 // @param barr_lo Low 64 bits of Barrett precomputation floor(2^128 /
 // modulus)
 // @param modulus Modulus with which to perform modular reduction
-void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
-                          const uint64_t n, const uint64_t barr_hi,
-                          const uint64_t barr_lo, const uint64_t modulus);
+void MultiplyModInPlaceNative(uint64_t* operand1, const uint64_t* operand2,
+                              const uint64_t n, const uint64_t barr_hi,
+                              const uint64_t barr_lo, const uint64_t modulus);
 
-inline void MultiplyModInPlace64(uint64_t* operand1, const uint64_t* operand2,
-                                 const uint64_t n, const uint64_t modulus) {
+inline void MultiplyModInPlaceNative(uint64_t* operand1,
+                                     const uint64_t* operand2, const uint64_t n,
+                                     const uint64_t modulus) {
   BarrettFactor<64> bf(modulus);
 
-  MultiplyModInPlace64(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
+  MultiplyModInPlaceNative(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
 }
 
 }  // namespace lattice
