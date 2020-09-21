@@ -33,23 +33,29 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
                         const uint64_t* arg3, uint64_t* out,
                         const uint64_t arg2_barr, uint64_t n,
                         const uint64_t modulus) {
-  uint64_t n_mod_8 = n % 8;
-  if (n_mod_8 != 0) {
-    FMAModScalarNative(arg1, arg2, arg3, out, arg2_barr, n_mod_8, modulus);
-    arg1 += n_mod_8;
-    arg3 += n_mod_8;
-    // out += n -= n_mod_8;
-    n -= n_mod_8;
-  }
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
+
+  LATTICE_CHECK(arg1, "arg1 == nullptr");
+  LATTICE_CHECK(out, "out == nullptr");
 
   LATTICE_CHECK_BOUNDS(arg1, n, modulus,
                        "pre-mult value in arg1 exceeds bound " << modulus);
   LATTICE_CHECK_BOUNDS(&arg2, 1, modulus, "arg2 exceeds bound " << modulus);
   LATTICE_CHECK(BitShift == 52 || BitShift == 64,
                 "Invalid bitshift " << BitShift << "; need 52 or 64");
+
+  uint64_t n_mod_8 = n % 8;
+  if (n_mod_8 != 0) {
+    FMAModScalarNative(arg1, arg2, arg3, out, arg2_barr, n_mod_8, modulus);
+    arg1 += n_mod_8;
+    if (arg3 != nullptr) {
+      arg3 += n_mod_8;
+    }
+    out += n_mod_8;
+    n -= n_mod_8;
+  }
 
   __m512i varg2_barr = _mm512_set1_epi64(arg2_barr);
 

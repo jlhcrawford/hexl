@@ -134,7 +134,7 @@ uint64_t GeneratePrimitiveRoot(uint64_t degree, uint64_t modulus) {
   // Compute size of quotient group
   uint64_t size_quotient_group = size_entire_group / degree;
 
-  for (int trial = 0; trial < 1000; ++trial) {
+  for (int trial = 0; trial < 200; ++trial) {
     uint64_t root = distribution(generator);
 
     root = PowMod(root, size_quotient_group, modulus);

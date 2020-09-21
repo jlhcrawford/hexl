@@ -47,10 +47,22 @@ TEST(FMAModScalar, small) {
   CheckEqual(arg1, exp_out);
 }
 
-TEST(FMAModScalar, small_null) {
-  std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8};
+TEST(FMAModScalar, native_null) {
+  std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8, 9};
   uint64_t arg2 = 1;
-  std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  uint64_t modulus = 769;
+
+  FMAModScalarNative(arg1.data(), arg2, nullptr, arg1.data(), arg1.size(),
+                     modulus);
+
+  CheckEqual(arg1, exp_out);
+}
+
+TEST(FMAModScalar, null) {
+  std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  uint64_t arg2 = 1;
+  std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8, 9};
   uint64_t modulus = 769;
 
   FMAModScalar(arg1.data(), arg2, nullptr, arg1.data(), arg1.size(), modulus);
@@ -59,13 +71,13 @@ TEST(FMAModScalar, small_null) {
 }
 
 TEST(FMAModScalar, mult2) {
-  std::vector<uint64_t> arg1{1, 2,  3,  4,  5,  6,  7,  8,
-                             9, 10, 11, 12, 13, 14, 15, 16};
+  std::vector<uint64_t> arg1{1,  2,  3,  4,  5,  6,  7,  8, 9,
+                             10, 11, 12, 13, 14, 15, 16, 17};
   uint64_t arg2 = 72;
-  std::vector<uint64_t> arg3{17, 18, 19, 20, 21, 22, 23, 24,
-                             25, 26, 27, 28, 29, 30, 31, 32};
-  std::vector<uint64_t> exp_out{89, 61, 33, 5,  78, 50, 22, 95,
-                                67, 39, 11, 84, 56, 28, 0,  73};
+  std::vector<uint64_t> arg3{17, 18, 19, 20, 21, 22, 23, 24, 25,
+                             26, 27, 28, 29, 30, 31, 32, 33};
+  std::vector<uint64_t> exp_out{89, 61, 33, 5,  78, 50, 22, 95, 67,
+                                39, 11, 84, 56, 28, 0,  73, 45};
   uint64_t modulus = 101;
 
   FMAModScalar(arg1.data(), arg2, arg3.data(), arg1.data(), arg1.size(),
@@ -134,7 +146,7 @@ TEST(FMAModScalar, AVX512) {
     uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
     std::uniform_int_distribution<> distrib(0, prime - 1);
 
-    for (size_t trial = 0; trial < 1000; ++trial) {
+    for (size_t trial = 0; trial < 200; ++trial) {
       std::vector<uint64_t> arg1(length, 0);
       uint64_t arg2 = distrib(gen);
       std::vector<uint64_t> arg3(length, 0);

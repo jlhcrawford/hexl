@@ -61,7 +61,7 @@ TEST(PolyCmpGtAdd, AVX512) {
 
   std::uniform_int_distribution<> distrib(0, 100);
 
-  for (size_t trial = 0; trial < 1000; ++trial) {
+  for (size_t trial = 0; trial < 200; ++trial) {
     std::vector<uint64_t> op1(length, 0);
     uint64_t cmp = distrib(gen);
     uint64_t diff = distrib(gen);

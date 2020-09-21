@@ -34,19 +34,17 @@ void CmpGtSubMod(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                  uint64_t modulus, uint64_t n) {
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
-    IVLOG(3, "Calling CmpGtSubModAVX512");
-
     CmpGtSubModAVX512(operand1, cmp, diff, modulus, n);
     return;
   }
 #endif
-
-  IVLOG(3, "Calling CmpGtSubModNative");
   CmpGtSubModNative(operand1, cmp, diff, modulus, n);
 }
 
 void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
+  IVLOG(3, "Calling CmpGtSubModNative");
+
   LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
   for (size_t i = 0; i < n; ++i) {
     uint64_t op = operand1[i];
@@ -76,6 +74,8 @@ void CmpGtSubModNative(uint64_t* operand1, uint64_t cmp, uint64_t diff,
 #ifdef LATTICE_HAS_AVX512DQ
 void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
                        uint64_t modulus, uint64_t n) {
+  IVLOG(3, "Calling CmpGtSubModAVX512");
+
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
     CmpGtSubModNative(operand1, cmp, diff, modulus, n_mod_8);

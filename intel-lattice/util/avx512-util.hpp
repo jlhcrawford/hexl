@@ -159,6 +159,8 @@ inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, CMPINT_ENUM cmp,
     case CMPINT_ENUM::TRUE:
       mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::TRUE));
       break;
+    default:
+      mask = 0;
   }
 
   // __mmask8 mask = _mm512_cmp_epu64_mask(a, b, cmp);

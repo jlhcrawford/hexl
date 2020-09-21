@@ -249,7 +249,7 @@ TEST(AVX512, _mm512_il_barrett_reduce64) {
     __m512i vbarr =
         _mm512_set1_epi64(MultiplyFactor(1, 64, modulus).BarrettFactor());
 
-    for (size_t trial = 0; trial < 1000; ++trial) {
+    for (size_t trial = 0; trial < 200; ++trial) {
       std::vector<uint64_t> arg1(8, 0);
       std::vector<uint64_t> exp(8, 0);
       for (size_t i = 0; i < 8; ++i) {
