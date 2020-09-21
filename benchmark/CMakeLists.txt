@@ -26,7 +26,7 @@ add_executable(bench_lattice ${SRC})
 
 target_include_directories(bench_lattice PRIVATE ".")
 target_link_libraries(bench_lattice PRIVATE intel_lattice_internal)
-target_link_libraries(bench_lattice PRIVATE libgtest libgbenchmark libgflags Threads::Threads)
+target_link_libraries(bench_lattice PRIVATE libgbenchmark libgflags Threads::Threads)
 target_link_libraries(bench_lattice PRIVATE logging)
 
 target_compile_options(bench_lattice PRIVATE -Wall -Wextra -march=native -O3)

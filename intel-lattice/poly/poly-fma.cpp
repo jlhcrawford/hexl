@@ -22,7 +22,7 @@
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-fma-avx512.hpp"
 #endif
 
@@ -41,7 +41,7 @@ void FMAModScalar(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
     return;
   }
 #endif
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     IVLOG(3, "Calling 64-bit FMAModScalarAVX512");
     MultiplyFactor mf(arg2, 64, modulus);

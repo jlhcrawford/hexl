@@ -6,10 +6,20 @@ variables:
 
 before_script:
   - whoami
-  - export DEFAULT_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=clang++-10 -DCMAKE_C_COMPILER=clang-10"
-  - export DEBUG_COMPILER_FLAGS="${DEFAULT_COMPILER_FLAGS} -DLATTICE_DEBUG=ON"
-  - export DEFAULT_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
-  - export DEBUG_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice_debug.a -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
+  - export DEFAULT_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=clang++-10
+      -DCMAKE_C_COMPILER=clang-10
+      -DLATTICE_BENCHMARK=ON
+      -DLATTICE_TESTING=ON
+      -DLATTICE_COVERAGE=OFF"
+  - export DEBUG_COMPILER_FLAGS="-DCMAKE_CXX_COMPILER=g++-7
+      -DCMAKE_C_COMPILER=gcc-7
+      -DLATTICE_DEBUG=ON
+      -DLATTICE_BENCHMARK=ON
+      -DLATTICE_TESTING=ON
+      -DLATTICE_COVERAGE=ON"
+  - export GCOV_BIN="/usr/bin/gcov-7"
+  - export DEFAULT_EXAMPLE_FLAGS="-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a
+                                  -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
   - cmake --version
 
 stages:
@@ -51,8 +61,6 @@ default_build:
     - cd ../example
     - mkdir -p build
     - cd build
-    - echo "DEFAULT_EXAMPLE_FLAGS"
-    - echo ${DEFAULT_EXAMPLE_FLAGS}
     - cmake .. ${DEFAULT_COMPILER_FLAGS} ${DEFAULT_EXAMPLE_FLAGS}
     - make -j
   artifacts:
@@ -79,16 +87,9 @@ debug_build:
     - cd build
     - cmake .. ${DEBUG_COMPILER_FLAGS}
     - make -j all
-    # Build example
-    - cd ../example
-    - mkdir -p build
-    - cd build
-    - cmake .. ${DEBUG_COMPILER_FLAGS} ${DEBUG_EXAMPLE_FLAGS}
-    - make -j
   artifacts:
     paths:
         - build/
-        - example/build
     expire_in: 1 day
 
 default_example:
@@ -105,21 +106,6 @@ default_example:
     expire_in: 1 day
   dependencies:
     - default_build
-
-debug_example:
-  stage: example
-  only:
-    refs:
-      - merge_requests
-      - master
-  script:
-    - example/build/example
-  artifacts:
-    paths:
-        - example/build
-    expire_in: 1 day
-  dependencies:
-    - debug_build
 
 test:
   stage: test
@@ -144,10 +130,24 @@ debug_test:
   script:
     - pwd
     - ls
+    # Generate initial baseline
+    - lcov --no-external --capture --initial --directory build/test/CMakeFiles/unit-test.dir --gcov-tool /usr/bin/gcov-7 --output-file test_cov.info
     - build/test/unit-test
-    - example/build/example
+    # Run lcov again
+    - lcov --capture --directory build/test/CMakeFiles/unit-test.dir --gcov-tool /usr/bin/gcov-7 --output-file test_cov.info
+     # Remove unwanted directories
+    - lcov --remove test_cov.info '/usr/include/*' '/usr/lib/*' '${CI_PROJECT_DIR}/build/*' -o test_cov.info
+    # report overall summary to be parsed by gitlab CI
+    - lcov --list test_cov.info
+    # Generate coverage html
+    - genhtml test_cov.info --output-directory coverage
+
   dependencies:
     - debug_build
+  artifacts:
+    paths:
+        - coverage/
+    expire_in: 1 day
 
 benchmark:
   stage: benchmark

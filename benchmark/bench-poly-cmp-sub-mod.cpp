@@ -23,7 +23,7 @@
 #include "poly/poly-cmp-sub-mod-internal.hpp"
 #include "poly/poly-cmp-sub-mod.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-sub-mod-avx512.hpp"
 #endif
 
@@ -59,17 +59,15 @@ BENCHMARK(BM_PolyCmpSubModNative)
     ->MinTime(3.0)
     ->Args({1024})
     ->Args({4096})
-    ->Args({8192})
-    ->Args({16384})
-    ->Args({32768});
+    ->Args({16384});
 
 //=================================================================
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
 static void BM_PolyCmpSubModAVX512(benchmark::State& state) {  //  NOLINT
   size_t poly_size = state.range(0);
-  uint64_t modulus = 100;
+  size_t modulus = 100;
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -93,9 +91,7 @@ BENCHMARK(BM_PolyCmpSubModAVX512)
     ->MinTime(3.0)
     ->Args({1024})
     ->Args({4096})
-    ->Args({8192})
-    ->Args({16384})
-    ->Args({32768});
+    ->Args({16384});
 #endif
 
 }  // namespace lattice

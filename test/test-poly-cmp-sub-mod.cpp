@@ -25,7 +25,7 @@
 #include "poly/poly-cmp-sub-mod.hpp"
 #include "test/test-util.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-cmp-sub-mod-avx512.hpp"
 #endif
 

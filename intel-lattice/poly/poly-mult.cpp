@@ -22,7 +22,7 @@
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
 #include "poly/poly-mult-avx512.hpp"
 #endif
 
@@ -94,7 +94,7 @@ void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
     return;
   }
 #endif
-#ifdef LATTICE_HAS_AVX512F
+#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
 
