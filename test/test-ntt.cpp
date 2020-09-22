@@ -54,6 +54,35 @@ TEST(NTT, Powers) {
   }
 }
 
+TEST(NTT, root_of_unity) {
+  uint64_t p = 769;
+  uint64_t N = 8;
+  std::vector<uint64_t> input{1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> input2 = input;
+
+  uint64_t root_of_unity = MinimalPrimitiveRoot(2 * N, p);
+
+  NTT ntt1(N, p);
+  NTT ntt2(N, p, root_of_unity);
+
+  ntt1.ComputeForward(input.data());
+  ntt2.ComputeForward(input2.data());
+
+  CheckEqual(input, input2);
+}
+
+TEST(NTTImpl, root_of_unity) {
+  uint64_t p = 769;
+  uint64_t N = 8;
+
+  NTT::NTTImpl ntt_impl(N, p);
+
+  EXPECT_EQ(ntt_impl.GetMinimalRootOfUnity(), MinimalPrimitiveRoot(2 * N, p));
+  EXPECT_EQ(ntt_impl.GetDegree(), N);
+  EXPECT_EQ(ntt_impl.GetInvRootOfUnityPower(0),
+            ntt_impl.GetInvRootOfUnityPowers()[0]);
+}
+
 // Parameters = (degree, prime, input, expected_output)
 class NTTAPITest
     : public ::testing::TestWithParam<std::tuple<

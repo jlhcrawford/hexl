@@ -20,7 +20,6 @@ cmake_minimum_required(VERSION 3.12)
 if (NOT INTEL_LATTICE_LIBRARY)
     message(FATAL_ERROR "INTEL_LATTICE_LIBRARY must be defined")
 endif()
-
 if (NOT INTEL_LATTICE_HEADER)
     message(FATAL_ERROR "INTEL_LATTICE_HEADER must be defined")
 endif()
