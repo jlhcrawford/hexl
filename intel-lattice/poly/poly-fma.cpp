@@ -32,7 +32,6 @@ namespace lattice {
 void FMAModScalar(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
                   uint64_t* out, uint64_t n, uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): check behavior around 50-52 bits
   if (has_avx512_ifma && modulus < (1UL << 52)) {
     IVLOG(3, "Calling 52-bit FMAModScalarAVX512");
     MultiplyFactor mf(arg2, 52, modulus);

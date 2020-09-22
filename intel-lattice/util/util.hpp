@@ -22,23 +22,18 @@
 namespace intel {
 namespace lattice {
 
-struct hash_pair {
-  template <class T1, class T2>
-  size_t operator()(const std::pair<T1, T2>& p) const {
-    auto hash1 = std::hash<T1>{}(p.first);
-    auto hash2 = std::hash<T2>{}(p.second);
-    return hash1 ^ hash2;
-  }
-};
+inline size_t hash_combine(size_t lhs, size_t rhs) {
+  lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+  return lhs;
+}
 
-// TODO(fboemer): More secure hashing solution?
 struct hash_tuple {
   template <class T1, class T2, class T3>
   size_t operator()(const std::tuple<T1, T2, T3>& p) const {
     auto hash1 = std::hash<T1>{}(std::get<0>(p));
     auto hash2 = std::hash<T2>{}(std::get<1>(p));
     auto hash3 = std::hash<T2>{}(std::get<2>(p));
-    return hash1 ^ hash2 ^ hash3;
+    return hash_combine(hash_combine(hash1, hash2), hash3);
   }
 };
 

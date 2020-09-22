@@ -270,7 +270,7 @@ TEST(PolyMult, 8_bounds) {
 #endif
 
 TEST(PolyMult, 9) {
-  uint64_t modulus = GeneratePrimes(1, 48, 1024)[0];
+  uint64_t modulus = GeneratePrimes(1, 51, 1024)[0];
 
   std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
   std::vector<uint64_t> op2{modulus - 4, 8, 7, 6, 5, 4, 3, 2, 1};
@@ -293,7 +293,7 @@ TEST(PolyMult, AVX512) {
     uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
     std::uniform_int_distribution<> distrib(0, prime - 1);
 
-    for (size_t trial = 0; trial < 200; ++trial) {
+    for (size_t trial = 0; trial < 1000; ++trial) {
       std::vector<std::uint64_t> op1(length, 0);
       std::vector<std::uint64_t> op2(length, 0);
       for (size_t i = 0; i < length; ++i) {
