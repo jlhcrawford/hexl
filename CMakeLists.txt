@@ -108,7 +108,7 @@ function(check_flag FLAG OUTPUT_FLAG)
 endfunction()
 
 # Check for AVX512 support
-# TODO(fboemer): Support avx512 on macOS
+# TODO(fboemer): Support avx512 on macOS?
 if (NOT APPLE)
   check_flag("avx512f" HAS_AVX512F)
   check_flag("avx512dq" HAS_AVX512DQ)

@@ -143,10 +143,10 @@ TEST(FMAModScalar, AVX512) {
   std::mt19937 gen(rd());
 
   for (size_t bits = 48; bits <= 51; ++bits) {
-    uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
+    uint64_t prime = GeneratePrimes(1, bits, length)[0];
     std::uniform_int_distribution<> distrib(0, prime - 1);
 
-    for (size_t trial = 0; trial < 200; ++trial) {
+    for (size_t trial = 0; trial < 1000; ++trial) {
       std::vector<uint64_t> arg1(length, 0);
       uint64_t arg2 = distrib(gen);
       std::vector<uint64_t> arg3(length, 0);

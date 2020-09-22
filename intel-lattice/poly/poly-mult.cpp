@@ -87,8 +87,7 @@ void MultiplyModInPlaceNative(uint64_t* operand1, const uint64_t* operand2,
 void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
                         const uint64_t n, const uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512IFMA
-  // TODO(fboemer): check behavior around 50-52 bits
-  if (has_avx512_ifma && modulus < (1UL << 50)) {
+  if (has_avx512_ifma && modulus < (1UL << 52)) {
     IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
     MultiplyModInPlaceAVX512<52>(operand1, operand2, n, modulus);
     return;
