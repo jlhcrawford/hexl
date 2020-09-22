@@ -46,8 +46,6 @@ target_link_libraries(intel_lattice_internal PUBLIC
         )
 target_compile_options(intel_lattice_internal PRIVATE -Wall -Wextra -Wno-unknown-pragmas -march=native -O3)
 
-install(TARGETS intel_lattice_internal LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
-
 install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/
         FILES_MATCHING
@@ -68,6 +66,9 @@ add_custom_target(intel_lattice_combined ALL
         # COMMAND ar -x $<TARGET_FILE:logging>
         COMMAND ar -qcs ${intel_lattice_lib} *.o
         COMMAND rm -f *.o
+        BYPRODUCTS ${intel_lattice_lib}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        # DEPENDS intel_lattice_internal libcpu_features libgflags logging
+        DEPENDS intel_lattice_internal libcpu_features #libgflags logging
         )
+
+install(FILES ${intel_lattice_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR})
