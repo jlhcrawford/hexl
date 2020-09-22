@@ -21,4 +21,3 @@
 #include "poly/poly-cmp-sub-mod.hpp"
 #include "poly/poly-fma.hpp"
 #include "poly/poly-mult.hpp"
-#include "util/util.hpp"

@@ -283,6 +283,7 @@ TEST(PolyMult, 9) {
 
 // Checks AVX512 and native poly mult implementations match
 #ifdef LATTICE_HAS_AVX512IFMA
+#ifndef LATTICE_DEBUG
 TEST(PolyMult, AVX512) {
   uint64_t length = 1024;
   std::random_device rd;
@@ -308,6 +309,7 @@ TEST(PolyMult, AVX512) {
     }
   }
 }
+#endif
 #endif
 
 }  // namespace lattice
