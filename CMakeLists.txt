@@ -15,7 +15,7 @@
 # *****************************************************************************
 
 project(intel_lattice LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
@@ -89,8 +89,10 @@ if (LATTICE_COVERAGE)
     message(FATAL_ERROR "LATTICE_COVERAGE enabled, but LATTICE_TESTING not enabled. Enable LATTICE_TESTING for best proper coverage.")
   endif()
   add_compile_options(--coverage -O0 -g)
+  add_compile_options(-fprofile-arcs -ftest-coverage)
   add_compile_options(-fkeep-inline-functions)
-  link_libraries(gcov)
+  add_link_options(--coverage)
+  # link_libraries(gcov)
 endif()
 
 function(check_flag FLAG OUTPUT_FLAG)
