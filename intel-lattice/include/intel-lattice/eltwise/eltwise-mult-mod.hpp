@@ -21,15 +21,13 @@
 namespace intel {
 namespace lattice {
 
-// @brief Computes element-wise: if (operand1 > cmp) operand1 = (operand1 -
-// diff) mod modulus
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Scalar to compare against
-// @param diff Scalar to subtract by
-// @param modulus Modulus to redce by
-// @param n Number of elements in operand1
-void CmpGtSubModAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
-                       uint64_t modulus, uint64_t n);
+// @brief Multiplies two vectors elementwise with modular reduction
+// @param operand1 Vector of elements to multiply; stores result
+// @param operand2 Vector of elements to multiply
+// @param n Number of elements in each vector
+// @param modulus Modulus with which to perform modular reduction
+void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
+                    const uint64_t n, const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel

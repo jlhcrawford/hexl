@@ -14,24 +14,24 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "poly/poly-mult.hpp"
+#include "eltwise/eltwise-mult-mod.hpp"
 
+#include "eltwise/eltwise-mult-mod-internal.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-mult-internal.hpp"
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "poly/poly-mult-avx512.hpp"
+#include "eltwise/eltwise-mult-mod-avx512.hpp"
 #endif
 
 namespace intel {
 namespace lattice {
 
-void MultiplyModInPlaceNative(uint64_t* operand1, const uint64_t* operand2,
-                              const uint64_t n, const uint64_t barr_hi,
-                              const uint64_t barr_lo, const uint64_t modulus) {
+void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
+                          const uint64_t n, const uint64_t barr_hi,
+                          const uint64_t barr_lo, const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
 
@@ -84,12 +84,12 @@ void MultiplyModInPlaceNative(uint64_t* operand1, const uint64_t* operand2,
   }
 }
 
-void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
-                        const uint64_t n, const uint64_t modulus) {
+void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
+                    const uint64_t n, const uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && modulus < (1UL << 52)) {
     IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
-    MultiplyModInPlaceAVX512<52>(operand1, operand2, n, modulus);
+    EltwiseMultModAVX512<52>(operand1, operand2, n, modulus);
     return;
   }
 #endif
@@ -97,13 +97,13 @@ void MultiplyModInPlace(uint64_t* operand1, const uint64_t* operand2,
   if (has_avx512_dq) {
     IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
 
-    MultiplyModInPlaceAVX512<64>(operand1, operand2, n, modulus);
+    EltwiseMultModAVX512<64>(operand1, operand2, n, modulus);
     return;
   }
 #endif
 
   IVLOG(3, "Calling 64-bit default MultiplyMod");
-  MultiplyModInPlaceNative(operand1, operand2, n, modulus);
+  EltwiseMultModNative(operand1, operand2, n, modulus);
 }
 
 }  // namespace lattice

@@ -21,24 +21,24 @@
 namespace intel {
 namespace lattice {
 
-// @brief Computes fused multiply-add (arg1 * arg2 + arg3) mod modulus
-// element-wise, broadcasting scalars to vectors
-// @param arg1 Vector to multiply
-// @param arg2 Scalar to multiply
-// @param arg3 Vector to add
-// @param out Stores the outpud
-// @param b_barr floor(2**64 / modulus)
+// @brief Multiplies two vectors elementwise with modular reduction
+// @param operand1 Vector of elements to multiply; stores result
+// @param operand2 Vector of elements to multiply
 // @param n Number of elements in each vector
+// @param barr_hi High 64 bits of Barrett precomputation floor(2^128 /
+// modulus)
+// @param barr_lo Low 64 bits of Barrett precomputation floor(2^128 /
+// modulus)
 // @param modulus Modulus with which to perform modular reduction
-void FMAModScalarNative(const uint64_t* arg1, uint64_t arg2,
-                        const uint64_t* arg3, uint64_t* out, uint64_t b_barr,
-                        uint64_t n, uint64_t modulus);
+void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
+                          const uint64_t n, const uint64_t barr_hi,
+                          const uint64_t barr_lo, const uint64_t modulus);
 
-inline void FMAModScalarNative(const uint64_t* arg1, uint64_t arg2,
-                               const uint64_t* arg3, uint64_t* out, uint64_t n,
-                               uint64_t modulus) {
-  MultiplyFactor mf(arg2, 64, modulus);
-  FMAModScalarNative(arg1, arg2, arg3, out, mf.BarrettFactor(), n, modulus);
+inline void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
+                                 const uint64_t n, const uint64_t modulus) {
+  BarrettFactor<64> bf(modulus);
+
+  EltwiseMultModNative(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
 }
 
 }  // namespace lattice

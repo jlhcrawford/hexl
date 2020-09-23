@@ -21,6 +21,7 @@
 #include <iostream>
 #include <vector>
 
+#include "intel-lattice/util/util.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
@@ -119,76 +120,58 @@ inline __m512i _mm512_il_small_mod_epi64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
-enum class CMPINT_ENUM {
-  EQ = 0,
-  LT = 1,
-  LE = 2,
-  FALSE = 3,
-  NE = 4,
-  NLT = 5,
-  NLE = 6,
-  TRUE = 7
-};
+inline __mmask8 _mm512_il_cmp_epu64_mask(__m512i a, __m512i b, CMPINT cmp) {
+  switch (cmp) {
+    case CMPINT::EQ:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::EQ));
+    case CMPINT::LT:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::LT));
+    case CMPINT::LE:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::LE));
+    case CMPINT::FALSE:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::FALSE));
+    case CMPINT::NE:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::NE));
+    case CMPINT::NLT:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::NLT));
+    case CMPINT::NLE:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::NLE));
+    case CMPINT::TRUE:
+      return _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT::TRUE));
+  }
+  __mmask8 dummy = 0;  // Avoid end of non-void function warning
+  return dummy;
+}
 
 // Returns c[i] = a[i] CMP b[i] ? match_value : 0
-inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, CMPINT_ENUM cmp,
+inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, CMPINT cmp,
                                    uint64_t match_value) {
-  __mmask8 mask;
-  switch (cmp) {
-    case CMPINT_ENUM::EQ:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::EQ));
-      break;
-    case CMPINT_ENUM::LT:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::LT));
-      break;
-    case CMPINT_ENUM::LE:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::LE));
-      break;
-    case CMPINT_ENUM::FALSE:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::FALSE));
-      break;
-    case CMPINT_ENUM::NE:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NE));
-      break;
-    case CMPINT_ENUM::NLT:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NLT));
-      break;
-    case CMPINT_ENUM::NLE:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::NLE));
-      break;
-    case CMPINT_ENUM::TRUE:
-      mask = _mm512_cmp_epu64_mask(a, b, static_cast<int>(CMPINT_ENUM::TRUE));
-      break;
-    default:
-      mask = 0;
-  }
-
-  // __mmask8 mask = _mm512_cmp_epu64_mask(a, b, cmp);
+  __mmask8 mask = _mm512_il_cmp_epu64_mask(a, b, cmp);
   return _mm512_maskz_broadcastq_epi64(mask, _mm_set1_epi64x(match_value));
 }
 
 // Returns c[i] = a[i] CMP b[i] ? match_value : 0
 inline __m512i _mm512_il_cmp_epi64(__m512i a, __m512i b, int cmp,
                                    uint64_t match_value) {
-  return _mm512_il_cmp_epi64(a, b, static_cast<CMPINT_ENUM>(cmp), match_value);
+  return _mm512_il_cmp_epi64(a, b, static_cast<CMPINT>(cmp), match_value);
 }
 
 // Returns c[i] = a[i] >= b[i] ? match_value : 0
 inline __m512i _mm512_il_cmpge_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
-  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::NLT, match_value);
+  return _mm512_il_cmp_epi64(a, b, CMPINT::NLT, match_value);
 }
 
 // Returns c[i] = a[i] < b[i] ? match_value : 0
 inline __m512i _mm512_il_cmplt_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
-  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::LT, match_value);
+  return _mm512_il_cmp_epi64(a, b, CMPINT::LT, match_value);
 }
 
 // Returns c[i] = a[i] <= b[i] ? match_value : 0
 inline __m512i _mm512_il_cmple_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
-  return _mm512_il_cmp_epi64(a, b, CMPINT_ENUM::LE, match_value);
+  return _mm512_il_cmp_epi64(a, b, CMPINT::LE, match_value);
 }
 
 // Computes x + y mod 2^BitShift and stores the result in c.
