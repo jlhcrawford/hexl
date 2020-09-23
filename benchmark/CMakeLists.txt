@@ -16,10 +16,10 @@
 
 set(SRC main.cpp
     bench-ntt.cpp
-    bench-poly-fma.cpp
-    bench-poly-mult.cpp
-    bench-poly-cmp-add.cpp
-    bench-poly-cmp-sub-mod.cpp
+    bench-eltwise-fma.cpp
+    bench-eltwise-mult.cpp
+    bench-eltwise-cmp-add.cpp
+    bench-eltwise-cmp-sub-mod.cpp
     )
 
 add_executable(bench_lattice ${SRC})

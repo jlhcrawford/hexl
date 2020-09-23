@@ -14,20 +14,22 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "poly/poly-mult-avx512.hpp"
+#include "eltwise/eltwise-fma-avx512.hpp"
 
 namespace intel {
 namespace lattice {
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void MultiplyModInPlaceAVX512<52>(
-    uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
-    const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
+template void EltwiseFMAModAVX512<52>(const uint64_t* arg1, const uint64_t arg2,
+                                      const uint64_t* arg3, uint64_t* out,
+                                      const uint64_t b_barr, const uint64_t n,
+                                      const uint64_t modulus);
 #endif
 
-template void MultiplyModInPlaceAVX512<64>(
-    uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
-    const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
+template void EltwiseFMAModAVX512<64>(const uint64_t* arg1, const uint64_t arg2,
+                                      const uint64_t* arg3, uint64_t* out,
+                                      const uint64_t b_barr, const uint64_t n,
+                                      const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel

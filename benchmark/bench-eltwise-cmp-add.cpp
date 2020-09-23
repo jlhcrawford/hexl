@@ -19,12 +19,12 @@
 #include <random>
 #include <vector>
 
+#include "eltwise/eltwise-cmp-add-internal.hpp"
+#include "eltwise/eltwise-cmp-add.hpp"
 #include "logging/logging.hpp"
-#include "poly/poly-cmp-sub-mod-internal.hpp"
-#include "poly/poly-cmp-sub-mod.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "poly/poly-cmp-sub-mod-avx512.hpp"
+#include "eltwise/eltwise-cmp-add-avx512.hpp"
 #endif
 
 namespace intel {
@@ -33,28 +33,27 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
-static void BM_PolyCmpSubModNative(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseCmpAddNative(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
 
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  uint64_t modulus = 100;
-  std::uniform_int_distribution<> distrib(0, modulus - 1);
+  std::uniform_int_distribution<> distrib(0, 100);
 
-  uint64_t cmp = distrib(gen);
+  uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);
-  std::vector<uint64_t> input1(poly_size);
-  for (size_t i = 0; i < poly_size; ++i) {
+  std::vector<uint64_t> input1(input_size);
+  for (size_t i = 0; i < input_size; ++i) {
     input1[i] = distrib(gen);
   }
 
   for (auto _ : state) {
-    CmpGtSubModNative(input1.data(), cmp, diff, modulus, poly_size);
+    EltwiseCmpAddNative(input1.data(), CMPINT::NLT, bound, diff, input_size);
   }
 }
 
-BENCHMARK(BM_PolyCmpSubModNative)
+BENCHMARK(BM_EltwiseCmpAddNative)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
@@ -65,28 +64,27 @@ BENCHMARK(BM_PolyCmpSubModNative)
 
 #ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
-static void BM_PolyCmpSubModAVX512(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
-  size_t modulus = 100;
+static void BM_EltwiseCmpAddAVX512(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
 
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  std::uniform_int_distribution<> distrib(0, modulus - 1);
+  std::uniform_int_distribution<> distrib(0, 100);
 
-  uint64_t cmp = distrib(gen);
+  uint64_t bound = 50;
   uint64_t diff = distrib(gen);
-  std::vector<uint64_t> input1(poly_size);
-  for (size_t i = 0; i < poly_size; ++i) {
+  std::vector<uint64_t> input1(input_size);
+  for (size_t i = 0; i < input_size; ++i) {
     input1[i] = distrib(gen);
   }
 
   for (auto _ : state) {
-    CmpGtSubModAVX512(input1.data(), cmp, diff, modulus, poly_size);
+    EltwiseCmpAddAVX512(input1.data(), CMPINT::NLT, bound, diff, input_size);
   }
 }
 
-BENCHMARK(BM_PolyCmpSubModAVX512)
+BENCHMARK(BM_EltwiseCmpAddAVX512)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})

@@ -28,5 +28,7 @@ add_library(libintel_lattice STATIC IMPORTED)
 set_property(TARGET libintel_lattice PROPERTY IMPORTED_LOCATION ${INTEL_LATTICE_LIBRARY})
 include_directories(${INTEL_LATTICE_HEADER})
 
+find_package(Threads REQUIRED) # Needed for intel_lattice_debug.a
+
 add_executable(example example.cpp)
-target_link_libraries(example libintel_lattice)
+target_link_libraries(example libintel_lattice Threads::Threads)

@@ -19,9 +19,9 @@
 #include <immintrin.h>
 #include <stdint.h>
 
+#include "eltwise/eltwise-mult-mod-internal.hpp"
+#include "eltwise/eltwise-mult-mod.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-mult-internal.hpp"
-#include "poly/poly-mult.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
 
@@ -38,11 +38,10 @@ namespace lattice {
 // modulus)
 // @param modulus Modulus with which to perform modular reduction
 template <int BitShift>
-inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
-                                     const uint64_t* operand2, uint64_t n,
-                                     const uint64_t barr_hi,
-                                     const uint64_t barr_lo,
-                                     const uint64_t modulus) {
+inline void EltwiseMultModAVX512(uint64_t* operand1, const uint64_t* operand2,
+                                 uint64_t n, const uint64_t barr_hi,
+                                 const uint64_t barr_lo,
+                                 const uint64_t modulus) {
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
@@ -56,7 +55,7 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
 
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
-    MultiplyModInPlaceNative(operand1, operand2, n_mod_8, modulus);
+    EltwiseMultModNative(operand1, operand2, n_mod_8, modulus);
     operand1 += n_mod_8;
     operand2 += n_mod_8;
     n -= n_mod_8;
@@ -139,13 +138,12 @@ inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
 }
 
 template <int BitShift>
-inline void MultiplyModInPlaceAVX512(uint64_t* operand1,
-                                     const uint64_t* operand2, const uint64_t n,
-                                     const uint64_t modulus) {
+inline void EltwiseMultModAVX512(uint64_t* operand1, const uint64_t* operand2,
+                                 const uint64_t n, const uint64_t modulus) {
   BarrettFactor<BitShift> bf(modulus);
 
-  MultiplyModInPlaceAVX512<BitShift>(operand1, operand2, n, bf.Hi(), bf.Lo(),
-                                     modulus);
+  EltwiseMultModAVX512<BitShift>(operand1, operand2, n, bf.Hi(), bf.Lo(),
+                                 modulus);
 }
 
 }  // namespace lattice

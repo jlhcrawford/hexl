@@ -38,12 +38,16 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(ext_gflags SOURCE_DIR BINARY_DIR)
 
-add_library(libgflags INTERFACE)
+add_library(libgflags STATIC IMPORTED)
 add_dependencies(libgflags ext_gflags)
 
-target_include_directories(libgflags SYSTEM
-                           INTERFACE ${BINARY_DIR}/include)
-target_link_libraries(libgflags
-                      INTERFACE ${BINARY_DIR}/lib/libgflags.a)
+if(NOT IS_DIRECTORY ${BINARY_DIR}/include)
+  file(MAKE_DIRECTORY ${BINARY_DIR}/include)
+endif()
 
-install(TARGETS libgflags LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} )
+set_target_properties(libgflags
+                      PROPERTIES IMPORTED_LOCATION
+                      ${BINARY_DIR}/lib/libgflags.a)
+set_target_properties(libgflags
+                      PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+                      ${BINARY_DIR}/include)

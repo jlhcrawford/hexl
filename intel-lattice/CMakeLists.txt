@@ -17,17 +17,17 @@
 
 set(SRC ntt/ntt.cpp
         number-theory/number-theory.cpp
-        poly/poly-mult.cpp
-        poly/poly-fma.cpp
-        poly/poly-cmp-add.cpp
-        poly/poly-cmp-sub-mod.cpp
+        eltwise/eltwise-mult-mod.cpp
+        eltwise/eltwise-fma.cpp
+        eltwise/eltwise-cmp-add.cpp
+        eltwise/eltwise-cmp-sub-mod.cpp
 )
 
 if (${HAS_AVX512F})
     list(APPEND SRC
         ntt/ntt-avx512.cpp
-        poly/poly-mult-avx512.cpp
-        poly/poly-fma-avx512.cpp
+        eltwise/eltwise-mult-mod-avx512.cpp
+        eltwise/eltwise-fma-avx512.cpp
         )
 endif()
 
@@ -55,20 +55,32 @@ install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
 # Create combined library for intel-lattice containing all its dependencies
 if (${LATTICE_DEBUG})
         set(intel_lattice_lib ${CMAKE_BINARY_DIR}/libintel_lattice_debug.a)
+        add_custom_target(intel_lattice_combined ALL
+                COMMAND ar -x $<TARGET_FILE:intel_lattice_internal>
+                COMMAND ar -x $<TARGET_FILE:libcpu_features>
+                COMMAND ar -x $<TARGET_FILE:libgflags>
+                COMMAND ar -x $<TARGET_FILE:logging>
+                COMMAND ar -x $<TARGET_FILE:easylogging>
+                COMMAND ar -qcs ${intel_lattice_lib} *.o
+                COMMAND rm -f *.o
+                BYPRODUCTS ${intel_lattice_lib}
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                DEPENDS intel_lattice_internal libcpu_features logging easylogging libgflags
+        )
 else()
         set(intel_lattice_lib ${CMAKE_BINARY_DIR}/libintel_lattice.a)
-endif()
-
-add_custom_target(intel_lattice_combined ALL
-        COMMAND ar -x $<TARGET_FILE:intel_lattice_internal>
-        COMMAND ar -x $<TARGET_FILE:libcpu_features>
-        # COMMAND ar -x $<TARGET_FILE:libgflags>
-        # COMMAND ar -x $<TARGET_FILE:logging>
-        COMMAND ar -qcs ${intel_lattice_lib} *.o
-        COMMAND rm -f *.o
-        BYPRODUCTS ${intel_lattice_lib}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        DEPENDS intel_lattice_internal libcpu_features #libgflags logging
+        # Don't export logging unless we are debugging
+        add_custom_target(intel_lattice_combined ALL
+                COMMAND ar -x $<TARGET_FILE:intel_lattice_internal>
+                COMMAND ar -x $<TARGET_FILE:libcpu_features>
+                # COMMAND ar -x $<TARGET_FILE:libgflags>
+                # COMMAND ar -x $<TARGET_FILE:logging>
+                COMMAND ar -qcs ${intel_lattice_lib} *.o
+                COMMAND rm -f *.o
+                BYPRODUCTS ${intel_lattice_lib}
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                DEPENDS intel_lattice_internal libcpu_features #libgflags logging
         )
+endif()
 
 install(FILES ${intel_lattice_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR})

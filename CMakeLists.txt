@@ -61,8 +61,8 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 #------------------------------------------------------------------------------
 
 option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
-option(LATTICE_BENCHMARK "Enable benchmarking" OFF)
-option(LATTICE_TESTING "Enables unit-tests" OFF)
+option(LATTICE_BENCHMARK "Enable benchmarking" ON)
+option(LATTICE_TESTING "Enables unit-tests" ON)
 option(LATTICE_COVERAGE "Enables coverage for unit tests" OFF)
 # Sanitizers
 option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
@@ -197,7 +197,7 @@ message(STATUS "LATTICE_FORWARD_CMAKE_ARGS ${LATTICE_FORWARD_CMAKE_ARGS}")
 #------------------------------------------------------------------------------
 # Third-party code...
 #------------------------------------------------------------------------------
-if (LATTICE_TESTING OR LATTICE_BENCHMARK)
+if (LATTICE_TESTING OR LATTICE_BENCHMARK OR LATTICE_DEBUG)
   set(THREADS_PREFER_PTHREAD_FLAG ON)
   find_package(Threads REQUIRED)
 endif()

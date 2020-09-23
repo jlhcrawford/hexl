@@ -26,6 +26,7 @@
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
+#include "util/util-internal.hpp"
 #include "util/util.hpp"
 
 namespace intel {

@@ -19,9 +19,9 @@
 #include <immintrin.h>
 #include <stdint.h>
 
+#include "eltwise/eltwise-fma-internal.hpp"
+#include "eltwise/eltwise-fma.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-fma-internal.hpp"
-#include "poly/poly-fma.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
 
@@ -29,10 +29,10 @@ namespace intel {
 namespace lattice {
 
 template <int BitShift>
-void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
-                        const uint64_t* arg3, uint64_t* out,
-                        const uint64_t arg2_barr, uint64_t n,
-                        const uint64_t modulus) {
+void EltwiseFMAModAVX512(const uint64_t* arg1, const uint64_t arg2,
+                         const uint64_t* arg3, uint64_t* out,
+                         const uint64_t arg2_barr, uint64_t n,
+                         const uint64_t modulus) {
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
@@ -48,7 +48,7 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
 
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
-    FMAModScalarNative(arg1, arg2, arg3, out, arg2_barr, n_mod_8, modulus);
+    EltwiseFMAModNative(arg1, arg2, arg3, out, n_mod_8, modulus);
     arg1 += n_mod_8;
     if (arg3 != nullptr) {
       arg3 += n_mod_8;
@@ -116,13 +116,13 @@ void FMAModScalarAVX512(const uint64_t* arg1, const uint64_t arg2,
 }
 
 template <int BitShift>
-inline void FMAModScalarAVX512(const uint64_t* arg1, uint64_t arg2,
-                               const uint64_t* arg3, uint64_t* out, uint64_t n,
-                               uint64_t modulus) {
+inline void EltwiseFMAModAVX512(const uint64_t* arg1, uint64_t arg2,
+                                const uint64_t* arg3, uint64_t* out, uint64_t n,
+                                uint64_t modulus) {
   MultiplyFactor mf(arg2, BitShift, modulus);
 
-  FMAModScalarAVX512<BitShift>(arg1, arg2, arg3, out, mf.BarrettFactor(), n,
-                               modulus);
+  EltwiseFMAModAVX512<BitShift>(arg1, arg2, arg3, out, mf.BarrettFactor(), n,
+                                modulus);
 }
 
 }  // namespace lattice

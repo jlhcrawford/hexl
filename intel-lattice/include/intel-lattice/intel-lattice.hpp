@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include "eltwise/eltwise-cmp-add.hpp"
+#include "eltwise/eltwise-cmp-sub-mod.hpp"
+#include "eltwise/eltwise-fma.hpp"
+#include "eltwise/eltwise-mult-mod.hpp"
 #include "ntt/ntt.hpp"
-#include "poly/poly-cmp-add.hpp"
-#include "poly/poly-cmp-sub-mod.hpp"
-#include "poly/poly-fma.hpp"
-#include "poly/poly-mult.hpp"
+#include "util/util.hpp"

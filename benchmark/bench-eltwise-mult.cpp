@@ -18,13 +18,13 @@
 
 #include <vector>
 
+#include "eltwise/eltwise-mult-mod-internal.hpp"
+#include "eltwise/eltwise-mult-mod.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-mult-internal.hpp"
-#include "poly/poly-mult.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "poly/poly-mult-avx512.hpp"
+#include "eltwise/eltwise-mult-mod-avx512.hpp"
 #endif
 
 namespace intel {
@@ -33,19 +33,19 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
-static void BM_PolyMultNative(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseMultNative(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   uint64_t modulus = 0xffffffffffc0001ULL;
 
-  std::vector<uint64_t> input1(poly_size, 1);
-  std::vector<uint64_t> input2(poly_size, 2);
+  std::vector<uint64_t> input1(input_size, 1);
+  std::vector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
-    MultiplyModInPlaceNative(input1.data(), input2.data(), poly_size, modulus);
+    EltwiseMultModNative(input1.data(), input2.data(), input_size, modulus);
   }
 }
 
-BENCHMARK(BM_PolyMultNative)
+BENCHMARK(BM_EltwiseMultNative)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
@@ -56,20 +56,19 @@ BENCHMARK(BM_PolyMultNative)
 
 #ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
-static void BM_PolyMultAVX512DQ(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseMultAVX512DQ(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(poly_size, 1);
-  std::vector<uint64_t> input2(poly_size, 2);
+  std::vector<uint64_t> input1(input_size, 1);
+  std::vector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
-    MultiplyModInPlaceAVX512<64>(input1.data(), input2.data(), poly_size,
-                                 modulus);
+    EltwiseMultModAVX512<64>(input1.data(), input2.data(), input_size, modulus);
   }
 }
 
-BENCHMARK(BM_PolyMultAVX512DQ)
+BENCHMARK(BM_EltwiseMultAVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
@@ -81,20 +80,19 @@ BENCHMARK(BM_PolyMultAVX512DQ)
 
 #ifdef LATTICE_HAS_AVX512IFMA
 // state[0] is the degree
-static void BM_PolyMultAVX512IFMA(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseMultAVX512IFMA(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(poly_size, 1);
-  std::vector<uint64_t> input2(poly_size, 2);
+  std::vector<uint64_t> input1(input_size, 1);
+  std::vector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
-    MultiplyModInPlaceAVX512<52>(input1.data(), input2.data(), poly_size,
-                                 modulus);
+    EltwiseMultModAVX512<52>(input1.data(), input2.data(), input_size, modulus);
   }
 }
 
-BENCHMARK(BM_PolyMultAVX512IFMA)
+BENCHMARK(BM_EltwiseMultAVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})

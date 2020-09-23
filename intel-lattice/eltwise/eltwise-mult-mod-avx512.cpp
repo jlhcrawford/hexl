@@ -14,20 +14,20 @@
 // limitations under the License.
 //*****************************************************************************
 
-#pragma once
-
-#include "number-theory/number-theory.hpp"
+#include "eltwise/eltwise-mult-mod-avx512.hpp"
 
 namespace intel {
 namespace lattice {
 
-// @brief Computes element-wise: if (operand1 > cmp) operand1 += diff
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Scalar to compare against
-// @param diff Scalar to increment by
-// @param n Number of elements in operand1
-void CmpGtAddAVX512(uint64_t* operand1, uint64_t cmp, uint64_t diff,
-                    uint64_t n);
+#ifdef LATTICE_HAS_AVX512IFMA
+template void EltwiseMultModAVX512<52>(
+    uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
+    const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
+#endif
+
+template void EltwiseMultModAVX512<64>(
+    uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
+    const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
 
 }  // namespace lattice
 }  // namespace intel

@@ -18,13 +18,13 @@
 
 #include <vector>
 
+#include "eltwise/eltwise-fma-internal.hpp"
+#include "eltwise/eltwise-fma.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "poly/poly-fma-internal.hpp"
-#include "poly/poly-fma.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "poly/poly-fma-avx512.hpp"
+#include "eltwise/eltwise-fma-avx512.hpp"
 #endif
 
 namespace intel {
@@ -33,21 +33,20 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
-static void BM_PolyFMANative(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseFMANative(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   uint64_t modulus = 0xffffffffffc0001ULL;
 
-  std::vector<uint64_t> op1(poly_size, 1);
+  std::vector<uint64_t> op1(input_size, 1);
   uint64_t op2 = 1;
-  std::vector<uint64_t> op3(poly_size, 2);
+  std::vector<uint64_t> op3(input_size, 2);
 
   for (auto _ : state) {
-    FMAModScalarNative(op1.data(), op2, op3.data(), op1.data(), op1.size(),
-                       modulus);
+    EltwiseFMAMod(op1.data(), op2, op3.data(), op1.data(), op1.size(), modulus);
   }
 }
 
-BENCHMARK(BM_PolyFMANative)
+BENCHMARK(BM_EltwiseFMANative)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
@@ -58,21 +57,21 @@ BENCHMARK(BM_PolyFMANative)
 
 #ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
-static void BM_PolyFMAAVX512DQ(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseFMAAVX512DQ(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(poly_size, 1);
+  std::vector<uint64_t> input1(input_size, 1);
   uint64_t input2 = 3;
-  std::vector<uint64_t> input3(poly_size, 2);
+  std::vector<uint64_t> input3(input_size, 2);
 
   for (auto _ : state) {
-    FMAModScalarAVX512<64>(input1.data(), input2, input3.data(), input1.data(),
-                           poly_size, modulus);
+    EltwiseFMAModAVX512<64>(input1.data(), input2, input3.data(), input1.data(),
+                            input_size, modulus);
   }
 }
 
-BENCHMARK(BM_PolyFMAAVX512DQ)
+BENCHMARK(BM_EltwiseFMAAVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
@@ -84,21 +83,21 @@ BENCHMARK(BM_PolyFMAAVX512DQ)
 
 #ifdef LATTICE_HAS_AVX512IFMA
 // state[0] is the degree
-static void BM_PolyFMAAVX512IFMA(benchmark::State& state) {  //  NOLINT
-  size_t poly_size = state.range(0);
+static void BM_EltwiseFMAAVX512IFMA(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(poly_size, 1);
+  std::vector<uint64_t> input1(input_size, 1);
   uint64_t input2 = 3;
-  std::vector<uint64_t> input3(poly_size, 2);
+  std::vector<uint64_t> input3(input_size, 2);
 
   for (auto _ : state) {
-    FMAModScalarAVX512<52>(input1.data(), input2, input3.data(), input1.data(),
-                           poly_size, modulus);
+    EltwiseFMAModAVX512<52>(input1.data(), input2, input3.data(), input1.data(),
+                            input_size, modulus);
   }
 }
 
-BENCHMARK(BM_PolyFMAAVX512IFMA)
+BENCHMARK(BM_EltwiseFMAAVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})

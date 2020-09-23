@@ -33,53 +33,68 @@ void CheckEqual(const std::vector<uint64_t>& x,
   }
 }
 
-void ExampleCmpGtAdd() {
+void ExampleEltwiseCmpAdd() {
+  std::cout << "Running ExampleEltwiseCmpAdd...\n";
+
   std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
   uint64_t cmp = 3;
   uint64_t diff = 5;
   std::vector<uint64_t> exp_out{1, 2, 3, 9, 10, 11, 12, 13};
 
-  intel::lattice::CmpGtAdd(op1.data(), cmp, diff, op1.size());
+  intel::lattice::EltwiseCmpAdd(op1.data(), intel::lattice::CMPINT::NLE, cmp,
+                                diff, op1.size());
 
   CheckEqual(op1, exp_out);
+  std::cout << "Done running ExampleEltwiseCmpAdd\n";
 }
 
-void ExampleCmpSubMod() {
+void ExampleEltwiseCmpSubMod() {
+  std::cout << "Running ExampleEltwiseCmpSubMod...\n";
+
   std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7};
-  uint64_t cmp = 4;
+  uint64_t bound = 4;
   uint64_t diff = 5;
   std::vector<uint64_t> exp_out{1, 2, 3, 4, 0, 1, 2};
 
   uint64_t modulus = 10;
 
-  intel::lattice::CmpGtSubMod(op1.data(), cmp, diff, modulus, op1.size());
+  intel::lattice::EltwiseCmpSubMod(op1.data(), intel::lattice::CMPINT::NLE,
+                                   bound, diff, modulus, op1.size());
   CheckEqual(op1, exp_out);
+  std::cout << "Done running ExampleEltwiseCmpSubMod\n";
 }
 
-void ExampleFMAModScalar() {
+void ExampleEltwiseFMAMod() {
+  std::cout << "Running ExampleEltwiseFMAMod...\n";
+
   std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8, 9};
   uint64_t arg2 = 1;
   std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8, 9};
   uint64_t modulus = 769;
 
-  intel::lattice::FMAModScalar(arg1.data(), arg2, nullptr, arg1.data(),
-                               arg1.size(), modulus);
+  intel::lattice::EltwiseFMAMod(arg1.data(), arg2, nullptr, arg1.data(),
+                                arg1.size(), modulus);
   CheckEqual(arg1, exp_out);
+  std::cout << "Done running ExampleEltwiseFMAMod\n";
 }
 
-void ExampleMultiplyMod() {
+void ExampleEltwiseMultMod() {
+  std::cout << "Running ExampleEltwiseMultMod...\n";
+
   std::vector<uint64_t> op1{2, 4, 3, 2};
   std::vector<uint64_t> op2{2, 1, 2, 0};
   std::vector<uint64_t> exp_out{4, 4, 6, 0};
 
   uint64_t modulus = 769;
 
-  intel::lattice::MultiplyModInPlace(op1.data(), op2.data(), op1.size(),
-                                     modulus);
+  intel::lattice::EltwiseMultMod(op1.data(), op2.data(), op1.size(), modulus);
   CheckEqual(op1, exp_out);
+  std::cout << "Done running ExampleEltwiseMultMod\n";
 }
 
 void ExampleNTT() {
+  std::cout << "Running ExampleNTT...\n";
+
   uint64_t prime = 769;
   uint64_t N = 8;
   std::vector<uint64_t> arg{1, 2, 3, 4, 5, 6, 7, 8};
@@ -89,13 +104,15 @@ void ExampleNTT() {
   ntt.ComputeForward(arg.data());
   ntt.ComputeInverse(arg.data());
   CheckEqual(arg, exp_out);
+  std::cout << "Done running ExampleNTT\n";
 }
 
 int main() {
-  ExampleCmpGtAdd();
-  ExampleCmpSubMod();
-  ExampleFMAModScalar();
-  ExampleMultiplyMod();
+  ExampleEltwiseCmpAdd();
+  ExampleEltwiseCmpSubMod();
+  ExampleEltwiseFMAMod();
+  ExampleEltwiseMultMod();
+  ExampleNTT();
 
   return 0;
 }

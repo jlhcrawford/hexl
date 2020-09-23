@@ -17,10 +17,10 @@
 set(SRC main.cpp
     test-number-theory.cpp
     test-ntt.cpp
-    test-poly-mult.cpp
-    test-poly-fma.cpp
-    test-poly-cmp-add.cpp
-    test-poly-cmp-sub-mod.cpp
+    test-eltwise-mult-mod.cpp
+    test-eltwise-fma.cpp
+    test-eltwise-cmp-add.cpp
+    test-eltwise-cmp-sub-mod.cpp
 )
 
 if (${HAS_AVX512F})
