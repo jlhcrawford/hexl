@@ -86,23 +86,23 @@ void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
 
 void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
                     const uint64_t n, const uint64_t modulus) {
+#ifdef LATTICE_HAS_AVX512DQ
+  if (has_avx512_dq && modulus < (1UL << 50)) {
+    IVLOG(3, "Calling EltwiseMultModAVX512Float");
+    EltwiseMultModAVX512Float(operand1, operand2, n, modulus);
+    return;
+  }
+#endif
+
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && modulus < (1UL << 52)) {
-    IVLOG(3, "Calling 52-bit AVX512 MultiplyMod");
-    EltwiseMultModAVX512<52>(operand1, operand2, n, modulus);
-    return;
-  }
-#endif
-#ifdef LATTICE_HAS_AVX512DQ
-  if (has_avx512_dq) {
-    IVLOG(3, "Calling 64-bit AVX512 MultiplyMod");
-
-    EltwiseMultModAVX512<64>(operand1, operand2, n, modulus);
+    IVLOG(3, "Calling EltwiseMultModAVX512Int<52>");
+    EltwiseMultModAVX512Int<52>(operand1, operand2, n, modulus);
     return;
   }
 #endif
 
-  IVLOG(3, "Calling 64-bit default MultiplyMod");
+  IVLOG(3, "Calling EltwiseMultModNative");
   EltwiseMultModNative(operand1, operand2, n, modulus);
 }
 

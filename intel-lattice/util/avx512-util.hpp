@@ -46,6 +46,26 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
   return xs;
 }
 
+// Returns the 64-bit floating-point values in x as a vector
+inline std::vector<double> ExtractValues(__m512d x) {
+  std::vector<double> ret(8, 0);
+  double* x_data = reinterpret_cast<double*>(&x);
+  for (size_t i = 0; i < 8; ++i) {
+    ret[i] = *x_data++;
+  }
+  return ret;
+}
+
+// Returns the 64-bit floating-point values in x as a vector
+inline std::vector<double> ExtractValues(__m256d x) {
+  std::vector<double> ret(4, 0);
+  double* x_data = reinterpret_cast<double*>(&x);
+  for (size_t i = 0; i < 4; ++i) {
+    ret[i] = *x_data++;
+  }
+  return ret;
+}
+
 // Checks all 64-bit values in x are less than bound
 // Returns true
 inline void CheckBounds(__m512i x, uint64_t bound) {
