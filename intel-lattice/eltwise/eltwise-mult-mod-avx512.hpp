@@ -163,10 +163,14 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     n -= n_mod_8;
   }
   __m512d p = _mm512_set1_pd(static_cast<double>(modulus));
+  // TODO(fboemer): investigate more closely. Use round toward infinity in
+  // computing u. See Proposition 13 at https://arxiv.org/pdf/1407.3383.pdf
   __m512d u = _mm512_set1_pd(static_cast<double>((1.0 / modulus)));
 
   __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
+
+  __m512d zero = _mm512_setzero_pd();
 
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
@@ -174,6 +178,8 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
     __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
 
+    // TODO(fboemer): investigate more closely. Use round toward infinity?
+    // see Proposition 13 at https://arxiv.org/pdf/1407.3383.pdf
     __m512d x = _mm512_cvt_roundepu64_pd(
         v_operand1, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
     __m512d y = _mm512_cvt_roundepu64_pd(
@@ -187,12 +193,15 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     __m512d d = _mm512_fnmadd_pd(c, p, h);
     __m512d g = _mm512_add_pd(d, l);
     // if g >= p, return g - p;
-    // if g < 0.0, return g + p
+
+    // Omit g < 0.0 condition -- see Proposition 13 at
+    // https://arxiv.org/pdf/1407.3383.pdf
+    // // if g < 0.0, return g + p
     // return g;
-    __mmask8 m = _mm512_cmp_pd_mask(g, _mm512_setzero_pd(), _CMP_LT_OQ);
-    __mmask8 mm = _mm512_cmp_pd_mask(p, g, _CMP_LE_OQ);
+    __mmask8 m = _mm512_cmp_pd_mask(g, zero, _CMP_LT_OQ);
+    // __mmask8 mm = _mm512_cmp_pd_mask(p, g, _CMP_LE_OQ);
     g = _mm512_mask_add_pd(g, m, g, p);
-    g = _mm512_mask_sub_pd(g, mm, g, p);
+    // g = _mm512_mask_sub_pd(g, mm, g, p);
 
     v_operand1 = _mm512_cvt_roundpd_epu64(
         g, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
