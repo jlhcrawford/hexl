@@ -67,10 +67,7 @@ TEST(EltwiseMult, avx512_small) {
   std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
 
   uint64_t modulus = 769;
-  BarrettFactor<64> bf(modulus);
-
-  EltwiseMultModAVX512<64>(op1.data(), op2.data(), op1.size(), bf.Hi(), bf.Lo(),
-                           modulus);
+  EltwiseMultModAVX512Float(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -84,9 +81,7 @@ TEST(EltwiseMult, avx512_mult2) {
                                 23, 58, 95, 33, 74, 16, 61, 7};
 
   uint64_t modulus = 101;
-  BarrettFactor<64> bf(modulus);
-
-  EltwiseMultModAVX512<64>(op1.data(), op2.data(), op1.size(), modulus);
+  EltwiseMultModAVX512Float(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -102,8 +97,8 @@ TEST(EltwiseMult, avx512ifma_small) {
   uint64_t modulus = 769;
   BarrettFactor<52> bf(modulus);
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), bf.Hi(), bf.Lo(),
-                           modulus);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), bf.Hi(),
+                              bf.Lo(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -115,7 +110,7 @@ TEST(EltwiseMult, avx512ifma_big) {
   std::vector<uint64_t> op2{modulus - 1, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{1, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), modulus);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -127,7 +122,7 @@ TEST(EltwiseMult, avx512ifma_big2) {
   std::vector<uint64_t> op2{2, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{modulus - 2, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), modulus);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -139,7 +134,7 @@ TEST(EltwiseMult, avx512ifma_big3) {
   std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), modulus);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -151,7 +146,7 @@ TEST(EltwiseMult, avx512ifma_big4) {
   std::vector<uint64_t> op2{(p + 1) / 2, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{70368744187392, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), p);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), p);
 
   CheckEqual(op1, exp_out);
 }
@@ -164,7 +159,7 @@ TEST(EltwiseMult, avx512ifma_big5) {
   std::vector<uint64_t> op2{(p - 1), 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{1, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), p);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), p);
 
   CheckEqual(op1, exp_out);
 }
@@ -176,7 +171,7 @@ TEST(EltwiseMult, avx512ifma_big6) {
   std::vector<uint64_t> op2{1114802337613200, 1, 1, 1, 1, 1, 1, 1};
   std::vector<uint64_t> exp_out{13344071208410, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), p);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), p);
 
   CheckEqual(op1, exp_out);
 }
@@ -192,8 +187,8 @@ TEST(EltwiseMult, avx512ifma_mult2) {
   uint64_t modulus = 101;
   BarrettFactor<52> bf(modulus);
 
-  EltwiseMultModAVX512<52>(op1.data(), op2.data(), op1.size(), bf.Hi(), bf.Lo(),
-                           modulus);
+  EltwiseMultModAVX512Int<52>(op1.data(), op2.data(), op1.size(), bf.Hi(),
+                              bf.Lo(), modulus);
 
   CheckEqual(op1, exp_out);
 }
@@ -299,12 +294,15 @@ TEST(EltwiseMult, AVX512) {
         op1[i] = distrib(gen);
         op2[i] = distrib(gen);
       }
-      std::vector<std::uint64_t> op1a = op1;
+      auto op1a = op1;
+      auto op1b = op1;
 
       EltwiseMultModNative(op1.data(), op2.data(), op1.size(), prime);
-      EltwiseMultModAVX512<52>(op1a.data(), op2.data(), op1.size(), prime);
+      EltwiseMultModAVX512Float(op1a.data(), op2.data(), op1.size(), prime);
+      EltwiseMultModAVX512Int<52>(op1b.data(), op2.data(), op1.size(), prime);
 
       ASSERT_EQ(op1, op1a);
+      ASSERT_EQ(op1, op1b);
     }
   }
 }

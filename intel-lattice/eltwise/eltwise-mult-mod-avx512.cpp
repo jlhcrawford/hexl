@@ -20,12 +20,12 @@ namespace intel {
 namespace lattice {
 
 #ifdef LATTICE_HAS_AVX512IFMA
-template void EltwiseMultModAVX512<52>(
+template void EltwiseMultModAVX512Int<52>(
     uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
     const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
 #endif
 
-template void EltwiseMultModAVX512<64>(
+template void EltwiseMultModAVX512Int<64>(
     uint64_t* operand1, const uint64_t* operand2, const uint64_t n,
     const uint64_t barrett_hi, const uint64_t barrett_lo, const uint64_t mod);
 
