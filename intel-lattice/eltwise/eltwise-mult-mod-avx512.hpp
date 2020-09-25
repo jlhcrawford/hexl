@@ -20,6 +20,8 @@
 #include <stdint.h>
 
 #include <functional>
+#include <iomanip>
+#include <limits>
 
 #include "eltwise/eltwise-mult-mod-internal.hpp"
 #include "eltwise/eltwise-mult-mod.hpp"
@@ -163,7 +165,11 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     n -= n_mod_8;
   }
   __m512d p = _mm512_set1_pd(static_cast<double>(modulus));
-  __m512d u = _mm512_set1_pd(static_cast<double>((1.0 / modulus)));
+
+  // Add epsilon to ensure u * p >= 1.0
+  // See Proposition 13 of https://arxiv.org/pdf/1407.3383.pdf
+  double ubar = (1.0 + std::numeric_limits<double>::epsilon()) / modulus;
+  __m512d u = _mm512_set1_pd(ubar);
   __m512d zero = _mm512_setzero_pd();
 
   __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
@@ -175,9 +181,9 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
 
     __m512d x = _mm512_cvt_roundepu64_pd(
-        v_operand1, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        v_operand1, (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));
     __m512d y = _mm512_cvt_roundepu64_pd(
-        v_operand2, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        v_operand2, (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));
 
     __m512d h = _mm512_mul_pd(x, y);
     __m512d l =
@@ -187,12 +193,11 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     __m512d d = _mm512_fnmadd_pd(c, p, h);
     __m512d g = _mm512_add_pd(d, l);
     __mmask8 m = _mm512_cmp_pd_mask(g, zero, _CMP_LT_OQ);
-    __mmask8 mm = _mm512_cmp_pd_mask(p, g, _CMP_LE_OQ);
     g = _mm512_mask_add_pd(g, m, g, p);
-    g = _mm512_mask_sub_pd(g, mm, g, p);
 
     v_operand1 = _mm512_cvt_roundpd_epu64(
-        g, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        g, (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));
+
     _mm512_storeu_si512(vp_operand1, v_operand1);
 
     ++vp_operand1;
