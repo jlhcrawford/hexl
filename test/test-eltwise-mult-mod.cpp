@@ -275,6 +275,26 @@ TEST(EltwiseMult, 9) {
   CheckEqual(op1, exp_out);
 }
 
+#ifdef LATTICE_HAS_AVX512DQ
+TEST(EltwiseMultBig, 9) {
+  uint64_t modulus = 1125891450734593;
+
+  std::vector<uint64_t> op1{706712574074152, 943467560561867, 1115920708919443,
+                            515713505356094, 525633777116309, 910766532971356,
+                            757086506562426, 799841520990167};
+  std::vector<uint64_t> op2{515910833966633, 96924929169117,  537587376997453,
+                            41829060600750,  205864998008014, 463185427411646,
+                            965818279134294, 1075778049568657};
+  std::vector<uint64_t> exp_out{
+      231838787758587, 618753612121218, 1116345967490421, 409735411065439,
+      25680427818594,  950138933882289, 554128714280822,  1465109636753};
+
+  EltwiseMultModAVX512Float(op1.data(), op2.data(), op1.size(), modulus);
+
+  CheckEqual(op1, exp_out);
+}
+#endif
+
 // Checks AVX512 and native eltwise mult implementations match
 #ifdef LATTICE_HAS_AVX512IFMA
 #ifndef LATTICE_DEBUG
