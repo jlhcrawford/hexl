@@ -102,6 +102,14 @@ void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
   }
 #endif
 
+#ifdef LATTICE_HAS_AVX512DQ
+  if (has_avx512_dq) {
+    IVLOG(3, "Calling EltwiseMultModAVX512Int<64>");
+    EltwiseMultModAVX512Int<64>(operand1, operand2, n, modulus);
+    return;
+  }
+#endif
+
   IVLOG(3, "Calling EltwiseMultModNative");
   EltwiseMultModNative(operand1, operand2, n, modulus);
 }

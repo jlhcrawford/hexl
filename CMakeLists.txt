@@ -64,6 +64,7 @@ option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code
 option(LATTICE_BENCHMARK "Enable benchmarking" ON)
 option(LATTICE_TESTING "Enables unit-tests" ON)
 option(LATTICE_COVERAGE "Enables coverage for unit tests" OFF)
+option(LATTICE_SHARED_LIB "Generate a shared library" OFF)
 # Sanitizers
 option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
 option(ENABLE_THREAD_SANITIZER "Compiles and links with Thread Sanitizer" OFF)
@@ -76,6 +77,7 @@ message(STATUS "LATTICE_DEBUG:            ${LATTICE_DEBUG}")
 message(STATUS "LATTICE_BENCHMARK:        ${LATTICE_BENCHMARK}")
 message(STATUS "LATTICE_TESTING:          ${LATTICE_TESTING}")
 message(STATUS "LATTICE_COVERAGE:         ${LATTICE_COVERAGE}")
+message(STATUS "LATTICE_SHARED_LIB:       ${LATTICE_SHARED_LIB}")
 message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
 message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
 message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
@@ -173,11 +175,9 @@ endif()
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_CACHE})
 
-
 message(STATUS "CMAKE_INSTALL_LIBDIR:     ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "CMAKE_INSTALL_PREFIX:     ${CMAKE_INSTALL_PREFIX}")
-
 
 set(LATTICE_FORWARD_CMAKE_ARGS
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
