@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include <functional>
-#include <iomanip>
 #include <limits>
 
 #include "eltwise/eltwise-mult-mod-internal.hpp"
@@ -189,7 +188,7 @@ inline void EltwiseMultModAVX512Float(uint64_t* operand1,
     __m512d l =
         _mm512_fmsub_pd(x, y, h);     // rounding error; h + l == x * y exactly
     __m512d b = _mm512_mul_pd(h, u);  // ~ (x * y) / p
-    __m512d c = _mm512_floor_pd(b);
+    __m512d c = _mm512_floor_pd(b);   // ~ floor(x * y / p)
     __m512d d = _mm512_fnmadd_pd(c, p, h);
     __m512d g = _mm512_add_pd(d, l);
     __mmask8 m = _mm512_cmp_pd_mask(g, zero, _CMP_LT_OQ);

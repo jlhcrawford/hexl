@@ -51,7 +51,7 @@ inline std::vector<double> ExtractValues(__m512d x) {
   std::vector<double> ret(8, 0);
   double* x_data = reinterpret_cast<double*>(&x);
   for (size_t i = 0; i < 8; ++i) {
-    ret[i] = *x_data++;
+    ret[i] = x_data[i];
   }
   return ret;
 }
@@ -61,7 +61,7 @@ inline std::vector<double> ExtractValues(__m256d x) {
   std::vector<double> ret(4, 0);
   double* x_data = reinterpret_cast<double*>(&x);
   for (size_t i = 0; i < 4; ++i) {
-    ret[i] = *x_data++;
+    ret[i] = x_data[i];
   }
   return ret;
 }
@@ -73,6 +73,44 @@ inline void CheckBounds(__m512i x, uint64_t bound) {
   (void)bound;  // Ignore unused parameter warning
   LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 512 / 64, bound);
 }
+
+// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
+// and y to form a 2*BitShift-bit intermediate result.
+// Returns the high BitShift-bit unsigned integer from the intermediate result
+template <int BitShift>
+inline __m256i _mm256_il_mulhi_epi(__m256i x, __m256i y);
+
+template <>
+inline __m256i _mm256_il_mulhi_epi<64>(__m256i x, __m256i y) {
+  // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
+  __m256i lomask = _mm256_set1_epi64x(0x00000000ffffffff);
+  __m256i xh =
+      _mm256_shuffle_epi32(x, (_MM_PERM_ENUM)0xB1);  // x0l, x0h, x1l, x1h
+  __m256i yh =
+      _mm256_shuffle_epi32(y, (_MM_PERM_ENUM)0xB1);  // y0l, y0h, y1l, y1h
+  __m256i w0 = _mm256_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
+  __m256i w1 = _mm256_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
+  __m256i w2 = _mm256_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
+  __m256i w3 = _mm256_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
+  __m256i w0h = _mm256_srli_epi64(w0, 32);
+  __m256i s1 = _mm256_add_epi64(w1, w0h);
+  __m256i s1l = _mm256_and_si256(s1, lomask);
+  __m256i s1h = _mm256_srli_epi64(s1, 32);
+  __m256i s2 = _mm256_add_epi64(w2, s1l);
+  __m256i s2h = _mm256_srli_epi64(s2, 32);
+  __m256i hi1 = _mm256_add_epi64(w3, s1h);
+  return _mm256_add_epi64(hi1, s2h);
+}
+
+#ifdef LATTICE_HAS_AVX512IFMA
+template <>
+inline __m256i _mm256_il_mulhi_epi<52>(__m256i x, __m256i y) {
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 4, MaximumValue(52));
+  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 4, MaximumValue(52));
+  __m256i zero = _mm256_set1_epi64x(0);
+  return _mm256_madd52hi_epu64(zero, x, y);
+}
+#endif
 
 // Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
 // and y to form a 2*BitShift-bit intermediate result.
@@ -132,6 +170,13 @@ inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
   return _mm512_madd52lo_epu64(zero, x, y);
 }
 #endif
+
+// Returns x mod p; assumes x < 2p
+// x mod p == x >= p ? x - p : x
+//         == min(x - p, x)
+inline __m256i _mm256_il_small_mod_epi64(__m256i x, __m256i p) {
+  return _mm256_min_epu64(x, _mm256_sub_epi64(x, p));
+}
 
 // Returns x mod p; assumes x < 2p
 // x mod p == x >= p ? x - p : x
