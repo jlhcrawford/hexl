@@ -49,7 +49,7 @@ target_link_libraries(intel_lattice_internal PUBLIC
     libgflags
     logging
     )
-target_compile_options(intel_lattice_internal PRIVATE -Wall -Wextra -Wno-unknown-pragmas -march=native -O3)
+target_compile_options(intel_lattice_internal PRIVATE -Wall -Wextra -Wno-unknown-pragmas -march=native -O3 -fomit-frame-pointer)
 
 install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/

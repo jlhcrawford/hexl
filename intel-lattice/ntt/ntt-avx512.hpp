@@ -44,6 +44,8 @@ void ForwardTransformToBitReverseAVX512(
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
+  __m256i v_256modulus = _mm256_set1_epi64x(mod);
+  __m256i v_256twice_mod = _mm256_set1_epi64x(twice_mod);
 
   IVLOG(5, "root_of_unity_powers " << std::vector<uint64_t>(
                root_of_unity_powers, root_of_unity_powers + n))
@@ -57,7 +59,6 @@ void ForwardTransformToBitReverseAVX512(
   for (size_t m = 1; m < n; m <<= 1) {
     size_t j1 = 0;
     for (size_t i = 0; i < m; i++) {
-      size_t j2 = j1 + t;
       const uint64_t W_op = root_of_unity_powers[m + i];
       const uint64_t W_precon = precon_root_of_unity_powers[m + i];
 
@@ -66,34 +67,14 @@ void ForwardTransformToBitReverseAVX512(
       uint64_t tx;
       uint64_t Q;
 
-      if (j2 - j1 < 8) {
-#pragma GCC unroll 4
-#pragma clang loop unroll_count(4)
-        for (size_t j = j1; j < j2; j++) {
-          // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
-          // [0, 4p).
-          // See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
-          // X', Y' = X + WY, X - WY (mod p).
-          tx = *X - (twice_mod & static_cast<uint64_t>(
-                                     -static_cast<int64_t>(*X >= twice_mod)));
-          Q = MultiplyUIntModLazy<BitShift>(*Y, W_op, W_precon, mod);
-
-          LATTICE_CHECK(tx + Q <= MaximumValue(BitShift),
-                        "tx " << tx << " + Q " << Q << " excceds");
-          LATTICE_CHECK(tx + twice_mod - Q <= MaximumValue(BitShift),
-                        "tx " << tx << " + twice_mod " << twice_mod << " + Q "
-                              << Q << " excceds");
-          *X++ = tx + Q;
-          *Y++ = tx + twice_mod - Q;
-        }
-      } else {
+      if (t >= 8) {
         __m512i v_W_op = _mm512_set1_epi64(W_op);
         __m512i v_W_precon = _mm512_set1_epi64(W_precon);
 
         __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
         __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
 
-        for (size_t j = j1; j < j2; j += 8) {
+        for (size_t j = t / 8; j > 0; --j) {
           __m512i v_X = _mm512_loadu_si512(v_X_pt);
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
@@ -122,6 +103,54 @@ void ForwardTransformToBitReverseAVX512(
           ++v_X_pt;
           ++v_Y_pt;
         }
+      } else if (t == 4) {
+        __m256i v_W_op = _mm256_set1_epi64x(W_op);
+        __m256i v_W_precon = _mm256_set1_epi64x(W_precon);
+
+        __m256i* v_X_pt = reinterpret_cast<__m256i*>(X);
+        __m256i* v_Y_pt = reinterpret_cast<__m256i*>(Y);
+        __m256i v_X = _mm256_loadu_si256(v_X_pt);
+        __m256i v_Y = _mm256_loadu_si256(v_Y_pt);
+
+        // tx = X >= twice_mod ? X - twice_mod : X
+        __m256i v_tx = _mm256_il_small_mod_epi64(v_X, v_256twice_mod);
+
+        // multiply_uint64_hw64(Wprime, *Y, &Q);
+        __m256i v_Q = _mm256_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
+
+        // Q = *Y * W - Q * modulus;
+        // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
+        __m256i tmp1 = _mm256_mullo_epi64(v_Y, v_W_op);
+        __m256i tmp2 = _mm256_mullo_epi64(v_Q, v_256modulus);
+        v_Q = _mm256_sub_epi64(tmp1, tmp2);
+
+        // *X++ = tx + Q;
+        v_X = _mm256_add_epi64(v_tx, v_Q);
+
+        // *Y++ = tx + (two_times_modulus - Q);
+        __m256i sub = _mm256_sub_epi64(v_256twice_mod, v_Q);
+        v_Y = _mm256_add_epi64(v_tx, sub);
+
+        _mm256_storeu_si256(v_X_pt, v_X);
+        _mm256_storeu_si256(v_Y_pt, v_Y);
+      } else if (t == 2) {
+        tx = *X - (twice_mod & static_cast<uint64_t>(
+                                   -static_cast<int64_t>(*X >= twice_mod)));
+        Q = MultiplyUIntModLazy<BitShift>(*Y, W_op, W_precon, mod);
+        *X++ = tx + Q;
+        *Y++ = tx + twice_mod - Q;
+
+        tx = *X - (twice_mod & static_cast<uint64_t>(
+                                   -static_cast<int64_t>(*X >= twice_mod)));
+        Q = MultiplyUIntModLazy<BitShift>(*Y, W_op, W_precon, mod);
+        *X = tx + Q;
+        *Y = tx + twice_mod - Q;
+      } else {  // t == 1
+        tx = *X - (twice_mod & static_cast<uint64_t>(
+                                   -static_cast<int64_t>(*X >= twice_mod)));
+        Q = MultiplyUIntModLazy<BitShift>(*Y, W_op, W_precon, mod);
+        *X = tx + Q;
+        *Y = tx + twice_mod - Q;
       }
       j1 += (t << 1);
     }
@@ -170,6 +199,8 @@ void InverseTransformFromBitReverseAVX512(
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
+  __m256i v256_modulus = _mm256_set1_epi64x(mod);
+  __m256i v256_twice_mod = _mm256_set1_epi64x(twice_mod);
 
   size_t t = 1;
   size_t root_index = 1;
@@ -177,7 +208,6 @@ void InverseTransformFromBitReverseAVX512(
   for (size_t m = (n >> 1); m > 1; m >>= 1) {
     size_t j1 = 0;
     for (size_t i = 0; i < m; i++, root_index++) {
-      size_t j2 = j1 + t;
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
       const uint64_t W_precon = precon_inv_root_of_unity_powers[root_index];
 
@@ -185,40 +215,21 @@ void InverseTransformFromBitReverseAVX512(
       uint64_t* Y = X + t;
 
       IVLOG(4, "m = " << i << ", i = " << i);
-      IVLOG(4, "j1 = " << j1 << ", j2 = " << j2);
+      IVLOG(4, "j1 = " << j1);
 
       uint64_t tx;
       uint64_t ty;
 
-      if (j2 - j1 < 8) {
-#pragma GCC unroll 4
-#pragma clang loop unroll_count(4)
-        for (size_t j = j1; j < j2; j++) {
-          IVLOG(4, "Loaded *X " << *X);
-          IVLOG(4, "Loaded *Y " << *Y);
-          // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in
-          // [0, 4p).
-          // X', Y' = X + Y (mod p), W(X - Y) (mod p).
-          tx = *X + *Y;
-          ty = *X + twice_mod - *Y;
-          *X++ =
-              tx - (twice_mod & static_cast<uint64_t>(
-                                    (-static_cast<int64_t>(tx >= twice_mod))));
-          *Y++ = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
-        }
-      } else {
+      if (t >= 8) {
         __m512i v_W_op = _mm512_set1_epi64(W_op);
         __m512i v_W_precon = _mm512_set1_epi64(W_precon);
 
         __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
         __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
 
-        for (size_t j = j1; j < j2; j += 8) {
+        for (size_t j = t / 8; j > 0; --j) {
           __m512i v_X = _mm512_loadu_si512(v_X_pt);
           __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
-
-          IVLOG(4, "Loaded v_X " << ExtractValues(v_X));
-          IVLOG(4, "Loaded v_Y " << ExtractValues(v_Y));
 
           // tx = *X + *Y
           __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
@@ -233,26 +244,69 @@ void InverseTransformFromBitReverseAVX512(
           // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
           // multiply_uint64_hw64(W_precon, *Y, &Q);
           __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-          IVLOG(4, "v_W_precon " << ExtractValues(v_W_precon));
-          IVLOG(4, "v_Q " << ExtractValues(v_Q));
 
           // *Y++ = ty * W_op - Q * modulus;
           // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
           __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
           __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
-          IVLOG(4, "tmp_y1 " << ExtractValues(tmp_y1));
-          IVLOG(4, "tmp_y2 " << ExtractValues(tmp_y2));
           v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
           _mm512_storeu_si512(v_X_pt, v_X);
           _mm512_storeu_si512(v_Y_pt, v_Y);
 
-          IVLOG(4, "Wrote v_X " << ExtractValues(v_X));
-          IVLOG(4, "Wrote v_Y " << ExtractValues(v_Y) << "\n");
-
           ++v_X_pt;
           ++v_Y_pt;
         }
+      } else if (t == 4) {
+        __m256i v_W_op = _mm256_set1_epi64x(W_op);
+        __m256i v_W_precon = _mm256_set1_epi64x(W_precon);
+
+        __m256i* v_X_pt = reinterpret_cast<__m256i*>(X);
+        __m256i* v_Y_pt = reinterpret_cast<__m256i*>(Y);
+
+        __m256i v_X = _mm256_loadu_si256(v_X_pt);
+        __m256i v_Y = _mm256_loadu_si256(v_Y_pt);
+        // tx = *X + *Y
+        __m256i v_tx = _mm256_add_epi64(v_X, v_Y);
+
+        // ty = *X + twice_mod - *Y
+        __m256i tmp_ty = _mm256_add_epi64(v_X, v256_twice_mod);
+        __m256i v_ty = _mm256_sub_epi64(tmp_ty, v_Y);
+
+        // *X++ = tx >= twice_mod ? tx - twice_mod : tx
+        v_X = _mm256_il_small_mod_epi64(v_tx, v256_twice_mod);
+
+        // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
+        // multiply_uint64_hw64(W_precon, *Y, &Q);
+        __m256i v_Q = _mm256_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+
+        // *Y++ = ty * W_op - Q * modulus;
+        // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
+        __m256i tmp_y1 = _mm256_mullo_epi64(v_ty, v_W_op);
+        __m256i tmp_y2 = _mm256_mullo_epi64(v_Q, v256_modulus);
+        v_Y = _mm256_sub_epi64(tmp_y1, tmp_y2);
+
+        _mm256_storeu_si256(v_X_pt, v_X);
+        _mm256_storeu_si256(v_Y_pt, v_Y);
+
+      } else if (t == 2) {
+        tx = *X + *Y;
+        ty = *X + twice_mod - *Y;
+        *X++ = tx - (twice_mod & static_cast<uint64_t>(
+                                     (-static_cast<int64_t>(tx >= twice_mod))));
+        *Y++ = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
+
+        tx = *X + *Y;
+        ty = *X + twice_mod - *Y;
+        *X = tx - (twice_mod & static_cast<uint64_t>(
+                                   (-static_cast<int64_t>(tx >= twice_mod))));
+        *Y = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
+      } else {  // t == 1
+        tx = *X + *Y;
+        ty = *X + twice_mod - *Y;
+        *X = tx - (twice_mod & static_cast<uint64_t>(
+                                   (-static_cast<int64_t>(tx >= twice_mod))));
+        *Y = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
       }
       j1 += (t << 1);
     }
@@ -299,7 +353,7 @@ void InverseTransformFromBitReverseAVX512(
 
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
-    for (size_t j = (n >> 1); j < n; j += 8) {
+    for (size_t j = n / 16; j > 0; --j) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
@@ -347,7 +401,7 @@ void InverseTransformFromBitReverseAVX512(
     // n power of two at least 8 => n divisible by 8
     LATTICE_CHECK(n % 8 == 0, "n " << n << " not a power of 2");
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
-    for (size_t i = 0; i < n; i += 8) {
+    for (size_t i = n / 8; i > 0; --i) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
       v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
