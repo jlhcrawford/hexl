@@ -25,7 +25,8 @@ set(SRC ntt/ntt.cpp
 
 if (${HAS_AVX512F})
     list(APPEND SRC
-        ntt/ntt-avx512.cpp
+        ntt/fwd-ntt-avx512.cpp
+        ntt/inv-ntt-avx512.cpp
         eltwise/eltwise-mult-mod-avx512.cpp
         eltwise/eltwise-fma-avx512.cpp
         )

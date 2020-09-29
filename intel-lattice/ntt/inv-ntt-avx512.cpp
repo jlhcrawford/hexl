@@ -14,33 +14,13 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "ntt/ntt-avx512.hpp"
+#include "ntt/inv-ntt-avx512.hpp"
 
-#include <immintrin.h>
-
-#include <iostream>
-
-#include "logging/logging.hpp"
 #include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
-#include "util/avx512-util.hpp"
 
 namespace intel {
 namespace lattice {
-
-#ifdef LATTICE_HAS_AVX512IFMA
-template void
-ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
-    const uint64_t degree, const uint64_t mod,
-    const uint64_t* root_of_unity_powers,
-    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
-#endif
-
-template void
-ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
-    const uint64_t degree, const uint64_t mod,
-    const uint64_t* root_of_unity_powers,
-    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
 
 #ifdef LATTICE_HAS_AVX512IFMA
 template void
