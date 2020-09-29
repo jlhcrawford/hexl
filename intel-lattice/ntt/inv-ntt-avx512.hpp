@@ -79,15 +79,13 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
-void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
-           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+void InvT1(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-  size_t j1 = 0;
 
   // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
-    uint64_t* X = elements + j1;
     uint64_t* Y = X + 1;
 
     __m512i v_X =
@@ -111,7 +109,6 @@ void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
 
-    // for (size_t cpy = 0; cpy < 8; ++cpy) {
     *X++ = *X_out++;
     *X++ = *Y_out++;
     *X++ = *X_out++;
@@ -128,19 +125,16 @@ void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     *X++ = *Y_out++;
     *X++ = *X_out++;
     *X++ = *Y_out++;
-    // }
-    j1 += 16;
   }
 }
 
 template <int BitShift>
-void InvT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
-           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 
   // 4 | m guaranteed by n >= 16
   for (size_t i = m / 4; i > 0; --i) {
-    uint64_t* X = elements + j1;
     uint64_t* Y = X + 2;
 
     __m512i v_X =
@@ -185,7 +179,6 @@ void InvT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 
     W_op += 4;
     W_precon += 4;
-    j1 += 16;
   }
 }
 
