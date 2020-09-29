@@ -23,7 +23,8 @@
 #include "ntt/ntt.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "ntt/ntt-avx512.hpp"
+#include "ntt/fwd-ntt-avx512.hpp"
+#include "ntt/inv-ntt-avx512.hpp"
 #endif
 
 #include "number-theory/number-theory.hpp"
