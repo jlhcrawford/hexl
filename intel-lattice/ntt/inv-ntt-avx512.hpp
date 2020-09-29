@@ -242,56 +242,47 @@ void InverseTransformFromBitReverseAVX512(
   LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift));
 
   uint64_t twice_mod = mod << 1;
-
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
   size_t t = 1;
   size_t root_index = 1;
+  size_t m = (n >> 1);
 
-  for (size_t m = (n >> 1); m > 1; m >>= 1) {
-    size_t j1 = 0;
-
-    if (t >= 8) {
-      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
-      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-      InvT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
-      t <<= 1;
-      root_index += m;
-      continue;
-    }
-
-    if (t == 1) {
-      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
-      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-      InvT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
-      t <<= 1;
-      root_index += m;
-      continue;
-    }
-
-    if (t == 2) {
-      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
-      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-      InvT2<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
-      t <<= 1;
-      root_index += m;
-      continue;
-    }
-
-    if (t == 4) {
-      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
-      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-      InvT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
-      t <<= 1;
-      root_index += m;
-      continue;
-    }
-
-    for (size_t i = 0; i < m; i++, root_index++) {
-      j1 += (t << 1);
-    }
+  // Extract t=1, t=2, t=4 loops separately
+  {
+    // t = 1
+    const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
+    const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
+    InvT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
     t <<= 1;
+    root_index += m;
+    m >>= 1;
+
+    // t = 2
+    W_op = &inv_root_of_unity_powers[root_index];
+    W_precon = &precon_inv_root_of_unity_powers[root_index];
+    InvT2<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    t <<= 1;
+    root_index += m;
+    m >>= 1;
+
+    // t = 4
+    W_op = &inv_root_of_unity_powers[root_index];
+    W_precon = &precon_inv_root_of_unity_powers[root_index];
+    InvT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    t <<= 1;
+    root_index += m;
+    m >>= 1;
+  }
+
+  // t >= 8
+  for (; m > 1; m >>= 1) {
+    const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
+    const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
+    InvT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+    t <<= 1;
+    root_index += m;
   }
 
   IVLOG(4, "AVX512 intermediate elements "
