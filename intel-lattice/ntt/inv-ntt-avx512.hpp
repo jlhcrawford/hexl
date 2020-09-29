@@ -43,8 +43,6 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = _mm512_set1_epi64(*W_op++);
     __m512i v_W_precon = _mm512_set1_epi64(*W_precon++);
 
-    // LOG(INFO) << "v_W_op " << ExtractValues(v_W_op);
-
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
     __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
 
@@ -52,9 +50,6 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     for (size_t j = t / 8; j > 0; --j) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
-
-      // LOG(INFO) << "loaded v_X " << ExtractValues(v_X);
-      // LOG(INFO) << "loaded v_Y " << ExtractValues(v_Y);
 
       // tx = *X + *Y
       __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
@@ -76,16 +71,73 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
       v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
-      _mm512_storeu_si512(v_X_pt, v_X);
-      _mm512_storeu_si512(v_Y_pt, v_Y);
-
-      // LOG(INFO) << "wrote v_X " << ExtractValues(v_X);
-      // LOG(INFO) << "wrote v_Y " << ExtractValues(v_Y);
-
-      ++v_X_pt;
-      ++v_Y_pt;
+      _mm512_storeu_si512(v_X_pt++, v_X);
+      _mm512_storeu_si512(v_Y_pt++, v_Y);
     }
     j1 += (t << 1);
+  }
+}
+
+template <int BitShift>
+void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
+  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
+  size_t j1 = 0;
+
+  // 8 | m guaranteed by n >= 16
+  for (size_t i = 0; i < m / 8; i++) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + 1;
+
+    __m512i v_X =
+        _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
+
+    __m512i v_Y =
+        _mm512_set_epi64(Y[14], Y[12], Y[10], Y[8], Y[6], Y[4], Y[2], Y[0]);
+
+    // LOG(INFO) << "Loaded v_X " << ExtractValues(v_X);
+    // LOG(INFO) << "Loaded v_Y " << ExtractValues(v_Y);
+
+    __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
+    __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
+
+    // LOG(INFO) << "loaded v_W_op " << ExtractValues(v_W_op);
+
+    // tx = *X + *Y
+    __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
+
+    // ty = *X + twice_mod - *Y
+    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+
+    // *X++ = tx >= twice_mod ? tx - twice_mod : tx
+    v_X = _mm512_il_small_mod_epi64(v_tx, v_twice_mod);
+
+    // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
+    // multiply_uint64_hw64(W_precon, *Y, &Q);
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+
+    // *Y++ = ty * W_op - Q * modulus;
+    // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
+    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+    // LOG(INFO) << "wrote v_X " << ExtractValues(v_X);
+    // LOG(INFO) << "wrote v_Y " << ExtractValues(v_Y);
+
+    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
+    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
+    for (size_t cpy = 0; cpy < 8; ++cpy) {
+      *X++ = *X_out++;
+      *X++ = *Y_out++;
+    }
+    j1 += 16;
+
+    // _mm512_storeu_si512(v_X_pt++, v_X);
+    // _mm512_storeu_si512(v_Y_pt++, v_Y);
+    // j1 += (1 << 1);
   }
 }
 
@@ -116,6 +168,17 @@ void InverseTransformFromBitReverseAVX512(
       const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
       const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
       InvT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+      t <<= 1;
+      root_index += m;
+      continue;
+    }
+
+    bool use_vec = std::getenv("VEC") != nullptr;
+
+    if (use_vec && t == 1) {
+      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
+      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
+      InvT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
       t <<= 1;
       root_index += m;
       continue;
@@ -175,11 +238,16 @@ void InverseTransformFromBitReverseAVX512(
                                    (-static_cast<int64_t>(tx >= twice_mod))));
         *Y = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
       } else {  // t == 1
+        LOG(INFO) << "bad t ==1";
+        LOG(INFO) << "loaded X = " << (*X);
+        LOG(INFO) << "loaded Y = " << (*Y);
         tx = *X + *Y;
         ty = *X + twice_mod - *Y;
         *X = tx - (twice_mod & static_cast<uint64_t>(
                                    (-static_cast<int64_t>(tx >= twice_mod))));
         *Y = MultiplyUIntModLazy<BitShift>(ty, W_op, W_precon, mod);
+        LOG(INFO) << "wrote X = " << (*X);
+        LOG(INFO) << "wrote Y = " << (*Y);
       }
       j1 += (t << 1);
     }
