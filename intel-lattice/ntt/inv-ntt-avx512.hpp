@@ -131,8 +131,6 @@ void InvT1(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
 template <int BitShift>
 void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
            const uint64_t* W_op, const uint64_t* W_precon) {
-  size_t j1 = 0;
-
   // 4 | m guaranteed by n >= 16
   for (size_t i = m / 4; i > 0; --i) {
     uint64_t* Y = X + 2;
@@ -185,11 +183,10 @@ void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
 template <int BitShift>
 void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
-  size_t j1 = 0;
+  uint64_t* X = elements;
 
   // 2 | m guaranteed by n >= 16
   for (size_t i = m / 2; i > 0; --i) {
-    uint64_t* X = elements + j1;
     uint64_t* Y = X + 4;
 
     __m512i v_X =
@@ -232,7 +229,6 @@ void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     *X++ = *Y_out++;
     *X++ = *Y_out++;
 
-    j1 += 16;
     W_op += 2;
     W_precon += 2;
   }
