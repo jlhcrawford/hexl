@@ -31,6 +31,65 @@ namespace intel {
 namespace lattice {
 
 template <int BitShift>
+void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t t, uint64_t m, const uint64_t* W_op,
+           const uint64_t* W_precon) {
+  size_t j1 = 0;
+
+  for (size_t i = 0; i < m; i++) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + t;
+
+    __m512i v_W_op = _mm512_set1_epi64(*W_op++);
+    __m512i v_W_precon = _mm512_set1_epi64(*W_precon++);
+
+    // LOG(INFO) << "v_W_op " << ExtractValues(v_W_op);
+
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
+    __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
+
+    // assume 8 | t
+    for (size_t j = t / 8; j > 0; --j) {
+      __m512i v_X = _mm512_loadu_si512(v_X_pt);
+      __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
+
+      // LOG(INFO) << "loaded v_X " << ExtractValues(v_X);
+      // LOG(INFO) << "loaded v_Y " << ExtractValues(v_Y);
+
+      // tx = *X + *Y
+      __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
+
+      // ty = *X + twice_mod - *Y
+      __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+      __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+
+      // *X++ = tx >= twice_mod ? tx - twice_mod : tx
+      v_X = _mm512_il_small_mod_epi64(v_tx, v_twice_mod);
+
+      // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
+      // multiply_uint64_hw64(W_precon, *Y, &Q);
+      __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+
+      // *Y++ = ty * W_op - Q * modulus;
+      // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
+      __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+      __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+      v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+      _mm512_storeu_si512(v_X_pt, v_X);
+      _mm512_storeu_si512(v_Y_pt, v_Y);
+
+      // LOG(INFO) << "wrote v_X " << ExtractValues(v_X);
+      // LOG(INFO) << "wrote v_Y " << ExtractValues(v_Y);
+
+      ++v_X_pt;
+      ++v_Y_pt;
+    }
+    j1 += (t << 1);
+  }
+}
+
+template <int BitShift>
 void InverseTransformFromBitReverseAVX512(
     const uint64_t n, const uint64_t mod,
     const uint64_t* inv_root_of_unity_powers,
@@ -52,6 +111,16 @@ void InverseTransformFromBitReverseAVX512(
 
   for (size_t m = (n >> 1); m > 1; m >>= 1) {
     size_t j1 = 0;
+
+    if (t >= 8) {
+      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
+      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
+      InvT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+      t <<= 1;
+      root_index += m;
+      continue;
+    }
+
     for (size_t i = 0; i < m; i++, root_index++) {
       const uint64_t W_op = inv_root_of_unity_powers[root_index];
       const uint64_t W_precon = precon_inv_root_of_unity_powers[root_index];
@@ -59,50 +128,9 @@ void InverseTransformFromBitReverseAVX512(
       uint64_t* X = elements + j1;
       uint64_t* Y = X + t;
 
-      IVLOG(4, "m = " << i << ", i = " << i);
-      IVLOG(4, "j1 = " << j1);
-
       uint64_t tx;
       uint64_t ty;
-
-      if (t >= 8) {
-        __m512i v_W_op = _mm512_set1_epi64(W_op);
-        __m512i v_W_precon = _mm512_set1_epi64(W_precon);
-
-        __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
-        __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
-
-        for (size_t j = t / 8; j > 0; --j) {
-          __m512i v_X = _mm512_loadu_si512(v_X_pt);
-          __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
-
-          // tx = *X + *Y
-          __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
-
-          // ty = *X + twice_mod - *Y
-          __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
-          __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-
-          // *X++ = tx >= twice_mod ? tx - twice_mod : tx
-          v_X = _mm512_il_small_mod_epi64(v_tx, v_twice_mod);
-
-          // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
-          // multiply_uint64_hw64(W_precon, *Y, &Q);
-          __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-
-          // *Y++ = ty * W_op - Q * modulus;
-          // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
-          __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
-          __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
-          v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
-
-          _mm512_storeu_si512(v_X_pt, v_X);
-          _mm512_storeu_si512(v_Y_pt, v_Y);
-
-          ++v_X_pt;
-          ++v_Y_pt;
-        }
-      } else if (t == 4) {
+      if (t == 4) {
         __m256i v_W_op = _mm256_set1_epi64x(W_op);
         __m256i v_W_precon = _mm256_set1_epi64x(W_precon);
 
