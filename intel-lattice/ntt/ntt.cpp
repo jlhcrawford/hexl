@@ -60,87 +60,98 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p)
 NTT::NTTImpl::~NTTImpl() = default;
 
 void NTT::NTTImpl::ComputeRootOfUnityPowers() {
-  {
-    auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(m_key);
-    if (it != NTT::NTTImpl::GetStaticRootOfUnityPowers().end()) {
-      return;
-    }
-
-    auto it_inv = NTT::NTTImpl::GetStaticInvRootOfUnityPowers().find(m_key_inv);
-    if (it_inv != NTT::NTTImpl::GetStaticInvRootOfUnityPowers().end()) {
-      return;
-    }
-
-    std::vector<uint64_t> root_of_unity_powers(m_degree);
-    std::vector<uint64_t> precon_root_of_unity_powers(m_degree);
-    std::vector<uint64_t> inv_root_of_unity_powers(m_degree);
-    std::vector<uint64_t> precon_inv_root_of_unity_powers(m_degree);
-
-    MultiplyFactor first(1, m_bit_shift, m_p);
-    root_of_unity_powers[0] = first.Operand();
-    precon_root_of_unity_powers[0] = first.BarrettFactor();
-
-    MultiplyFactor first_inv(InverseUIntMod(first.Operand(), m_p), m_bit_shift,
-                             m_p);
-    inv_root_of_unity_powers[0] = first_inv.Operand();
-    precon_inv_root_of_unity_powers[0] = first_inv.BarrettFactor();
-    int idx = 0;
-    int prev_idx = idx;
-    for (size_t i = 1; i < m_degree; i++) {
-      idx = ReverseBitsUInt(i, m_degree_bits);
-      MultiplyFactor mf(
-          MultiplyUIntMod(root_of_unity_powers[prev_idx], m_w, m_p),
-          m_bit_shift, m_p);
-      root_of_unity_powers[idx] = mf.Operand();
-      precon_root_of_unity_powers[idx] = mf.BarrettFactor();
-
-      MultiplyFactor mf_inv(InverseUIntMod(mf.Operand(), m_p), m_bit_shift,
-                            m_p);
-      inv_root_of_unity_powers[idx] = mf_inv.Operand();
-      precon_inv_root_of_unity_powers[idx] = mf_inv.BarrettFactor();
-
-      prev_idx = idx;
-    }
-
-    // Reordering inv_root_of_powers
-    std::vector<uint64_t> temp(m_degree);
-    temp[0] = inv_root_of_unity_powers[0];
-    idx = 1;
-    for (size_t m = (m_degree >> 1); m > 0; m >>= 1) {
-      for (size_t i = 0; i < m; i++) {
-        temp[idx] = inv_root_of_unity_powers[m + i];
-        idx++;
-      }
-    }
-    inv_root_of_unity_powers = temp;
-
-    // Reordering precon_inv_root_of_unity_powers
-    temp[0] = precon_inv_root_of_unity_powers[0];
-    idx = 1;
-    for (size_t m = (m_degree >> 1); m > 0; m >>= 1) {
-      for (size_t i = 0; i < m; i++) {
-        temp[idx] = precon_inv_root_of_unity_powers[m + i];
-        idx++;
-      }
-    }
-    precon_inv_root_of_unity_powers = std::move(temp);
-
-    NTT::NTTImpl::GetStaticRootOfUnityPowers()[m_key] =
-        std::move(root_of_unity_powers);
-    NTT::NTTImpl::GetStaticPreconRootOfUnityPowers()[m_key] =
-        std::move(precon_root_of_unity_powers);
-
-    NTT::NTTImpl::GetStaticInvRootOfUnityPowers()[m_key_inv] =
-        std::move(inv_root_of_unity_powers);
-    NTT::NTTImpl::GetStaticPreconInvRootOfUnityPowers()[m_key_inv] =
-        std::move(precon_inv_root_of_unity_powers);
+  auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(m_key);
+  if (it != NTT::NTTImpl::GetStaticRootOfUnityPowers().end()) {
+    return;
   }
+
+  auto it_inv = NTT::NTTImpl::GetStaticInvRootOfUnityPowers().find(m_key_inv);
+  if (it_inv != NTT::NTTImpl::GetStaticInvRootOfUnityPowers().end()) {
+    return;
+  }
+
+  std::vector<uint64_t> root_of_unity_powers(m_degree);
+  std::vector<uint64_t> inv_root_of_unity_powers(m_degree);
+
+  // 64-bit  precon
+  root_of_unity_powers[0] = 1;
+  inv_root_of_unity_powers[0] = InverseUIntMod(1, m_p);
+  int idx = 0;
+  int prev_idx = idx;
+  for (size_t i = 1; i < m_degree; i++) {
+    idx = ReverseBitsUInt(i, m_degree_bits);
+    root_of_unity_powers[idx] =
+        MultiplyUIntMod(root_of_unity_powers[prev_idx], m_w, m_p);
+    inv_root_of_unity_powers[idx] =
+        InverseUIntMod(root_of_unity_powers[idx], m_p);
+
+    prev_idx = idx;
+  }
+
+  // Reordering inv_root_of_powers
+  std::vector<uint64_t> temp(m_degree);
+  temp[0] = inv_root_of_unity_powers[0];
+  idx = 1;
+  for (size_t m = (m_degree >> 1); m > 0; m >>= 1) {
+    for (size_t i = 0; i < m; i++) {
+      temp[idx] = inv_root_of_unity_powers[m + i];
+      idx++;
+    }
+  }
+  inv_root_of_unity_powers = temp;
+
+  // 64-bit preconditioned root of unity powers
+  std::vector<uint64_t> precon64_root_of_unity_powers;
+  precon64_root_of_unity_powers.reserve(m_degree);
+  for (uint64_t root_of_unity : root_of_unity_powers) {
+    MultiplyFactor mf(root_of_unity, 64, m_p);
+    precon64_root_of_unity_powers.push_back(mf.BarrettFactor());
+  }
+
+  NTT::NTTImpl::GetStaticPrecon64RootOfUnityPowers()[m_key] =
+      std::move(precon64_root_of_unity_powers);
+
+  // 52-bit preconditioned root of unity powers
+  std::vector<uint64_t> precon52_root_of_unity_powers;
+  precon52_root_of_unity_powers.reserve(m_degree);
+  for (uint64_t root_of_unity : root_of_unity_powers) {
+    MultiplyFactor mf(root_of_unity, 52, m_p);
+    precon64_root_of_unity_powers.push_back(mf.BarrettFactor());
+  }
+
+  NTT::NTTImpl::GetStaticPrecon52RootOfUnityPowers()[m_key] =
+      std::move(precon64_root_of_unity_powers);
+
+  NTT::NTTImpl::GetStaticRootOfUnityPowers()[m_key] =
+      std::move(root_of_unity_powers);
+
+  // 64-bit preconditioned inverse root of unity powers
+  std::vector<uint64_t> precon64_inv_root_of_unity_powers;
+  precon64_inv_root_of_unity_powers.reserve(m_degree);
+  for (uint64_t inv_root_of_unity : inv_root_of_unity_powers) {
+    MultiplyFactor mf(inv_root_of_unity, 64, m_p);
+    precon64_inv_root_of_unity_powers.push_back(mf.BarrettFactor());
+  }
+
+  NTT::NTTImpl::GetStaticPrecon64InvRootOfUnityPowers()[m_key_inv] =
+      std::move(precon64_inv_root_of_unity_powers);
+
+  // 52-bit preconditioned inverse root of unity powers
+  std::vector<uint64_t> precon52_inv_root_of_unity_powers;
+  precon52_inv_root_of_unity_powers.reserve(m_degree);
+  for (uint64_t inv_root_of_unity : inv_root_of_unity_powers) {
+    MultiplyFactor mf(inv_root_of_unity, 52, m_p);
+    precon52_inv_root_of_unity_powers.push_back(mf.BarrettFactor());
+  }
+
+  NTT::NTTImpl::GetStaticPrecon52InvRootOfUnityPowers()[m_key_inv] =
+      std::move(precon52_inv_root_of_unity_powers);
+
+  NTT::NTTImpl::GetStaticInvRootOfUnityPowers()[m_key_inv] =
+      std::move(inv_root_of_unity_powers);
 }
 
 void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
-  const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
-  const uint64_t* precon_root_of_unity_powers = GetPreconRootOfUnityPowersPtr();
-
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
@@ -148,7 +159,10 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && m_bit_shift == s_ifma_shift_bits &&
-      (m_p < s_max_ifma_modulus)) {
+      (m_p < s_max_ifma_modulus && (m_degree >= 16))) {
+    const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
+    const uint64_t* precon_root_of_unity_powers =
+        GetPrecon52RootOfUnityPowersPtr();
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
@@ -158,8 +172,11 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 #endif
 
 #ifdef LATTICE_HAS_AVX512DQ
-  if (has_avx512_dq) {
+  if (has_avx512_dq && m_degree >= 16) {
     IVLOG(3, "Calling 64-bit AVX512 NTT");
+    const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
+    const uint64_t* precon_root_of_unity_powers =
+        GetPrecon64RootOfUnityPowersPtr();
     ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
         m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
         elements);
@@ -168,23 +185,26 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 #endif
 
   IVLOG(3, "Calling 64-bit default NTT");
+  const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
+  const uint64_t* precon_root_of_unity_powers =
+      GetPrecon64RootOfUnityPowersPtr();
   ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers,
                                  precon_root_of_unity_powers, elements);
 }
 
 void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
-  const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
-  const uint64_t* precon_inv_root_of_unity_powers =
-      GetPreconInvRootOfUnityPowersPtr();
-
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
                    << " or " << s_default_shift_bits);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus)) {
+  if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus) &&
+      (m_degree >= 16)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA InvNTT");
+    const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
+    const uint64_t* precon_inv_root_of_unity_powers =
+        GetPrecon52InvRootOfUnityPowersPtr();
     InverseTransformFromBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
         precon_inv_root_of_unity_powers, elements);
@@ -193,14 +213,22 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
 #endif
 
 #ifdef LATTICE_HAS_AVX512DQ
-  IVLOG(3, "Calling 64-bit AVX512 InvNTT");
-  InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
-      m_degree, m_p, inv_root_of_unity_powers, precon_inv_root_of_unity_powers,
-      elements);
-  return;
+  if (has_avx512_dq && m_degree >= 16) {
+    IVLOG(3, "Calling 64-bit AVX512 InvNTT");
+    const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
+    const uint64_t* precon_inv_root_of_unity_powers =
+        GetPrecon64InvRootOfUnityPowersPtr();
+    InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
+        m_degree, m_p, inv_root_of_unity_powers,
+        precon_inv_root_of_unity_powers, elements);
+    return;
+  }
 #endif
 
   IVLOG(3, "Calling 64-bit default InvNTT");
+  const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
+  const uint64_t* precon_inv_root_of_unity_powers =
+      GetPrecon64InvRootOfUnityPowersPtr();
   InverseTransformFromBitReverse64(m_degree, m_p, inv_root_of_unity_powers,
                                    precon_inv_root_of_unity_powers, elements);
 }

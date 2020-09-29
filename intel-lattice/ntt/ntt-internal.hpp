@@ -47,10 +47,17 @@ class NTT::NTTImpl {
 
   uint64_t GetBitShift() const { return m_bit_shift; }
 
-  uint64_t* GetPreconRootOfUnityPowersPtr() {
-    auto it = GetStaticPreconRootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
-                  "Could not find pre-conditioned root of unity power");
+  uint64_t* GetPrecon64RootOfUnityPowersPtr() {
+    auto it = GetStaticPrecon64RootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPrecon64RootOfUnityPowers().end(),
+                  "Could not find 64-bit pre-conditioned root of unity power");
+    return it->second.data();
+  }
+
+  uint64_t* GetPrecon52RootOfUnityPowersPtr() {
+    auto it = GetStaticPrecon52RootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPrecon52RootOfUnityPowers().end(),
+                  "Could not find 52-bit pre-conditioned root of unity power");
     return it->second.data();
   }
 
@@ -61,9 +68,16 @@ class NTT::NTTImpl {
     return it->second.data();
   }
 
-  std::vector<uint64_t> GetPreconRootOfUnityPowers() {
-    auto it = GetStaticPreconRootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPreconRootOfUnityPowers().end(),
+  std::vector<uint64_t> GetPrecon64RootOfUnityPowers() {
+    auto it = GetStaticPrecon64RootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPrecon64RootOfUnityPowers().end(),
+                  "Could not find 64-bit pre-conditioned root of unity power");
+    return it->second;
+  }
+
+  std::vector<uint64_t> GetPrecon52RootOfUnityPowers() {
+    auto it = GetStaticPrecon52RootOfUnityPowers().find(m_key);
+    LATTICE_CHECK(it != GetStaticPrecon52RootOfUnityPowers().end(),
                   "Could not find pre-conditioned root of unity power");
     return it->second;
   }
@@ -80,19 +94,39 @@ class NTT::NTTImpl {
   // Returns the root of unity at index i.
   uint64_t GetRootOfUnityPower(size_t i) { return GetRootOfUnityPowers()[i]; }
 
-  // Returns the vector of pre-conditioned pre-computed root of unity powers for
-  // the modulus and root of unity.
-  std::vector<uint64_t> GetPreconInvRootOfUnityPowers() {
-    auto it = GetStaticPreconInvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(it != GetStaticPreconInvRootOfUnityPowers().end(),
-                  "Could not find pre-conditioned inverse root of unity power");
+  // Returns the vector of 64-bit pre-conditioned pre-computed root of unity
+  // powers for the modulus and root of unity.
+  std::vector<uint64_t> GetPrecon64InvRootOfUnityPowers() {
+    auto it = GetStaticPrecon64InvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(
+        it != GetStaticPrecon64InvRootOfUnityPowers().end(),
+        "Could not find 64-bit pre-conditioned inverse root of unity power");
     return it->second;
   }
 
-  uint64_t* GetPreconInvRootOfUnityPowersPtr() {
-    auto it = GetStaticPreconInvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(it != GetStaticPreconInvRootOfUnityPowers().end(),
-                  "Could not find pre-conditioned inverse root of unity power");
+  // Returns the vector of 52-bit pre-conditioned pre-computed root of unity
+  // powers for the modulus and root of unity.
+  std::vector<uint64_t> GetPrecon52InvRootOfUnityPowers() {
+    auto it = GetStaticPrecon52InvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(
+        it != GetStaticPrecon52InvRootOfUnityPowers().end(),
+        "Could not find 52-bit pre-conditioned inverse root of unity power");
+    return it->second;
+  }
+
+  uint64_t* GetPrecon64InvRootOfUnityPowersPtr() {
+    auto it = GetStaticPrecon64InvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(
+        it != GetStaticPrecon64InvRootOfUnityPowers().end(),
+        "Could not find 64-bit pre-conditioned inverse root of unity power");
+    return it->second.data();
+  }
+
+  uint64_t* GetPrecon52InvRootOfUnityPowersPtr() {
+    auto it = GetStaticPrecon52InvRootOfUnityPowers().find(m_key_inv);
+    LATTICE_CHECK(
+        it != GetStaticPrecon52InvRootOfUnityPowers().end(),
+        "Could not find 52-bit pre-conditioned inverse root of unity power");
     return it->second.data();
   }
 
@@ -132,12 +166,22 @@ class NTT::NTTImpl {
   // unity>]
   static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
                             std::vector<uint64_t>, hash_tuple>&
-  GetStaticPreconRootOfUnityPowers() {
+  GetStaticPrecon64RootOfUnityPowers() {
     static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
                               std::vector<uint64_t>, hash_tuple>
-        s_precon_root_of_unity_powers;
+        s_precon64_root_of_unity_powers;
 
-    return s_precon_root_of_unity_powers;
+    return s_precon64_root_of_unity_powers;
+  }
+
+  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
+                            std::vector<uint64_t>, hash_tuple>&
+  GetStaticPrecon52RootOfUnityPowers() {
+    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
+                              std::vector<uint64_t>, hash_tuple>
+        s_precon52_root_of_unity_powers;
+
+    return s_precon52_root_of_unity_powers;
   }
 
   // Returns map of pre-computed inverse root of unity powers.
@@ -157,12 +201,25 @@ class NTT::NTTImpl {
   // modulus, root of unity>]
   static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
                             std::vector<uint64_t>, hash_tuple>&
-  GetStaticPreconInvRootOfUnityPowers() {
+  GetStaticPrecon64InvRootOfUnityPowers() {
     static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
                               std::vector<uint64_t>, hash_tuple>
-        s_precon_inv_root_of_unity_powers;
+        s_precon64_inv_root_of_unity_powers;
 
-    return s_precon_inv_root_of_unity_powers;
+    return s_precon64_inv_root_of_unity_powers;
+  }
+
+  // Returns map of pre-computed 52-bit pre-conditioned inverse root of unity
+  // powers. Access via s_precon_inv_root_of_unity_powers[<degree, prime
+  // modulus, root of unity>]
+  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
+                            std::vector<uint64_t>, hash_tuple>&
+  GetStaticPrecon52InvRootOfUnityPowers() {
+    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
+                              std::vector<uint64_t>, hash_tuple>
+        s_precon52_inv_root_of_unity_powers;
+
+    return s_precon52_inv_root_of_unity_powers;
   }
 
   void ComputeForward(uint64_t* elements);

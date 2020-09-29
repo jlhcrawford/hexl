@@ -244,18 +244,17 @@ TEST_P(NTTPrimesTest, IFMAPrimes) {
   NTT::NTTImpl ntt_ifma(N, prime);
   ForwardTransformToBitReverseAVX512<52>(
       N, ntt_ifma.GetModulus(), ntt_ifma.GetRootOfUnityPowers().data(),
-      ntt_ifma.GetPreconRootOfUnityPowers().data(), input_ifma.data());
+      ntt_ifma.GetPrecon52RootOfUnityPowers().data(), input_ifma.data());
 
   CheckEqual(input64, input_ifma);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    NTTPrimesTest, NTTPrimesTest,
-    ::testing::Values(std::make_tuple(1 << 1, 48), std::make_tuple(1 << 2, 48),
-                      std::make_tuple(1 << 3, 48), std::make_tuple(1 << 4, 48),
-                      std::make_tuple(1 << 5, 49), std::make_tuple(1 << 6, 49),
-                      std::make_tuple(1 << 7, 49),
-                      std::make_tuple(1 << 8, 49)));
+INSTANTIATE_TEST_SUITE_P(NTTPrimesTest, NTTPrimesTest,
+                         ::testing::Values(std::make_tuple(1 << 4, 48),
+                                           std::make_tuple(1 << 5, 49),
+                                           std::make_tuple(1 << 6, 49),
+                                           std::make_tuple(1 << 7, 49),
+                                           std::make_tuple(1 << 8, 49)));
 #endif
 
 #ifdef LATTICE_HAS_AVX512DQ
@@ -278,11 +277,11 @@ TEST(NTT, FwdNTT_AVX512) {
     NTT::NTTImpl ntt_impl(N, prime);
     ForwardTransformToBitReverse64(
         N, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconRootOfUnityPowers().data(), input2.data());
+        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input2.data());
 
     ForwardTransformToBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
@@ -308,11 +307,11 @@ TEST(NTT, InvNTT_AVX512) {
     NTT::NTTImpl ntt_impl(N, prime);
     InverseTransformFromBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
 
     InverseTransformFromBitReverse64(
         N, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input2.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input2.data());
 
     EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
