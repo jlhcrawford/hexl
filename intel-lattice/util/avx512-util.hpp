@@ -18,7 +18,6 @@
 
 #include <immintrin.h>
 
-#include <iostream>
 #include <vector>
 
 #include "intel-lattice/util/util.hpp"
@@ -42,6 +41,16 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
                            static_cast<uint64_t>(_mm256_extract_epi64(x1, 1)),
                            static_cast<uint64_t>(_mm256_extract_epi64(x1, 2)),
                            static_cast<uint64_t>(_mm256_extract_epi64(x1, 3))};
+
+  return xs;
+}
+
+// Returns the unsigned 64-bit integer values in x as a vector
+inline std::vector<uint64_t> ExtractValues(__m256i x) {
+  std::vector<uint64_t> xs{static_cast<uint64_t>(_mm256_extract_epi64(x, 0)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x, 1)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x, 2)),
+                           static_cast<uint64_t>(_mm256_extract_epi64(x, 3))};
 
   return xs;
 }

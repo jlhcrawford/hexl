@@ -44,7 +44,7 @@ static void BM_NTTNative(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverse64(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
   }
 }
 
@@ -70,7 +70,7 @@ static void BM_NTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon52InvRootOfUnityPowers().data(), input.data());
   }
 }
 
@@ -98,7 +98,7 @@ static void BM_NTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
   }
 }
 
@@ -123,7 +123,7 @@ static void BM_invNTTNative(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     InverseTransformFromBitReverse64(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
   }
 }
 
@@ -148,7 +148,7 @@ static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon52InvRootOfUnityPowers().data(), input.data());
   }
 }
 
@@ -174,7 +174,7 @@ static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPreconInvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
   }
 }
 
