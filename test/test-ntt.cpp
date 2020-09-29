@@ -27,8 +27,7 @@
 #include "test/test-util.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
-#include "ntt/fwd-ntt-avx512.hpp"
-#include "ntt/inv-ntt-avx512.hpp"
+#include "ntt/ntt-avx512.hpp"
 #endif
 
 namespace intel {
@@ -295,10 +294,10 @@ TEST(NTT, InvNTT_AVX512) {
   uint64_t prime = GeneratePrimes(1, 55, N)[0];
 
   std::random_device rd;
-  std::mt19937 gen(42);  // rd());
+  std::mt19937 gen(rd());
   std::uniform_int_distribution<> distrib(0, prime - 1);
 
-  for (size_t trial = 0; trial < 100; ++trial) {
+  for (size_t trial = 0; trial < 200; ++trial) {
     std::vector<std::uint64_t> input(N, 0);
     for (size_t i = 0; i < N; ++i) {
       input[i] = distrib(gen);
