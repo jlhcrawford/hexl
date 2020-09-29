@@ -110,10 +110,25 @@ void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-    for (size_t cpy = 0; cpy < 8; ++cpy) {
-      *X++ = *X_out++;
-      *X++ = *Y_out++;
-    }
+
+    // for (size_t cpy = 0; cpy < 8; ++cpy) {
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    // }
     j1 += 16;
   }
 }
@@ -151,26 +166,25 @@ void InvT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
 
-    *X++ = X_out[0];
-    *X++ = X_out[1];
-    *X++ = Y_out[0];
-    *X++ = Y_out[1];
-    *X++ = X_out[2];
-    *X++ = X_out[3];
-    *X++ = Y_out[2];
-    *X++ = Y_out[3];
-    *X++ = X_out[4];
-    *X++ = X_out[5];
-    *X++ = Y_out[4];
-    *X++ = Y_out[5];
-    *X++ = X_out[6];
-    *X++ = X_out[7];
-    *X++ = Y_out[6];
-    *X++ = Y_out[7];
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
 
     W_op += 4;
     W_precon += 4;
-
     j1 += 16;
   }
 }
@@ -208,22 +222,22 @@ void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
 
-    *X++ = X_out[0];
-    *X++ = X_out[1];
-    *X++ = X_out[2];
-    *X++ = X_out[3];
-    *X++ = Y_out[0];
-    *X++ = Y_out[1];
-    *X++ = Y_out[2];
-    *X++ = Y_out[3];
-    *X++ = X_out[4];
-    *X++ = X_out[5];
-    *X++ = X_out[6];
-    *X++ = X_out[7];
-    *X++ = Y_out[4];
-    *X++ = Y_out[5];
-    *X++ = Y_out[6];
-    *X++ = Y_out[7];
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *X_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
+    *X++ = *Y_out++;
 
     j1 += 16;
     W_op += 2;
@@ -344,11 +358,8 @@ void InverseTransformFromBitReverseAVX512(
     v_Y = _mm512_il_small_mod_epi64(v_Y, v_twice_mod);
     v_Y = _mm512_il_small_mod_epi64(v_Y, v_modulus);
 
-    _mm512_storeu_si512(v_X_pt, v_X);
-    _mm512_storeu_si512(v_Y_pt, v_Y);
-
-    ++v_X_pt;
-    ++v_Y_pt;
+    _mm512_storeu_si512(v_X_pt++, v_X);
+    _mm512_storeu_si512(v_Y_pt++, v_Y);
   }
 
   IVLOG(5, "AVX512 returning elements "
