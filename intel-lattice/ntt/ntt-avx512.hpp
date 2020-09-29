@@ -31,15 +31,12 @@ namespace intel {
 namespace lattice {
 
 template <int BitShift>
-void FwdT1(uint64_t* elements, uint64_t modulus, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
+void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-
-  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
-  __m512i v_modulus = _mm512_set1_epi64(modulus);
-
   size_t j1 = 0;
+
   // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
@@ -74,15 +71,10 @@ void FwdT1(uint64_t* elements, uint64_t modulus, uint64_t m,
 }
 
 template <int BitShift>
-void FwdT2(uint64_t* elements, uint64_t modulus, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
-  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
-  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-
-  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
-  __m512i v_modulus = _mm512_set1_epi64(modulus);
-
+void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
+
   // 4 | m guaranteed by n >= 16
   for (size_t i = m / 4; i > 0; --i) {
     uint64_t* X = elements + j1;
@@ -136,14 +128,8 @@ void FwdT2(uint64_t* elements, uint64_t modulus, uint64_t m,
 }
 
 template <int BitShift>
-void FwdT4(uint64_t* elements, uint64_t modulus, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
-  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
-  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-
-  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
-  __m512i v_modulus = _mm512_set1_epi64(modulus);
-
+void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 
   // 2 | m guaranteed by n >= 16
@@ -198,11 +184,9 @@ void FwdT4(uint64_t* elements, uint64_t modulus, uint64_t m,
 }
 
 template <int BitShift>
-void FwdT8(uint64_t* elements, uint64_t modulus, uint64_t t, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
-  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
-  __m512i v_modulus = _mm512_set1_epi64(modulus);
-
+void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t t, uint64_t m, const uint64_t* W_op,
+           const uint64_t* W_precon) {
   size_t j1 = 0;
 
   for (size_t i = 0; i < m; i++) {
@@ -215,6 +199,7 @@ void FwdT8(uint64_t* elements, uint64_t modulus, uint64_t t, uint64_t m,
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
     __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
 
+    // assume 8 | t
     for (size_t j = t / 8; j > 0; --j) {
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
@@ -271,34 +256,28 @@ void ForwardTransformToBitReverseAVX512(
   IVLOG(5, "elements " << std::vector<uint64_t>(elements, elements + n));
 
   size_t t = (n >> 1);
+  size_t m = 1;
+  for (; m < (n >> 3); m <<= 1) {
+    const uint64_t* W_op = &root_of_unity_powers[m];
+    const uint64_t* W_precon = &precon_root_of_unity_powers[m];
+    FwdT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+    t >>= 1;
+  }
 
-  for (size_t m = 1; m < n; m <<= 1) {
-    size_t j1 = 0;
-
+  // Do T=1, T=2, T=4 separately
+  {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
 
-    switch (t) {
-      case 1: {
-        FwdT1<BitShift>(elements, mod, m, W_op, W_precon);
-        break;
-      }
-
-      case 2: {
-        FwdT2<BitShift>(elements, mod, m, W_op, W_precon);
-        break;
-      }
-
-      case 4: {
-        FwdT4<BitShift>(elements, mod, m, W_op, W_precon);
-        break;
-      }
-
-      default: {  // t >= 8
-        FwdT8<BitShift>(elements, mod, t, m, W_op, W_precon);
-      }
-    }
-    t >>= 1;
+    FwdT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    m <<= 1;
+    W_op = &root_of_unity_powers[m];
+    W_precon = &precon_root_of_unity_powers[m];
+    FwdT2<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    m <<= 1;
+    W_op = &root_of_unity_powers[m];
+    W_precon = &precon_root_of_unity_powers[m];
+    FwdT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
   }
 
   // n power of two at least 8 => n divisible by 8
@@ -307,6 +286,7 @@ void ForwardTransformToBitReverseAVX512(
   for (size_t i = 0; i < n; i += 8) {
     __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
+    // Reduce from [0, 4p) to [0, p)
     v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
     v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
 
