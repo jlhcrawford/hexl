@@ -35,12 +35,12 @@ void FwdT1(uint64_t* elements, uint64_t modulus, uint64_t m,
            const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-  // 8 | m guaranteed by n >= 16
 
   __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
   __m512i v_modulus = _mm512_set1_epi64(modulus);
 
-  size_t j1 = 1;
+  size_t j1 = 0;
+  // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
     uint64_t* Y = X + 1;
@@ -70,6 +70,179 @@ void FwdT1(uint64_t* elements, uint64_t modulus, uint64_t m,
       *X++ = *Y_out++;
     }
     j1 += 16;
+  }
+}
+
+template <int BitShift>
+void FwdT2(uint64_t* elements, uint64_t modulus, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
+  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
+  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
+
+  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
+  __m512i v_modulus = _mm512_set1_epi64(modulus);
+
+  size_t j1 = 0;
+  // 4 | m guaranteed by n >= 16
+  for (size_t i = m / 4; i > 0; --i) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + 2;
+
+    __m512i v_X =
+        _mm512_set_epi64(X[13], X[12], X[9], X[8], X[5], X[4], X[1], X[0]);
+    __m512i v_Y =
+        _mm512_set_epi64(Y[13], Y[12], Y[9], Y[8], Y[5], Y[4], Y[1], Y[0]);
+
+    __m512i v_W_op = _mm512_set_epi64(W_op[3], W_op[3], W_op[2], W_op[2],
+                                      W_op[1], W_op[1], W_op[0], W_op[0]);
+    __m512i v_W_precon =
+        _mm512_set_epi64(W_precon[3], W_precon[3], W_precon[2], W_precon[2],
+                         W_precon[1], W_precon[1], W_precon[0], W_precon[0]);
+
+    __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
+    __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
+    __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Q = _mm512_sub_epi64(tmp1, tmp2);
+    v_X = _mm512_add_epi64(v_tx, v_Q);
+    __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
+    v_Y = _mm512_add_epi64(v_tx, sub);
+
+    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
+    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
+
+    *X++ = X_out[0];
+    *X++ = X_out[1];
+    *X++ = Y_out[0];
+    *X++ = Y_out[1];
+    *X++ = X_out[2];
+    *X++ = X_out[3];
+    *X++ = Y_out[2];
+    *X++ = Y_out[3];
+    *X++ = X_out[4];
+    *X++ = X_out[5];
+    *X++ = Y_out[4];
+    *X++ = Y_out[5];
+    *X++ = X_out[6];
+    *X++ = X_out[7];
+    *X++ = Y_out[6];
+    *X++ = Y_out[7];
+
+    W_op += 4;
+    W_precon += 4;
+
+    j1 += 16;
+  }
+}
+
+template <int BitShift>
+void FwdT4(uint64_t* elements, uint64_t modulus, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
+  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
+  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
+
+  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
+  __m512i v_modulus = _mm512_set1_epi64(modulus);
+
+  size_t j1 = 0;
+
+  // 2 | m guaranteed by n >= 16
+  for (size_t i = m / 2; i > 0; --i) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + 4;
+
+    __m512i v_X =
+        _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2], X[1], X[0]);
+    __m512i v_Y =
+        _mm512_set_epi64(Y[11], Y[10], Y[9], Y[8], Y[3], Y[2], Y[1], Y[0]);
+
+    __m512i v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1],
+                                      W_op[0], W_op[0], W_op[0], W_op[0]);
+    __m512i v_W_precon =
+        _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
+                         W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
+
+    __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
+    __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
+    __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Q = _mm512_sub_epi64(tmp1, tmp2);
+    v_X = _mm512_add_epi64(v_tx, v_Q);
+    __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
+    v_Y = _mm512_add_epi64(v_tx, sub);
+
+    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
+    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
+
+    *X++ = X_out[0];
+    *X++ = X_out[1];
+    *X++ = X_out[2];
+    *X++ = X_out[3];
+    *X++ = Y_out[0];
+    *X++ = Y_out[1];
+    *X++ = Y_out[2];
+    *X++ = Y_out[3];
+    *X++ = X_out[4];
+    *X++ = X_out[5];
+    *X++ = X_out[6];
+    *X++ = X_out[7];
+    *X++ = Y_out[4];
+    *X++ = Y_out[5];
+    *X++ = Y_out[6];
+    *X++ = Y_out[7];
+
+    j1 += 16;
+    W_op += 2;
+    W_precon += 2;
+  }
+}
+
+template <int BitShift>
+void FwdT8(uint64_t* elements, uint64_t modulus, uint64_t t, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
+  __m512i v_twice_mod = _mm512_set1_epi64(modulus << 1);
+  __m512i v_modulus = _mm512_set1_epi64(modulus);
+
+  size_t j1 = 0;
+
+  for (size_t i = 0; i < m; i++) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + t;
+
+    __m512i v_W_op = _mm512_set1_epi64(*W_op++);
+    __m512i v_W_precon = _mm512_set1_epi64(*W_precon++);
+
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
+    __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
+
+    for (size_t j = t / 8; j > 0; --j) {
+      __m512i v_X = _mm512_loadu_si512(v_X_pt);
+      __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
+
+      // tx = X >= twice_mod ? X - twice_mod : X
+      __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+
+      // multiply_uint64_hw64(Wprime, *Y, &Q);
+      __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
+
+      // Q = *Y * W - Q * modulus;
+      // Use 64-bit multiply low, even when BitShift ==
+      // s_ifma_shift_bits
+      __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
+      __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
+      v_Q = _mm512_sub_epi64(tmp1, tmp2);
+
+      // *X++ = tx + Q;
+      v_X = _mm512_add_epi64(v_tx, v_Q);
+
+      // *Y++ = tx + (two_times_modulus - Q);
+      __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
+      v_Y = _mm512_add_epi64(v_tx, sub);
+
+      _mm512_storeu_si512(v_X_pt++, v_X);
+      _mm512_storeu_si512(v_Y_pt++, v_Y);
+    }
+    j1 += (t << 1);
   }
 }
 
@@ -112,151 +285,17 @@ void ForwardTransformToBitReverseAVX512(
       }
 
       case 2: {
-        // 4 | m guaranteed by n >= 16
-        for (size_t i = m / 4; i > 0; --i) {
-          uint64_t* X = elements + j1;
-          uint64_t* Y = X + 2;
-
-          __m512i v_X = _mm512_set_epi64(X[13], X[12], X[9], X[8], X[5], X[4],
-                                         X[1], X[0]);
-          __m512i v_Y = _mm512_set_epi64(Y[13], Y[12], Y[9], Y[8], Y[5], Y[4],
-                                         Y[1], Y[0]);
-
-          __m512i v_W_op = _mm512_set_epi64(W_op[3], W_op[3], W_op[2], W_op[2],
-                                            W_op[1], W_op[1], W_op[0], W_op[0]);
-          __m512i v_W_precon = _mm512_set_epi64(
-              W_precon[3], W_precon[3], W_precon[2], W_precon[2], W_precon[1],
-              W_precon[1], W_precon[0], W_precon[0]);
-
-          __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
-          __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-          __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-          __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-          v_Q = _mm512_sub_epi64(tmp1, tmp2);
-          v_X = _mm512_add_epi64(v_tx, v_Q);
-          __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-          v_Y = _mm512_add_epi64(v_tx, sub);
-
-          uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-          uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
-          *X++ = X_out[0];
-          *X++ = X_out[1];
-          *X++ = Y_out[0];
-          *X++ = Y_out[1];
-          *X++ = X_out[2];
-          *X++ = X_out[3];
-          *X++ = Y_out[2];
-          *X++ = Y_out[3];
-          *X++ = X_out[4];
-          *X++ = X_out[5];
-          *X++ = Y_out[4];
-          *X++ = Y_out[5];
-          *X++ = X_out[6];
-          *X++ = X_out[7];
-          *X++ = Y_out[6];
-          *X++ = Y_out[7];
-
-          W_op += 4;
-          W_precon += 4;
-
-          j1 += 16;
-        }
+        FwdT2<BitShift>(elements, mod, m, W_op, W_precon);
         break;
       }
 
       case 4: {
-        // 2 | m guaranteed by n >= 16
-        for (size_t i = m / 2; i > 0; --i) {
-          uint64_t* X = elements + j1;
-          uint64_t* Y = X + 4;
-
-          __m512i v_X = _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2],
-                                         X[1], X[0]);
-          __m512i v_Y = _mm512_set_epi64(Y[11], Y[10], Y[9], Y[8], Y[3], Y[2],
-                                         Y[1], Y[0]);
-
-          __m512i v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1],
-                                            W_op[0], W_op[0], W_op[0], W_op[0]);
-          __m512i v_W_precon = _mm512_set_epi64(
-              W_precon[1], W_precon[1], W_precon[1], W_precon[1], W_precon[0],
-              W_precon[0], W_precon[0], W_precon[0]);
-
-          __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
-          __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-          __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-          __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-          v_Q = _mm512_sub_epi64(tmp1, tmp2);
-          v_X = _mm512_add_epi64(v_tx, v_Q);
-          __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-          v_Y = _mm512_add_epi64(v_tx, sub);
-
-          uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-          uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
-          *X++ = X_out[0];
-          *X++ = X_out[1];
-          *X++ = X_out[2];
-          *X++ = X_out[3];
-          *X++ = Y_out[0];
-          *X++ = Y_out[1];
-          *X++ = Y_out[2];
-          *X++ = Y_out[3];
-          *X++ = X_out[4];
-          *X++ = X_out[5];
-          *X++ = X_out[6];
-          *X++ = X_out[7];
-          *X++ = Y_out[4];
-          *X++ = Y_out[5];
-          *X++ = Y_out[6];
-          *X++ = Y_out[7];
-
-          j1 += 16;
-          W_op += 2;
-          W_precon += 2;
-        }
+        FwdT4<BitShift>(elements, mod, m, W_op, W_precon);
         break;
       }
 
       default: {  // t >= 8
-        for (size_t i = 0; i < m; i++) {
-          uint64_t* X = elements + j1;
-          uint64_t* Y = X + t;
-
-          __m512i v_W_op = _mm512_set1_epi64(*W_op++);
-          __m512i v_W_precon = _mm512_set1_epi64(*W_precon++);
-
-          __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
-          __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
-
-          for (size_t j = t / 8; j > 0; --j) {
-            __m512i v_X = _mm512_loadu_si512(v_X_pt);
-            __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
-
-            // tx = X >= twice_mod ? X - twice_mod : X
-            __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
-
-            // multiply_uint64_hw64(Wprime, *Y, &Q);
-            __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-
-            // Q = *Y * W - Q * modulus;
-            // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
-            __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-            __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-            v_Q = _mm512_sub_epi64(tmp1, tmp2);
-
-            // *X++ = tx + Q;
-            v_X = _mm512_add_epi64(v_tx, v_Q);
-
-            // *Y++ = tx + (two_times_modulus - Q);
-            __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-            v_Y = _mm512_add_epi64(v_tx, sub);
-
-            _mm512_storeu_si512(v_X_pt++, v_X);
-            _mm512_storeu_si512(v_Y_pt++, v_Y);
-          }
-          j1 += (t << 1);
-        }
+        FwdT8<BitShift>(elements, mod, t, m, W_op, W_precon);
       }
     }
     t >>= 1;
