@@ -176,6 +176,62 @@ void InvT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
+void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+  size_t j1 = 0;
+
+  // 2 | m guaranteed by n >= 16
+  for (size_t i = m / 2; i > 0; --i) {
+    uint64_t* X = elements + j1;
+    uint64_t* Y = X + 4;
+
+    __m512i v_X =
+        _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2], X[1], X[0]);
+    __m512i v_Y =
+        _mm512_set_epi64(Y[11], Y[10], Y[9], Y[8], Y[3], Y[2], Y[1], Y[0]);
+
+    __m512i v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1],
+                                      W_op[0], W_op[0], W_op[0], W_op[0]);
+    __m512i v_W_precon =
+        _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
+                         W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
+
+    __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
+    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+    v_X = _mm512_il_small_mod_epi64(v_tx, v_twice_mod);
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
+    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
+
+    *X++ = X_out[0];
+    *X++ = X_out[1];
+    *X++ = X_out[2];
+    *X++ = X_out[3];
+    *X++ = Y_out[0];
+    *X++ = Y_out[1];
+    *X++ = Y_out[2];
+    *X++ = Y_out[3];
+    *X++ = X_out[4];
+    *X++ = X_out[5];
+    *X++ = X_out[6];
+    *X++ = X_out[7];
+    *X++ = Y_out[4];
+    *X++ = Y_out[5];
+    *X++ = Y_out[6];
+    *X++ = Y_out[7];
+
+    j1 += 16;
+    W_op += 2;
+    W_precon += 2;
+  }
+}
+
+template <int BitShift>
 void InverseTransformFromBitReverseAVX512(
     const uint64_t n, const uint64_t mod,
     const uint64_t* inv_root_of_unity_powers,
@@ -189,8 +245,6 @@ void InverseTransformFromBitReverseAVX512(
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
-  __m256i v256_modulus = _mm256_set1_epi64x(mod);
-  __m256i v256_twice_mod = _mm256_set1_epi64x(twice_mod);
 
   size_t t = 1;
   size_t root_index = 1;
@@ -225,45 +279,16 @@ void InverseTransformFromBitReverseAVX512(
       continue;
     }
 
+    if (t == 4) {
+      const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
+      const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
+      InvT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+      t <<= 1;
+      root_index += m;
+      continue;
+    }
+
     for (size_t i = 0; i < m; i++, root_index++) {
-      const uint64_t W_op = inv_root_of_unity_powers[root_index];
-      const uint64_t W_precon = precon_inv_root_of_unity_powers[root_index];
-
-      uint64_t* X = elements + j1;
-      uint64_t* Y = X + t;
-
-      if (t == 4) {
-        __m256i v_W_op = _mm256_set1_epi64x(W_op);
-        __m256i v_W_precon = _mm256_set1_epi64x(W_precon);
-
-        __m256i* v_X_pt = reinterpret_cast<__m256i*>(X);
-        __m256i* v_Y_pt = reinterpret_cast<__m256i*>(Y);
-
-        __m256i v_X = _mm256_loadu_si256(v_X_pt);
-        __m256i v_Y = _mm256_loadu_si256(v_Y_pt);
-        // tx = *X + *Y
-        __m256i v_tx = _mm256_add_epi64(v_X, v_Y);
-
-        // ty = *X + twice_mod - *Y
-        __m256i tmp_ty = _mm256_add_epi64(v_X, v256_twice_mod);
-        __m256i v_ty = _mm256_sub_epi64(tmp_ty, v_Y);
-
-        // *X++ = tx >= twice_mod ? tx - twice_mod : tx
-        v_X = _mm256_il_small_mod_epi64(v_tx, v256_twice_mod);
-
-        // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
-        // multiply_uint64_hw64(W_precon, *Y, &Q);
-        __m256i v_Q = _mm256_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-
-        // *Y++ = ty * W_op - Q * modulus;
-        // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
-        __m256i tmp_y1 = _mm256_mullo_epi64(v_ty, v_W_op);
-        __m256i tmp_y2 = _mm256_mullo_epi64(v_Q, v256_modulus);
-        v_Y = _mm256_sub_epi64(tmp_y1, tmp_y2);
-
-        _mm256_storeu_si256(v_X_pt, v_X);
-        _mm256_storeu_si256(v_Y_pt, v_Y);
-      }
       j1 += (t << 1);
     }
     t <<= 1;
