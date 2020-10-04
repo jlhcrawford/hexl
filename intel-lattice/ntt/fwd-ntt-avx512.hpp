@@ -40,18 +40,17 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
-    uint64_t* Y = X + 1;
 
     __m512i v_X =
         _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
 
     __m512i v_Y =
-        _mm512_set_epi64(Y[14], Y[12], Y[10], Y[8], Y[6], Y[4], Y[2], Y[0]);
+        _mm512_set_epi64(X[15], X[13], X[11], X[9], X[7], X[5], X[3], X[1]);
 
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
     __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
     __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -78,12 +77,10 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   // 4 | m guaranteed by n >= 16
   for (size_t i = m / 4; i > 0; --i) {
     uint64_t* X = elements + j1;
-    uint64_t* Y = X + 2;
-
     __m512i v_X =
         _mm512_set_epi64(X[13], X[12], X[9], X[8], X[5], X[4], X[1], X[0]);
     __m512i v_Y =
-        _mm512_set_epi64(Y[13], Y[12], Y[9], Y[8], Y[5], Y[4], Y[1], Y[0]);
+        _mm512_set_epi64(X[15], X[14], X[11], X[10], X[7], X[6], X[3], X[2]);
 
     __m512i v_W_op = _mm512_set_epi64(W_op[3], W_op[3], W_op[2], W_op[2],
                                       W_op[1], W_op[1], W_op[0], W_op[0]);
@@ -91,7 +88,7 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
         _mm512_set_epi64(W_precon[3], W_precon[3], W_precon[2], W_precon[2],
                          W_precon[1], W_precon[1], W_precon[0], W_precon[0]);
 
-    __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
     __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
     __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -135,12 +132,11 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   // 2 | m guaranteed by n >= 16
   for (size_t i = m / 2; i > 0; --i) {
     uint64_t* X = elements + j1;
-    uint64_t* Y = X + 4;
 
     __m512i v_X =
         _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2], X[1], X[0]);
     __m512i v_Y =
-        _mm512_set_epi64(Y[11], Y[10], Y[9], Y[8], Y[3], Y[2], Y[1], Y[0]);
+        _mm512_set_epi64(X[15], X[14], X[13], X[12], X[7], X[6], X[5], X[4]);
 
     __m512i v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1],
                                       W_op[0], W_op[0], W_op[0], W_op[0]);
@@ -148,7 +144,7 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
         _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
                          W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
 
-    __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
     __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
     __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -205,7 +201,7 @@ void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
       // tx = X >= twice_mod ? X - twice_mod : X
-      __m512i v_tx = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
+      __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
 
       // multiply_uint64_hw64(Wprime, *Y, &Q);
       __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
@@ -287,8 +283,8 @@ void ForwardTransformToBitReverseAVX512(
     __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
     // Reduce from [0, 4p) to [0, p)
-    v_X = _mm512_il_small_mod_epi64(v_X, v_twice_mod);
-    v_X = _mm512_il_small_mod_epi64(v_X, v_modulus);
+    v_X = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
+    v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
 
     LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8, mod);
 

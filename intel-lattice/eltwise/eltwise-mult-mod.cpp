@@ -29,51 +29,39 @@
 namespace intel {
 namespace lattice {
 
+// Algorithm 1 of https://hal.archives-ouvertes.fr/hal-01215845/document
 void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
-                          const uint64_t n, const uint64_t barr_hi,
-                          const uint64_t barr_lo, const uint64_t modulus) {
+                          const uint64_t n, const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
+
+  uint64_t logmod = std::log2l(modulus);
+
+  // modulus < 2**N
+  uint64_t N = logmod + 1;
+  uint64_t D = N + N;
+  uint64_t L = D;
+  uint64_t barr_lo = (uint128_t(1) << L) / modulus;
 
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 0; i < n; ++i) {
-    uint64_t prod_hi, prod_lo, rnd1_hi, rnd2_hi, rnd2_lo, rnd3_hi, rnd3_lo,
-        floor_lo, floor_hi, result;
+    uint64_t prod_hi, prod_lo, c2_hi, c2_lo, result;
 
     // Multiply inputs
     MultiplyUInt64(*operand1, *operand2, &prod_hi, &prod_lo);
+    // C1 = D >> (N-1)
 
-    // Reduces product using base 2^BitShift Barrett reduction
-    // Each | indicates BitShift-bit chunks
-    //
-    //                        | barr_hi | barr_lo |
-    //      X                 | prod_hi | prod_lo |
-    // --------------------------------------------
-    //                        | prod_lo x barr_lo | // Round 1
-    // +            | prod_lo x barr_hi |           // Round 2
-    // +            | prod_hi x barr_lo |           // Round 3
-    // +  | barr_hi x prod_hi |                     // Round 4
-    // --------------------------------------------
-    //              |floor_hi | floor_lo|
-    //               \-------/
-    //                   \- The only BitShift-bit chunk we care about: vfloor_hi
+    uint64_t c1 = (prod_lo >> (N - 1)) + (prod_hi << (64 - (N - 1)));
 
-    // Round 1
-    rnd1_hi = MultiplyUInt64Hi<64>(prod_lo, barr_lo);
-    // Round 2
-    MultiplyUInt64(prod_lo, barr_hi, &rnd2_hi, &rnd2_lo);
-    floor_hi = rnd2_hi + AddUInt64(rnd2_lo, rnd1_hi, &floor_lo);
+    // C2 = C1 * barr_lo
+    MultiplyUInt64(c1, barr_lo, &c2_hi, &c2_lo);
 
-    // Round 3
-    MultiplyUInt64(prod_hi, barr_lo, &rnd3_hi, &rnd3_lo);
-    floor_hi += rnd3_hi + AddUInt64(floor_lo, rnd3_lo, &floor_lo);
+    // C3 = C2 >> (L - N + 1)
+    uint64_t c3 = (c2_lo >> (L - N + 1)) + (c2_hi << (64 - (L - N + 1)));
 
-    // Round 4
-    floor_hi += prod_hi * barr_hi;
-
-    // Barrett subtraction
-    result = prod_lo - floor_hi * modulus;
+    // C4 = prod_lo - (p * c3)_lo
+    result = prod_lo - c3 * modulus;
 
     // Conditional subtraction
     *operand1 = result - (modulus & static_cast<uint64_t>(-static_cast<int64_t>(
@@ -87,26 +75,14 @@ void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
 void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
                     const uint64_t n, const uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512DQ
-  if (has_avx512_dq && modulus < (1UL << 50)) {
-    IVLOG(3, "Calling EltwiseMultModAVX512Float");
-    EltwiseMultModAVX512Float(operand1, operand2, n, modulus);
-    return;
-  }
-#endif
-
-#ifdef LATTICE_HAS_AVX512IFMA
-  if (has_avx512_ifma && modulus < (1UL << 52)) {
-    IVLOG(3, "Calling EltwiseMultModAVX512Int<52>");
-    EltwiseMultModAVX512Int<52>(operand1, operand2, n, modulus);
-    return;
-  }
-#endif
-
-#ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
-    IVLOG(3, "Calling EltwiseMultModAVX512Int<64>");
-    EltwiseMultModAVX512Int<64>(operand1, operand2, n, modulus);
-    return;
+    if (modulus < (1UL << 50)) {
+      EltwiseMultModAVX512Float(operand1, operand2, n, modulus);
+      return;
+    } else {
+      EltwiseMultModAVX512Int(operand1, operand2, n, modulus);
+      return;
+    }
   }
 #endif
 

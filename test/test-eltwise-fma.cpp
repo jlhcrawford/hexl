@@ -141,7 +141,7 @@ TEST(EltwiseFMAMod, AVX512) {
 
   for (size_t bits = 48; bits <= 51; ++bits) {
     uint64_t prime = GeneratePrimes(1, bits, length)[0];
-    std::uniform_int_distribution<> distrib(0, prime - 1);
+    std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
 
     for (size_t trial = 0; trial < 1000; ++trial) {
       std::vector<uint64_t> arg1(length, 0);
