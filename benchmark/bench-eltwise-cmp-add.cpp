@@ -39,7 +39,7 @@ static void BM_EltwiseCmpAddNative(benchmark::State& state) {  //  NOLINT
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  std::uniform_int_distribution<> distrib(0, 100);
+  std::uniform_int_distribution<uint64_t> distrib(0, 100);
 
   uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);
@@ -70,7 +70,7 @@ static void BM_EltwiseCmpAddAVX512(benchmark::State& state) {  //  NOLINT
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  std::uniform_int_distribution<> distrib(0, 100);
+  std::uniform_int_distribution<uint64_t> distrib(0, 100);
 
   uint64_t bound = 50;
   uint64_t diff = distrib(gen);

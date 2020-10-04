@@ -40,7 +40,7 @@ static void BM_EltwiseCmpSubModNative(benchmark::State& state) {  //  NOLINT
   std::mt19937 gen(rd());
 
   uint64_t modulus = 100;
-  std::uniform_int_distribution<> distrib(0, modulus - 1);
+  std::uniform_int_distribution<uint64_t> distrib(0, modulus - 1);
 
   uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);
@@ -73,7 +73,7 @@ static void BM_EltwiseCmpSubModAVX512(benchmark::State& state) {  //  NOLINT
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  std::uniform_int_distribution<> distrib(0, modulus - 1);
+  std::uniform_int_distribution<uint64_t> distrib(0, modulus - 1);
 
   uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);

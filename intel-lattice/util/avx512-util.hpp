@@ -45,6 +45,22 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
   return xs;
 }
 
+inline std::vector<int64_t> ExtractIntValues(__m512i x) {
+  __m256i x0 = _mm512_extracti64x4_epi64(x, 0);
+  __m256i x1 = _mm512_extracti64x4_epi64(x, 1);
+
+  std::vector<int64_t> xs{static_cast<int64_t>(_mm256_extract_epi64(x0, 0)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x0, 1)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x0, 2)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x0, 3)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x1, 0)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x1, 1)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x1, 2)),
+                          static_cast<int64_t>(_mm256_extract_epi64(x1, 3))};
+
+  return xs;
+}
+
 // Returns the unsigned 64-bit integer values in x as a vector
 inline std::vector<uint64_t> ExtractValues(__m256i x) {
   std::vector<uint64_t> xs{static_cast<uint64_t>(_mm256_extract_epi64(x, 0)),
@@ -180,17 +196,17 @@ inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
 }
 #endif
 
-// Returns x mod p; assumes x < 2p
+// Returns x mod p; assumes 0 < x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
-inline __m256i _mm256_il_small_mod_epi64(__m256i x, __m256i p) {
+inline __m256i _mm256_il_small_mod_epu64(__m256i x, __m256i p) {
   return _mm256_min_epu64(x, _mm256_sub_epi64(x, p));
 }
 
-// Returns x mod p; assumes x < 2p
+// Returns x mod p; assumes 0 < x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
-inline __m512i _mm512_il_small_mod_epi64(__m512i x, __m512i p) {
+inline __m512i _mm512_il_small_mod_epu64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
@@ -264,7 +280,7 @@ inline __m512i _mm512_il_add_epu<52>(__m512i x, __m512i y, __m512i* c) {
   __m512i vtwo_pow_52 = _mm512_set1_epi64(1UL << 52);
   __m512i sum = _mm512_add_epi64(x, y);
   __m512i carry = _mm512_il_cmpge_epu64(sum, vtwo_pow_52, 1);
-  *c = _mm512_il_small_mod_epi64(sum, vtwo_pow_52);
+  *c = _mm512_il_small_mod_epu64(sum, vtwo_pow_52);
   return carry;
 }
 
@@ -279,7 +295,7 @@ inline __m512i _mm512_il_barrett_reduce64(__m512i x, __m512i p,
   __m512i tmp1_times_mod = _mm512_il_mullo_epi<64>(rnd1_hi, p);
   x = _mm512_sub_epi64(x, tmp1_times_mod);
   // Correction
-  x = _mm512_il_small_mod_epi64(x, p);
+  x = _mm512_il_small_mod_epu64(x, p);
   return x;
 }
 

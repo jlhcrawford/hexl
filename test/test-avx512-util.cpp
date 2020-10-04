@@ -176,14 +176,14 @@ TEST(AVX512, _mm512_il_cmpge_epu64) {
   }
 }
 
-TEST(AVX512, _mm512_il_small_mod_epi64) {
+TEST(AVX512, _mm512_il_small_mod_epu64) {
   // Small
   {
     __m512i a = _mm512_set_epi64(0, 2, 4, 6, 8, 10, 11, 12);
     __m512i mods = _mm512_set_epi64(1, 2, 3, 4, 5, 6, 7, 8);
     __m512i expected_out = _mm512_set_epi64(0, 0, 1, 2, 3, 4, 4, 4);
 
-    __m512i c = _mm512_il_small_mod_epi64(a, mods);
+    __m512i c = _mm512_il_small_mod_epu64(a, mods);
 
     CheckEqual(c, expected_out);
   }
@@ -209,7 +209,7 @@ TEST(AVX512, _mm512_il_small_mod_epi64) {
     __m512i expected_out =
         _mm512_set_epi64(0, 0, 1, (1UL << 63) + 10, 0, 0, 0, 0);
 
-    __m512i c = _mm512_il_small_mod_epi64(a, mods);
+    __m512i c = _mm512_il_small_mod_epu64(a, mods);
 
     CheckEqual(c, expected_out);
   }
@@ -244,7 +244,7 @@ TEST(AVX512, _mm512_il_barrett_reduce64) {
     std::mt19937 gen(rd());
 
     uint64_t modulus = 75;
-    std::uniform_int_distribution<> distrib(50, modulus * modulus - 1);
+    std::uniform_int_distribution<uint64_t> distrib(50, modulus * modulus - 1);
     __m512i vmod = _mm512_set1_epi64(modulus);
     __m512i vbarr =
         _mm512_set1_epi64(MultiplyFactor(1, 64, modulus).BarrettFactor());

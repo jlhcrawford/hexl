@@ -266,7 +266,7 @@ TEST(NTT, FwdNTT_AVX512) {
 
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<> distrib(0, prime - 1);
+  std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
 
   for (size_t trial = 0; trial < 200; ++trial) {
     std::vector<std::uint64_t> input(N, 0);
@@ -296,7 +296,7 @@ TEST(NTT, InvNTT_AVX512) {
 
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<> distrib(0, prime - 1);
+  std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
 
   for (size_t trial = 0; trial < 200; ++trial) {
     std::vector<std::uint64_t> input(N, 0);

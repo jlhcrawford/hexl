@@ -25,21 +25,9 @@ namespace lattice {
 // @param operand1 Vector of elements to multiply; stores result
 // @param operand2 Vector of elements to multiply
 // @param n Number of elements in each vector
-// @param barr_hi High 64 bits of Barrett precomputation floor(2^128 /
-// modulus)
-// @param barr_lo Low 64 bits of Barrett precomputation floor(2^128 /
-// modulus)
 // @param modulus Modulus with which to perform modular reduction
 void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
-                          const uint64_t n, const uint64_t barr_hi,
-                          const uint64_t barr_lo, const uint64_t modulus);
-
-inline void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
-                                 const uint64_t n, const uint64_t modulus) {
-  BarrettFactor<64> bf(modulus);
-
-  EltwiseMultModNative(operand1, operand2, n, bf.Hi(), bf.Lo(), modulus);
-}
+                          const uint64_t n, const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel

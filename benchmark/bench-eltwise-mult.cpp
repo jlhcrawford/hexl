@@ -79,22 +79,21 @@ BENCHMARK(BM_EltwiseMultModAVX512Float)
 
 //=================================================================
 
-#ifdef LATTICE_HAS_AVX512IFMA
+#ifdef LATTICE_HAS_AVX512DQ
 // state[0] is the degree
-static void BM_EltwiseMultModAVX512IFMA(benchmark::State& state) {  //  NOLINT
+static void BM_EltwiseMultModAVX512Int(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
-  size_t modulus = 100;
+  size_t modulus = 1152921504606877697;
 
   std::vector<uint64_t> input1(input_size, 1);
   std::vector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
-    EltwiseMultModAVX512Int<52>(input1.data(), input2.data(), input_size,
-                                modulus);
+    EltwiseMultModAVX512Int(input1.data(), input2.data(), input_size, modulus);
   }
 }
 
-BENCHMARK(BM_EltwiseMultModAVX512IFMA)
+BENCHMARK(BM_EltwiseMultModAVX512Int)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
     ->Args({1024})
