@@ -49,17 +49,13 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
 
   // modulus < 2**N
   uint64_t N = logmod + 1;
-  uint64_t D = N + N;
-  uint64_t L = D;
+  uint64_t L = 63 + N;  // Ensures L-N+1 == 64
   uint64_t barr_lo = (uint128_t(1) << L) / modulus;
-  uint64_t C1_shift_right = 64 - (N - 1);
 
   __m512i vbarr_lo = _mm512_set1_epi64(barr_lo);
-
   __m512i vmodulus = _mm512_set1_epi64(modulus);
   __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
-
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = n / 8; i > 0; --i) {
@@ -72,22 +68,13 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
 
     // uint64_t c1 = (prod_lo >> (N - 1)) + (prod_hi << (64 - (N - 1)));
     __m512i c1_lo = _mm512_srli_epi64(vprod_lo, N - 1);
-    __m512i c1_hi = _mm512_slli_epi64(vprod_hi, C1_shift_right);
+    __m512i c1_hi = _mm512_slli_epi64(vprod_hi, 64 - (N - 1));
     __m512i c1 = _mm512_add_epi64(c1_lo, c1_hi);
     // Requires AVX512_VBMI2, found on icelake
     // c1 = _mm512_shrdi_epi64(vprod_lo, vprod_hi, N - 1);
 
-    // MultiplyUInt64(c1, barr_lo, &c2_hi, &c2_lo);
-    __m512i c2_hi = _mm512_il_mulhi_epi<64>(c1, vbarr_lo);
-    __m512i c2_lo = _mm512_il_mullo_epi<64>(c1, vbarr_lo);
-
-    // C3 = C2 >> (L - N + 1)
-    // uint64_t c3 = (c2_lo >> (L - N + 1)) + (c2_hi << (64 - (L - N + 1)));
-    __m512i c3_lo = _mm512_srli_epi64(c2_lo, L - N + 1);
-    __m512i c3_hi = _mm512_slli_epi64(c2_hi, 64 - (L - N + 1));
-    __m512i c3 = _mm512_add_epi64(c3_lo, c3_hi);
-    // Requires AVX512_VBMI2, found on icelake
-    // c3 = _mm512_shrdi_epi64(c2_lo, c2_hi, L - N + 1);
+    // L - N + 1 == 64, so we only need high 64 bits
+    __m512i c3 = _mm512_il_mulhi_epi<64>(c1, vbarr_lo);
 
     // C4 = prod_lo - (p * c3)_lo
     __m512i vresult = _mm512_il_mullo_epi<64>(c3, vmodulus);
@@ -145,10 +132,9 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
         v_operand2, (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));
 
     __m512d h = _mm512_mul_pd(x, y);
-    __m512d l =
-        _mm512_fmsub_pd(x, y, h);     // rounding error; h + l == x * y exactly
-    __m512d b = _mm512_mul_pd(h, u);  // ~ (x * y) / p
-    __m512d c = _mm512_floor_pd(b);   // ~ floor(x * y / p)
+    __m512d l = _mm512_fmsub_pd(x, y, h);  // rounding error; h + l == x * y
+    __m512d b = _mm512_mul_pd(h, u);       // ~ (x * y) / p
+    __m512d c = _mm512_floor_pd(b);        // ~ floor(x * y / p)
     __m512d d = _mm512_fnmadd_pd(c, p, h);
     __m512d g = _mm512_add_pd(d, l);
     __mmask8 m = _mm512_cmp_pd_mask(g, zero, _CMP_LT_OQ);
