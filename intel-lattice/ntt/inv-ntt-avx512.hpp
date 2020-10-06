@@ -341,10 +341,8 @@ void InverseTransformFromBitReverseAVX512(
     __m512i tmp_y2 = _mm512_mullo_epi64(v_Q2, v_modulus);
     v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 
-    v_X = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
+    // Modulus reduction from [0,2p), to [0,p)
     v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
-
-    v_Y = _mm512_il_small_mod_epu64(v_Y, v_twice_mod);
     v_Y = _mm512_il_small_mod_epu64(v_Y, v_modulus);
 
     _mm512_storeu_si512(v_X_pt++, v_X);

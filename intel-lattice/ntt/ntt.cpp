@@ -403,11 +403,8 @@ void InverseTransformFromBitReverse64(
     *Y++ = MultiplyUIntModLazy<64>(ty, inv_n_w, mod);
   }
 
-  // Reduce from [0, 4p) to [0,p)
+  // Reduce from [0, 2p) to [0,p)
   for (size_t i = 0; i < n; ++i) {
-    if (elements[i] >= twice_mod) {
-      elements[i] -= twice_mod;
-    }
     if (elements[i] >= mod) {
       elements[i] -= mod;
     }
