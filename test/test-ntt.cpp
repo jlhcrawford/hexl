@@ -307,11 +307,11 @@ TEST(NTT, InvNTT_AVX512) {
 
     NTT::NTTImpl ntt_impl(N, prime);
     InverseTransformFromBitReverseAVX512<64>(
-        N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
+        N, ntt_impl.GetModulus(), ntt_impl.GetInvRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
 
     InverseTransformFromBitReverse64(
-        N, prime, ntt_impl.GetRootOfUnityPowers().data(),
+        N, prime, ntt_impl.GetInvRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input2.data());
 
     EXPECT_EQ(input, input2);

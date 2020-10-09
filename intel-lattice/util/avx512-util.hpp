@@ -210,6 +210,21 @@ inline __m512i _mm512_il_small_mod_epu64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
 
+// Returns (x + y) mod p; assumes 0 < x, y < p
+// x += y - p;
+// if (x < 0) x+= p
+// return x
+inline __m512i _mm512_il_small_add_mod_epi64(__m512i x, __m512i y, __m512i p) {
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, ExtractValues(p)[0]);
+  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, ExtractValues(p)[0]);
+  // return _mm512_il_small_mod_epu64(_mm512_add_epi64(x, y), p);
+
+  __m512i v_diff = _mm512_sub_epi64(y, p);
+  x = _mm512_add_epi64(x, v_diff);
+  __mmask8 sign_bits = _mm512_movepi64_mask(x);
+  return _mm512_mask_add_epi64(x, sign_bits, x, p);
+}
+
 inline __mmask8 _mm512_il_cmp_epu64_mask(__m512i a, __m512i b, CMPINT cmp) {
   switch (cmp) {
     case CMPINT::EQ:
