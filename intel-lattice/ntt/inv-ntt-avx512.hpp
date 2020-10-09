@@ -51,22 +51,15 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-      // tx = *X + *Y
-      __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
-
       // ty = *X + twice_mod - *Y
       __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
       __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
 
-      // *X++ = tx >= twice_mod ? tx - twice_mod : tx
-      v_X = _mm512_il_small_mod_epu64(v_tx, v_twice_mod);
+      // tx = *X + *Y mod modulus
+      v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
 
       // *Y++ = MultiplyUIntModLazy<64>(ty, W_operand, mod)
-      // multiply_uint64_hw64(W_precon, *Y, &Q);
       __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-
-      // *Y++ = ty * W_op - Q * modulus;
-      // Use 64-bit multiply low, even when BitShift == s_ifma_shift_bits
       __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
       __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
       v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
@@ -94,13 +87,19 @@ void InvT1(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
     __m512i v_Y =
         _mm512_set_epi64(Y[14], Y[12], Y[10], Y[8], Y[6], Y[4], Y[2], Y[0]);
 
+    LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8,
+                         ExtractValues(v_twice_mod)[0]);
+    LATTICE_CHECK_BOUNDS(ExtractValues(v_Y).data(), 8,
+                         ExtractValues(v_twice_mod)[0]);
+
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
     __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
     __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-    v_X = _mm512_il_small_mod_epu64(v_tx, v_twice_mod);
+
+    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
     __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
     __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -146,10 +145,11 @@ void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
         _mm512_set_epi64(W_precon[3], W_precon[3], W_precon[2], W_precon[2],
                          W_precon[1], W_precon[1], W_precon[0], W_precon[0]);
 
-    __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
     __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
     __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-    v_X = _mm512_il_small_mod_epu64(v_tx, v_twice_mod);
+
+    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
     __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
     __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -200,10 +200,11 @@ void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
         _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
                          W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
 
-    __m512i v_tx = _mm512_add_epi64(v_X, v_Y);
     __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
     __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-    v_X = _mm512_il_small_mod_epu64(v_tx, v_twice_mod);
+
+    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
     __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
     __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
@@ -319,9 +320,7 @@ void InverseTransformFromBitReverseAVX512(
     __m512i v_X = _mm512_loadu_si512(v_X_pt);
     __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-    // tx = tx >= twice_mod ? tx - twice_mod : tx
-    __m512i tmp_tx = _mm512_add_epi64(v_X, v_Y);
-    __m512i v_tx = _mm512_il_small_mod_epu64(tmp_tx, v_twice_mod);
+    __m512i v_tx = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
 
     // ty = *X + twice_mod - *Y
     __m512i v_tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);

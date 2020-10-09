@@ -219,6 +219,7 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
     const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
     const uint64_t* precon_inv_root_of_unity_powers =
         GetPrecon64InvRootOfUnityPowersPtr();
+
     InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
         precon_inv_root_of_unity_powers, elements);
