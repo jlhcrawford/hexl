@@ -1,35 +1,40 @@
 # Intel-lattice
-** We plan to rename this repository to Intel-lattice. **
+This repository provides an efficient implementation of integer arithmetic on Galois fields. Such arithmetic is prevalent in cryptography, particularly in homomorphic encryption (HE) schemes based on the ring learning with errors (RLWE) problem.
 
-This repository provides an efficient implementation of integer arithmetic on Galois fields. We only support 64-bit unsigned integers.
+In such applications, the underlying prime `p` is typically 40-60 bits. Currently, Intel-lattice provides an API for 64-bit unsigned integers.
 
-We currently provide three primary functions:
-
+Intel lattice implements the following functions:
 -  The negacyclic number-theoretic transform (NTT), with the following implementations:
    - 1) A default implementation in native C++
    - 2) An AVX512-DQ-accelerated implementation
-   - 3) An AVX512-IFMA-accelerated implementation for prime moduli < 50 bits
+   - 3) An AVX512-IFMA-accelerated implementation for `p` < 50 bits
 
-  The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
-
-- Polynomial-polynomial modular multiplication, with the following implementations;
+- Element-wise vector-vector modular multiplication, with the following implementations;
   - 1) A default implementation in native C++
   - 2) An AVX512-DQ accelerated implementation
-  - 3) An AVX512-IFMA-accelerated implementation for prime moduli < 50 bits
-
-  The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+  - 3) An AVX512-IFMA-accelerated implementation for `p`  < 50 bits
 
 -  The inverse negacyclic number-theoretic transform (NTT), with the following implementations:
    - 1) A default implementation in native C++
-   - 2) An AVX512-DQ-accelerated implementation
-   - 3) An AVX512-IFMA-accelerated implementation for prime moduli < 50 bits
+   - 2) An AVX512-IFMA-accelerated implementation for `p` > 50 bits bits
+   - 3) An AVX512-DQ-accelerated implementation for `p` < 50 bits
 
-  The library will automatically choose the best implementation for the given hardware. Implementation 3) is most preferred, followed by implementation 2), followed by implementation 1).
+In each case, the library will automatically choose the best implementation for the given CPU AVX512 feature set.
+
+The functions are currently optimized for performance on Intel ICX servers. Performance may suffer on non-ICX servers.
+
+For additional functionality, see the public headers, located in `include/intel-lattice`
 
 
 # Build
-```bash
 
+## Dependencies
+  - CMake >= 3.13
+  - A modern compiler supporting C++17, e.g. clang-10
+  - Operating system: Currently, we have tested the code on Ubuntu 18.04 and macOS 10.15
+
+To build intel-lattice, call
+```bash
 mkdir build
 cd build
 # Other compilers may work; we find best performance with clang-10
