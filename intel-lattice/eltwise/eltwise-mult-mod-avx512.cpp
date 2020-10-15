@@ -30,6 +30,30 @@
 namespace intel {
 namespace lattice {
 
+// Helper function
+template <int BitShift>
+void EltwiseMultModAVX512IntLoop(__m512i* vp_operand1,
+                                 const __m512i* vp_operand2, __m512i vbarr_lo,
+                                 __m512i vmodulus, uint64_t n) {
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
+  for (size_t i = n / 8; i > 0; --i) {
+    __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
+    __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
+    __m512i vprod_hi = _mm512_il_mulhi_epi<64>(v_operand1, v_operand2);
+    __m512i vprod_lo = _mm512_il_mullo_epi<64>(v_operand1, v_operand2);
+    __m512i c1 = _mm512_il_shrdi_epi64<BitShift - 1>(vprod_lo, vprod_hi);
+    __m512i c3 = _mm512_il_mulhi_epi<64>(c1, vbarr_lo);
+    __m512i vresult = _mm512_il_mullo_epi<64>(c3, vmodulus);
+    vresult = _mm512_sub_epi64(vprod_lo, vresult);
+    vresult = _mm512_il_small_mod_epu64(vresult, vmodulus);
+    _mm512_storeu_si512(vp_operand1, vresult);
+
+    ++vp_operand1;
+    ++vp_operand2;
+  }
+}
+
 void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
                              uint64_t n, const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
@@ -45,10 +69,9 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
     n -= n_mod_8;
   }
 
-  uint64_t logmod = std::log2l(modulus);
-
+  const uint64_t logmod = std::log2l(modulus);
   // modulus < 2**N
-  uint64_t N = logmod + 1;
+  const uint64_t N = logmod + 1;
   uint64_t L = 63 + N;  // Ensures L-N+1 == 64
   uint64_t barr_lo = (uint128_t(1) << L) / modulus;
 
@@ -56,38 +79,95 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
   __m512i vmodulus = _mm512_set1_epi64(modulus);
   __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
+
+  // For N < 50, we should prefer EltwiseMultModAVX512Float, so we don't
+  // generate a special case for it here
+  switch (N) {
+    case 50: {
+      EltwiseMultModAVX512IntLoop<50>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 51: {
+      EltwiseMultModAVX512IntLoop<51>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 52: {
+      EltwiseMultModAVX512IntLoop<52>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 53: {
+      EltwiseMultModAVX512IntLoop<53>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 54: {
+      EltwiseMultModAVX512IntLoop<54>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 55: {
+      EltwiseMultModAVX512IntLoop<55>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 56: {
+      EltwiseMultModAVX512IntLoop<56>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 57: {
+      EltwiseMultModAVX512IntLoop<57>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 58: {
+      EltwiseMultModAVX512IntLoop<58>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 59: {
+      EltwiseMultModAVX512IntLoop<59>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    case 60: {
+      EltwiseMultModAVX512IntLoop<60>(vp_operand1, vp_operand2, vbarr_lo,
+                                      vmodulus, n);
+      break;
+    }
+    default: {
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
-  for (size_t i = n / 8; i > 0; --i) {
-    __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
-    __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
+      for (size_t i = n / 8; i > 0; --i) {
+        __m512i v_operand1 = _mm512_loadu_si512(vp_operand1);
+        __m512i v_operand2 = _mm512_loadu_si512(vp_operand2);
 
-    // Compute product
-    __m512i vprod_hi = _mm512_il_mulhi_epi<64>(v_operand1, v_operand2);
-    __m512i vprod_lo = _mm512_il_mullo_epi<64>(v_operand1, v_operand2);
+        // Compute product
+        __m512i vprod_hi = _mm512_il_mulhi_epi<64>(v_operand1, v_operand2);
+        __m512i vprod_lo = _mm512_il_mullo_epi<64>(v_operand1, v_operand2);
 
-    // uint64_t c1 = (prod_lo >> (N - 1)) + (prod_hi << (64 - (N - 1)));
-    __m512i c1_lo = _mm512_srli_epi64(vprod_lo, N - 1);
-    __m512i c1_hi = _mm512_slli_epi64(vprod_hi, 64 - (N - 1));
-    __m512i c1 = _mm512_add_epi64(c1_lo, c1_hi);
-    // Requires AVX512_VBMI2, found on icelake
-    // c1 = _mm512_shrdi_epi64(vprod_lo, vprod_hi, N - 1);
+        __m512i c1 = _mm512_il_shrdi_epi64(vprod_lo, vprod_hi, N - 1);
 
-    // L - N + 1 == 64, so we only need high 64 bits
-    __m512i c3 = _mm512_il_mulhi_epi<64>(c1, vbarr_lo);
+        // L - N + 1 == 64, so we only need high 64 bits
+        __m512i c3 = _mm512_il_mulhi_epi<64>(c1, vbarr_lo);
 
-    // C4 = prod_lo - (p * c3)_lo
-    __m512i vresult = _mm512_il_mullo_epi<64>(c3, vmodulus);
-    vresult = _mm512_sub_epi64(vprod_lo, vresult);
+        // C4 = prod_lo - (p * c3)_lo
+        __m512i vresult = _mm512_il_mullo_epi<64>(c3, vmodulus);
+        vresult = _mm512_sub_epi64(vprod_lo, vresult);
 
-    // Conditional subtraction
-    // result = (result >= modulus) ? result - modulus : result
-    vresult = _mm512_il_small_mod_epu64(vresult, vmodulus);
-    _mm512_storeu_si512(vp_operand1, vresult);
+        // Conditional subtraction
+        vresult = _mm512_il_small_mod_epu64(vresult, vmodulus);
+        _mm512_storeu_si512(vp_operand1, vresult);
 
-    ++vp_operand1;
-    ++vp_operand2;
+        ++vp_operand1;
+        ++vp_operand2;
+      }
+    }
   }
+
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
