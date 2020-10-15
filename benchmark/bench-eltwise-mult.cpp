@@ -72,8 +72,8 @@ static void BM_EltwiseMultModAVX512Float(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_EltwiseMultModAVX512Float)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
-    ->Args({1024})
     ->Args({4096})
+    ->Args({8192})
     ->Args({16384});
 #endif
 
@@ -96,8 +96,8 @@ static void BM_EltwiseMultModAVX512Int(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_EltwiseMultModAVX512Int)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(3.0)
-    ->Args({1024})
     ->Args({4096})
+    ->Args({8192})
     ->Args({16384});
 #endif
 
