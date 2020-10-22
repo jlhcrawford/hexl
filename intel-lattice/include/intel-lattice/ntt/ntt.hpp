@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include <memory>
+#include <vector>
 
 namespace intel {
 namespace lattice {

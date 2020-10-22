@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include <mutex>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -244,6 +245,7 @@ class NTT::NTTImpl {
   static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
 
  private:
+  std::mutex mtx;
   void ComputeRootOfUnityPowers();
   uint64_t m_degree;  // N: size of NTT transform, should be power of 2
   uint64_t m_p;       // prime modulus
