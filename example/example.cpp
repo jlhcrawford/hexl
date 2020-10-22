@@ -14,23 +14,30 @@
 // limitations under the License.
 //*****************************************************************************
 
+#include <omp.h>
+
 #include <cstdint>
 #include <iostream>
+#include <thread>
 #include <vector>
 
 #include "intel-lattice/intel-lattice.hpp"
 
-void CheckEqual(const std::vector<uint64_t>& x,
+bool CheckEqual(const std::vector<uint64_t>& x,
                 const std::vector<uint64_t>& y) {
   if (x.size() != y.size()) {
     std::cout << "Not equal in size\n";
+    return false;
   }
   uint64_t N = x.size();
+  bool is_match = true;
   for (size_t i = 0; i < N; ++i) {
     if (x[i] != y[i]) {
       std::cout << "Not equal at index " << i << "\n";
+      is_match = false;
     }
   }
+  return is_match;
 }
 
 void ExampleEltwiseCmpAdd() {
@@ -103,6 +110,7 @@ void ExampleNTT() {
 
   ntt.ComputeForward(arg.data());
   ntt.ComputeInverse(arg.data());
+
   CheckEqual(arg, exp_out);
   std::cout << "Done running ExampleNTT\n";
 }

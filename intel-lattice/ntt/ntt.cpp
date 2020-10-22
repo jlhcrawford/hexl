@@ -16,7 +16,11 @@
 
 #include "ntt/ntt.hpp"
 
+#include <omp.h>
+
 #include <iostream>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 
@@ -33,6 +37,18 @@
 
 namespace intel {
 namespace lattice {
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
+  out << "{";
+  size_t last = v.size() - 1;
+  for (size_t i = 0; i < v.size(); ++i) {
+    out << v[i];
+    if (i != last) out << ", ";
+  }
+  out << "}";
+  return out;
+}
 
 NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p, uint64_t root_of_unity)
     : m_degree(degree), m_p(p), m_w(root_of_unity) {
@@ -61,6 +77,8 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p)
 NTT::NTTImpl::~NTTImpl() = default;
 
 void NTT::NTTImpl::ComputeRootOfUnityPowers() {
+  std::lock_guard<std::mutex> lock(mtx);
+
   auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(m_key);
   if (it != NTT::NTTImpl::GetStaticRootOfUnityPowers().end()) {
     return;
@@ -79,6 +97,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   inv_root_of_unity_powers[0] = InverseUIntMod(1, m_p);
   int idx = 0;
   int prev_idx = idx;
+
   for (size_t i = 1; i < m_degree; i++) {
     idx = ReverseBitsUInt(i, m_degree_bits);
     root_of_unity_powers[idx] =
@@ -93,6 +112,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   std::vector<uint64_t> temp(m_degree);
   temp[0] = inv_root_of_unity_powers[0];
   idx = 1;
+
   for (size_t m = (m_degree >> 1); m > 0; m >>= 1) {
     for (size_t i = 0; i < m; i++) {
       temp[idx] = inv_root_of_unity_powers[m + i];
@@ -164,6 +184,7 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
     const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
     const uint64_t* precon_root_of_unity_powers =
         GetPrecon52RootOfUnityPowersPtr();
+
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
     ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
@@ -178,6 +199,7 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
     const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
     const uint64_t* precon_root_of_unity_powers =
         GetPrecon64RootOfUnityPowersPtr();
+
     ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
         m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
         elements);
@@ -189,6 +211,7 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
   const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
   const uint64_t* precon_root_of_unity_powers =
       GetPrecon64RootOfUnityPowersPtr();
+
   ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers,
                                  precon_root_of_unity_powers, elements);
 }
