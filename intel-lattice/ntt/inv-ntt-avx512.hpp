@@ -98,7 +98,9 @@ void InvT1(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
     __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
     __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
 
-    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+    // No need for modulus reduction, since inputs are in [0,p)
+    // v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+    v_X = _mm512_add_epi64(v_X, v_Y);
 
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
     __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
@@ -243,7 +245,10 @@ void InverseTransformFromBitReverseAVX512(
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK_BOUNDS(precon_inv_root_of_unity_powers, n,
                        MaximumValue(BitShift));
-  LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift));
+  LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift),
+                       "elements too large");
+  LATTICE_CHECK_BOUNDS(elements, n, mod,
+                       "elements larger than modulus " << mod);
 
   uint64_t twice_mod = mod << 1;
   __m512i v_modulus = _mm512_set1_epi64(mod);

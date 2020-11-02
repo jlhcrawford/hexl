@@ -395,8 +395,8 @@ void InverseTransformFromBitReverse64(
       for (size_t j = j1; j < j2; j++) {
         IVLOG(4, "Loaded *X " << *X);
         IVLOG(4, "Loaded *Y " << *Y);
-        // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y'
-        // in [0, 4p). X', Y' = X + Y (mod p), W(X - Y) (mod p).
+        // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y'
+        // in [0, 2p). X', Y' = X + Y (mod p), W(X - Y) (mod p).
         tx = *X + *Y;
         ty = *X + twice_mod - *Y;
 
