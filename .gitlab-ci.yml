@@ -112,22 +112,23 @@ debug_test:
     - pwd
     - ls
     - echo ${CI_PROJECT_DIR}
+    # TODO(fboemer): Get lcov working again
     # Generate initial baseline
-    - lcov --capture --initial --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_base.info
-    - lcov --list cov_base.info
+    # - lcov --capture --initial --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_base.info
+    # - lcov --list cov_base.info
     - build/test/unit-test --v=3
     # Run lcov again
-    - lcov --capture --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_test.info
-    - lcov --list cov_test.info
+    # - lcov --capture --directory build/ --gcov-tool /usr/bin/gcov-7 --output-file cov_test.info
+    # - lcov --list cov_test.info
     # Combine two trace files
-    - lcov --add-tracefile  cov_base.info --add-tracefile cov_test.info --output-file cov_total.info
-    - lcov --list cov_total.info
+    # - lcov --add-tracefile  cov_base.info --add-tracefile cov_test.info --output-file cov_total.info
+    # - lcov --list cov_total.info
      # Remove unwanted directories
-    - lcov --remove cov_total.info '/usr/include/*' '/usr/lib/*' '*/test/*' '*/build/*' '*/benchmark/*' -o cov_filter.info
+    # - lcov --remove cov_total.info '/usr/include/*' '/usr/lib/*' '*/test/*' '*/build/*' '*/benchmark/*' -o cov_filter.info
     # report overall summary to be parsed by gitlab CI
-    - lcov --list cov_filter.info
+    # - lcov --list cov_filter.info
     # Generate coverage html
-    - genhtml --branch-coverage cov_filter.info --output-directory coverage
+    # - genhtml --branch-coverage cov_filter.info --output-directory coverage
 
   dependencies:
     - debug_build
