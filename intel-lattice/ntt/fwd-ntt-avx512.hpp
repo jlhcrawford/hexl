@@ -179,7 +179,7 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   }
 }
 
-template <int BitShift>
+template <int BitShift, bool InputLessThanMod = false>
 void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t t, uint64_t m, const uint64_t* W_op,
            const uint64_t* W_precon) {
@@ -201,7 +201,12 @@ void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
       // tx = X >= twice_mod ? X - twice_mod : X
-      __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
+      __m512i v_tx;
+      if (InputLessThanMod) {
+        v_tx = v_X;
+      } else {
+        v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
+      }
 
       // multiply_uint64_hw64(Wprime, *Y, &Q);
       __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
@@ -236,6 +241,8 @@ void ForwardTransformToBitReverseAVX512(
                        "precon_root_of_unity_powers too large");
   LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift),
                        "elements too large");
+  LATTICE_CHECK_BOUNDS(elements, n, mod,
+                       "elements larger than modulus " << mod);
   LATTICE_CHECK(n >= 16,
                 "Don't support small transforms. Need n > 16, got n = " << n);
 
@@ -253,6 +260,15 @@ void ForwardTransformToBitReverseAVX512(
 
   size_t t = (n >> 1);
   size_t m = 1;
+  // First iteration assumes input in [0,p)
+  if (m < (n >> 3)) {
+    const uint64_t* W_op = &root_of_unity_powers[m];
+    const uint64_t* W_precon = &precon_root_of_unity_powers[m];
+    FwdT8<BitShift, true>(elements, v_modulus, v_twice_mod, t, m, W_op,
+                          W_precon);
+    t >>= 1;
+    m <<= 1;
+  }
   for (; m < (n >> 3); m <<= 1) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
