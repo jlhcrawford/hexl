@@ -18,6 +18,7 @@ set(SRC main.cpp
     test-number-theory.cpp
     test-ntt.cpp
     test-eltwise-mult-mod.cpp
+    test-eltwise-add-mod.cpp
     test-eltwise-fma.cpp
     test-eltwise-cmp-add.cpp
     test-eltwise-cmp-sub-mod.cpp

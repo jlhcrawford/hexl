@@ -16,16 +16,18 @@
 
 #pragma once
 
+#include <stdint.h>
+
 namespace intel {
 namespace lattice {
 
-// @brief Multiplies two vectors elementwise with modular reduction
-// @param operand1 Vector of elements to multiply; stores result
-// @param operand2 Vector of elements to multiply
+// @brief Adds two vectors elementwise with modular reduction
+// @param operand1 Vector of elements to add; stores result
+// @param operand2 Vector of elements to add
 // @param n Number of elements in each vector
 // @param modulus Modulus with which to perform modular reduction
-void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
-                          const uint64_t n, const uint64_t modulus);
+void EltwiseAddMod(uint64_t* operand1, const uint64_t* operand2,
+                   const uint64_t n, const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel
