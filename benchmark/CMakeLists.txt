@@ -16,6 +16,7 @@
 
 set(SRC main.cpp
     bench-ntt.cpp
+    bench-eltwise-add.cpp
     bench-eltwise-fma.cpp
     bench-eltwise-mult.cpp
     bench-eltwise-cmp-add.cpp

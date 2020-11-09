@@ -18,6 +18,7 @@
 set(SRC ntt/ntt.cpp
     number-theory/number-theory.cpp
     eltwise/eltwise-mult-mod.cpp
+    eltwise/eltwise-add-mod.cpp
     eltwise/eltwise-fma.cpp
     eltwise/eltwise-cmp-add.cpp
     eltwise/eltwise-cmp-sub-mod.cpp
@@ -28,6 +29,7 @@ if (${HAS_AVX512F})
         ntt/fwd-ntt-avx512.cpp
         ntt/inv-ntt-avx512.cpp
         eltwise/eltwise-mult-mod-avx512.cpp
+        eltwise/eltwise-add-mod-avx512.cpp
         eltwise/eltwise-fma-avx512.cpp
         )
 endif()
