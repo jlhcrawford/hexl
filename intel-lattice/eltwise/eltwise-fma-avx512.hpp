@@ -36,6 +36,7 @@ void EltwiseFMAModAVX512(const uint64_t* arg1, const uint64_t arg2,
   LATTICE_CHECK((modulus) < MaximumValue(BitShift),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(BitShift));
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
 
   LATTICE_CHECK(arg1, "arg1 == nullptr");
   LATTICE_CHECK(out, "out == nullptr");

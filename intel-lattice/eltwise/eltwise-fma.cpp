@@ -31,6 +31,8 @@ namespace lattice {
 
 void EltwiseFMAMod(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
                    uint64_t* out, uint64_t n, uint64_t modulus) {
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && modulus < (1UL << 52)) {
     IVLOG(3, "Calling 52-bit EltwiseFMAModAVX512");
