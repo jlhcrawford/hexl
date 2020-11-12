@@ -217,7 +217,9 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
 }
 
 void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result) {
-  std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  if (elements != result) {
+    std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  }
   ComputeForward(result);
 }
 
@@ -264,7 +266,9 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
 }
 
 void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result) {
-  std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  if (elements != result) {
+    std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  }
   ComputeInverse(result);
 }
 
