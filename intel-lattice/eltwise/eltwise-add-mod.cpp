@@ -32,6 +32,7 @@ namespace lattice {
 // Algorithm 1 of https://hal.archives-ouvertes.fr/hal-01215845/document
 void EltwiseAddModNative(uint64_t* operand1, const uint64_t* operand2,
                          const uint64_t n, const uint64_t modulus) {
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
 

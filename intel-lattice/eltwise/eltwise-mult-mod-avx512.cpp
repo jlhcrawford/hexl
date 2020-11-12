@@ -271,6 +271,7 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
                        "pre-mult value in operand1 exceeds bound " << modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus,
                        "Value in operand2 exceeds bound " << modulus);
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
 
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
@@ -394,6 +395,7 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
   LATTICE_CHECK((modulus) < MaximumValue(50),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(50));
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
 
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
                        "pre-mult value in operand1 exceeds bound " << modulus);

@@ -33,6 +33,8 @@ namespace lattice {
 
 void EltwiseCmpSubMod(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                       uint64_t diff, uint64_t modulus, uint64_t n) {
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     EltwiseCmpSubModAVX512(operand1, cmp, bound, diff, modulus, n);
@@ -44,6 +46,8 @@ void EltwiseCmpSubMod(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 
 void EltwiseCmpSubModNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                             uint64_t diff, uint64_t modulus, uint64_t n) {
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+
   IVLOG(3, "Calling EltwiseCmpSubModNative");
 
   LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
@@ -63,6 +67,8 @@ void EltwiseCmpSubModNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 #ifdef LATTICE_HAS_AVX512DQ
 void EltwiseCmpSubModAVX512(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                             uint64_t diff, uint64_t modulus, uint64_t n) {
+  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+
   IVLOG(3, "Calling CmpSubModAVX512");
 
   uint64_t n_mod_8 = n % 8;
