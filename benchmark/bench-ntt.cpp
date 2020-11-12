@@ -210,5 +210,48 @@ BENCHMARK(BM_InvNTT_AVX512DQ)
     ->Args({16384});
 #endif
 
+// state[0] is the degree
+static void BM_FwdNTTInPlace(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
+
+  std::vector<uint64_t> input(ntt_size, 1);
+  NTT ntt(ntt_size, prime);
+
+  for (auto _ : state) {
+    ntt.ComputeForward(input.data());
+  }
+}
+
+BENCHMARK(BM_FwdNTTInPlace)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(5.0)
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384});
+
+// state[0] is the degree
+static void BM_FwdNTTCopy(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = state.range(0);
+  size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
+
+  std::vector<uint64_t> input(ntt_size, 1);
+  std::vector<uint64_t> output(ntt_size, 1);
+  NTT ntt(ntt_size, prime);
+
+  for (auto _ : state) {
+    ntt.ComputeForward(input.data(), output.data());
+  }
+}
+
+BENCHMARK(BM_FwdNTTCopy)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(5.0)
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384});
+
 }  // namespace lattice
 }  // namespace intel

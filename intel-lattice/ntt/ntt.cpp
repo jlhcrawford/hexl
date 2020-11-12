@@ -216,6 +216,11 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
                                  precon_root_of_unity_powers, elements);
 }
 
+void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result) {
+  std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  ComputeForward(result);
+}
+
 void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
@@ -258,6 +263,11 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
                                    precon_inv_root_of_unity_powers, elements);
 }
 
+void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result) {
+  std::memcpy(result, elements, m_degree * sizeof(uint64_t));
+  ComputeInverse(result);
+}
+
 // NTT API
 NTT::NTT() = default;
 
@@ -273,8 +283,16 @@ void NTT::ComputeForward(uint64_t* elements) {
   m_impl->ComputeForward(elements);
 }
 
+void NTT::ComputeForward(const uint64_t* elements, uint64_t* result) {
+  m_impl->ComputeForward(elements, result);
+}
+
 void NTT::ComputeInverse(uint64_t* elements) {
   m_impl->ComputeInverse(elements);
+}
+
+void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result) {
+  m_impl->ComputeInverse(elements, result);
 }
 
 // Free functions

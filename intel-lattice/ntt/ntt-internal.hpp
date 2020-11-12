@@ -224,8 +224,10 @@ class NTT::NTTImpl {
   }
 
   void ComputeForward(uint64_t* elements);
+  void ComputeForward(const uint64_t* elements, uint64_t* result);
 
   void ComputeInverse(uint64_t* elements);
+  void ComputeInverse(const uint64_t* elements, uint64_t* result);
 
   static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
 
