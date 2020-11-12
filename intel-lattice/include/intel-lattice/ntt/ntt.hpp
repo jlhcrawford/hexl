@@ -50,7 +50,21 @@ class NTT {
   // Results are bit-reversed.
   void ComputeForward(uint64_t* elements);
 
+  // Compute NTT
+  // Results are bit-reversed
+  // @param elements Data on which to compute the NTT
+  // @param result Stores the result
+  void ComputeForward(const uint64_t* elements, uint64_t* result);
+
+  // Compute in-place inverse NTT.
+  // Results are bit-reversed.
   void ComputeInverse(uint64_t* elements);
+
+  // Compute inverse NTT
+  // Results are bit-reversed
+  // @param elements Data on which to compute the NTT
+  // @param result Stores the result
+  void ComputeInverse(const uint64_t* elements, uint64_t* result);
 
   class NTTImpl;
 

@@ -104,6 +104,8 @@ TEST_P(NTTAPITest, Fwd) {
   std::vector<uint64_t> input = std::get<2>(GetParam());
   std::vector<uint64_t> input2 = input;
   std::vector<uint64_t> input3 = input;
+  std::vector<uint64_t> input4 = input;
+  std::vector<uint64_t> input5 = input;
   std::vector<uint64_t> exp_output = std::get<3>(GetParam());
 
   NTT::NTTImpl ntt_impl(N, prime);
@@ -119,8 +121,15 @@ TEST_P(NTTAPITest, Fwd) {
 
   // Test round-trip
   ntt.ComputeInverse(input.data());
-
   CheckEqual(input, input3);
+
+  // Test out-of-place forward
+  ntt.ComputeForward(input3.data(), input4.data());
+  CheckEqual(input4, input2);
+
+  // Test out-of-place inverse
+  ntt.ComputeInverse(input4.data(), input5.data());
+  CheckEqual(input5, input3);
 }
 
 INSTANTIATE_TEST_SUITE_P(
