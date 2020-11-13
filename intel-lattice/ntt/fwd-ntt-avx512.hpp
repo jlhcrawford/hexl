@@ -61,10 +61,23 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-    for (size_t cpy = 0; cpy < 8; ++cpy) {
-      *X++ = *X_out++;
-      *X++ = *Y_out++;
-    }
+    *X++ = X_out[0];
+    *X++ = Y_out[0];
+    *X++ = X_out[1];
+    *X++ = Y_out[1];
+    *X++ = X_out[2];
+    *X++ = Y_out[2];
+    *X++ = X_out[3];
+    *X++ = Y_out[3];
+    *X++ = X_out[4];
+    *X++ = Y_out[4];
+    *X++ = X_out[5];
+    *X++ = Y_out[5];
+    *X++ = X_out[6];
+    *X++ = Y_out[6];
+    *X++ = X_out[7];
+    *X++ = Y_out[7];
+
     j1 += 16;
   }
 }
