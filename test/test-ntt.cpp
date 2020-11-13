@@ -290,11 +290,13 @@ TEST(NTT, FwdNTT_AVX512) {
         N, prime, ntt_impl.GetRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64RootOfUnityPowers().data(), input2.data());
 
-    LOG(INFO) << "output native " << input;
+    LOG(INFO) << "output native " << input2;
 
     ForwardTransformToBitReverseAVX512<64>(
         N, prime, ntt_impl.GetRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64RootOfUnityPowers().data(), input.data());
+
+    LOG(INFO) << "output avx512 " << input;
 
     ASSERT_EQ(input, input2);
   }
