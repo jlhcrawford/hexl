@@ -37,15 +37,36 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
   size_t j1 = 0;
 
+  const __m512i vperm_hi_idx = _mm512_set_epi64(6, 4, 2, 0, 7, 5, 3, 1);
+  const __m512i vperm_lo_idx = _mm512_set_epi64(7, 5, 3, 1, 6, 4, 2, 0);
+  const __m512i vperm2_idx = _mm512_set_epi64(3, 2, 1, 0, 7, 6, 5, 4);
+
   // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
 
-    __m512i v_X =
-        _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
+    // 7, 6, 5, 4, 3, 2, 1, 0
+    __m512i v_7to0 = _mm512_loadu_si512(v_X_pt++);
 
-    __m512i v_Y =
-        _mm512_set_epi64(X[15], X[13], X[11], X[9], X[7], X[5], X[3], X[1]);
+    // 15, 14, 13, 12, 11, 10, 9, 8
+    __m512i v_15to8 = _mm512_loadu_si512(v_X_pt);
+
+    // 7, 5, 3, 1, 6, 4, 2, 0
+    __m512i perm_lo = _mm512_permutexvar_epi64(vperm_lo_idx, v_7to0);
+
+    __m512i perm_hi = _mm512_permutexvar_epi64(vperm_hi_idx, v_15to8);
+    // 14, 12, 10, 8, 15, 13, 11, 9
+
+    __m512i v_X = _mm512_mask_blend_epi64(0b00001111, perm_hi, perm_lo);
+
+    __m512i v_Y = _mm512_mask_blend_epi64(0b11110000, perm_hi, perm_lo);
+    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
+
+    // __m512i v_X =
+    //     _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
+    // __m512i v_Y =
+    //     _mm512_set_epi64(X[15], X[13], X[11], X[9], X[7], X[5], X[3], X[1]);
 
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
@@ -59,24 +80,34 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
     v_Y = _mm512_add_epi64(v_tx, sub);
 
-    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-    *X++ = X_out[0];
-    *X++ = Y_out[0];
-    *X++ = X_out[1];
-    *X++ = Y_out[1];
-    *X++ = X_out[2];
-    *X++ = Y_out[2];
-    *X++ = X_out[3];
-    *X++ = Y_out[3];
-    *X++ = X_out[4];
-    *X++ = Y_out[4];
-    *X++ = X_out[5];
-    *X++ = Y_out[5];
-    *X++ = X_out[6];
-    *X++ = Y_out[6];
-    *X++ = X_out[7];
-    *X++ = Y_out[7];
+    // Perform reverse permutations
+    // // v_X (14, 12, 10, 8, 6, 4, 2, 0) => (15, 14, 13, 12, 11, 10, 9, 8)
+    // // v_Y (15, 13, 11, 9, 7, 5, 3, 1) => (7,  6,  5,  4,  3,  2,  1, 0)
+
+    // // V_Y => (7, 5, 3, 1, 15, 13, 11, 9)
+    v_Y =
+        _mm512_permutexvar_epi64(_mm512_set_epi64(3, 2, 1, 0, 7, 6, 5, 4), v_Y);
+
+    // 7, 5, 3, 1, 6, 4, 2, 0
+    perm_lo = _mm512_mask_blend_epi64(0b00001111, v_X, v_Y);
+
+    // 14, 12, 10, 8, 15, 13, 11, 9
+    perm_hi = _mm512_mask_blend_epi64(0b11110000, v_X, v_Y);
+
+    // 15, 14, 13, 12, 11, 10, 9, 8
+    v_X = _mm512_permutexvar_epi64(_mm512_set_epi64(7, 3, 6, 2, 5, 1, 4, 0),
+                                   perm_hi);
+
+    // 7, 6, 5, 4, 3, 2, 1, 0
+    v_Y = _mm512_permutexvar_epi64(_mm512_set_epi64(3, 7, 2, 6, 1, 5, 0, 4),
+                                   perm_lo);
+
+    // v_X => 8, 14, 6, 12, 4, 10, 2, 8
+    // v_Y => 15, 7 ,13, 5, 11, 3, 9, 1
+
+    v_X_pt = reinterpret_cast<__m512i*>(X);
+    _mm512_storeu_si512(v_X_pt++, v_X);
+    _mm512_storeu_si512(v_X_pt, v_Y);
 
     j1 += 16;
   }
