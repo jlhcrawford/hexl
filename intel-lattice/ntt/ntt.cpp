@@ -348,7 +348,6 @@ void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
     }
     t >>= 1;
   }
-
   for (size_t i = 0; i < n; ++i) {
     if (elements[i] >= twice_mod) {
       elements[i] -= twice_mod;

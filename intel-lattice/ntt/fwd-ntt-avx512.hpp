@@ -61,7 +61,6 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 
     uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
     uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
     *X++ = X_out[0];
     *X++ = Y_out[0];
     *X++ = X_out[1];
@@ -283,7 +282,6 @@ void ForwardTransformToBitReverseAVX512(
     t >>= 1;
     m <<= 1;
   }
-
   for (; m < (n >> 3); m <<= 1) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
@@ -297,7 +295,6 @@ void ForwardTransformToBitReverseAVX512(
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
 
     FwdT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
-
     m <<= 1;
     W_op = &root_of_unity_powers[m];
     W_precon = &precon_root_of_unity_powers[m];
