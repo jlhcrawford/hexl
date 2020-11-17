@@ -14,9 +14,10 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include "ntt/ntt.hpp"
+#include "ntt/ntt-internal.hpp"
 
 #include <omp.h>
+#include <memory>
 
 #include <iostream>
 #include <mutex>

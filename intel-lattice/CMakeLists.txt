@@ -15,7 +15,7 @@
 # *****************************************************************************
 
 
-set(SRC ntt/ntt.cpp
+set(SRC ntt/ntt-internal.cpp
     number-theory/number-theory.cpp
     eltwise/eltwise-mult-mod.cpp
     eltwise/eltwise-add-mod.cpp
