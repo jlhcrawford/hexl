@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "logging/logging.hpp"
+#include "ntt/ntt-avx512-util.hpp"
 #include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
@@ -37,33 +38,14 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
   size_t j1 = 0;
 
-  const __m512i vperm_hi_idx = _mm512_set_epi64(6, 4, 2, 0, 7, 5, 3, 1);
-  const __m512i vperm_lo_idx = _mm512_set_epi64(7, 5, 3, 1, 6, 4, 2, 0);
-  const __m512i vperm2_idx = _mm512_set_epi64(3, 2, 1, 0, 7, 6, 5, 4);
-  const __m512i v_X_out_idx = _mm512_set_epi64(7, 3, 6, 2, 5, 1, 4, 0);
-  const __m512i v_Y_out_idx = _mm512_set_epi64(3, 7, 2, 6, 1, 5, 0, 4);
-
   // 8 | m guaranteed by n >= 16
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
 
-    // 7, 6, 5, 4, 3, 2, 1, 0
-    __m512i v_7to0 = _mm512_loadu_si512(v_X_pt++);
-    // 15, 14, 13, 12, 11, 10, 9, 8
-    __m512i v_15to8 = _mm512_loadu_si512(v_X_pt);
-    // 7, 5, 3, 1, 6, 4, 2, 0
-    __m512i perm_lo = _mm512_permutexvar_epi64(vperm_lo_idx, v_7to0);
-    // 14, 12, 10, 8, 15, 13, 11, 9
-    __m512i perm_hi = _mm512_permutexvar_epi64(vperm_hi_idx, v_15to8);
-
-    __m512i v_X = _mm512_mask_blend_epi64(0b00001111, perm_hi, perm_lo);
-    __m512i v_Y = _mm512_mask_blend_epi64(0b11110000, perm_hi, perm_lo);
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
-    // __m512i v_X =
-    //     _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
-    // __m512i v_Y =
-    //     _mm512_set_epi64(X[15], X[13], X[11], X[9], X[7], X[5], X[3], X[1]);
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT1(X, &v_X, &v_Y);
 
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
@@ -77,24 +59,7 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
     v_Y = _mm512_add_epi64(v_tx, sub);
 
-    // Perform reverse permutations
-    // // v_X (14, 12, 10, 8, 6, 4, 2, 0) => (15, 14, 13, 12, 11, 10, 9, 8)
-    // // v_Y (15, 13, 11, 9, 7, 5, 3, 1) => (7,  6,  5,  4,  3,  2,  1, 0)
-
-    // // V_Y => (7, 5, 3, 1, 15, 13, 11, 9)
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
-    // 7, 5, 3, 1, 6, 4, 2, 0
-    perm_lo = _mm512_mask_blend_epi64(0b00001111, v_X, v_Y);
-    // 14, 12, 10, 8, 15, 13, 11, 9
-    perm_hi = _mm512_mask_blend_epi64(0b11110000, v_X, v_Y);
-    // 15, 14, 13, 12, 11, 10, 9, 8
-    v_X = _mm512_permutexvar_epi64(v_X_out_idx, perm_hi);
-    // 7, 6, 5, 4, 3, 2, 1, 0
-    v_Y = _mm512_permutexvar_epi64(v_Y_out_idx, perm_lo);
-
-    v_X_pt = reinterpret_cast<__m512i*>(X);
-    _mm512_storeu_si512(v_X_pt++, v_X);
-    _mm512_storeu_si512(v_X_pt, v_Y);
+    WriteInterleavedT1(v_X, v_Y, v_X_pt);
 
     j1 += 16;
   }
@@ -104,48 +69,17 @@ template <int BitShift>
 void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
-
-  const __m512i vperm_hi_idx = _mm512_set_epi64(5, 4, 1, 0, 7, 6, 3, 2);
-  const __m512i vperm_lo_idx = _mm512_set_epi64(7, 6, 3, 2, 5, 4, 1, 0);
-  const __m512i vperm2_idx = _mm512_set_epi64(3, 2, 1, 0, 7, 6, 5, 4);
-  const __m512i vperm_w_idx = _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0);
-  const __m512i v_Y_out_idx = _mm512_set_epi64(3, 2, 7, 6, 1, 0, 5, 4);
-
   // 4 | m guaranteed by n >= 16
   for (size_t i = m / 4; i > 0; --i) {
     uint64_t* X = elements + j1;
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
 
-    // __m512i v_X =
-    //     _mm512_set_epi64(X[13], X[12], X[9], X[8], X[5], X[4], X[1], X[0]);
-    // __m512i v_Y =
-    //     _mm512_set_epi64(X[15], X[14], X[11], X[10], X[7], X[6], X[3], X[2]);
-    // 7, 6, 5, 4, 3, 2, 1, 0
-    __m512i v_7to0 = _mm512_loadu_si512(v_X_pt++);
-    // 15, 14, 13, 12, 11, 10, 9, 8
-    __m512i v_15to8 = _mm512_loadu_si512(v_X_pt);
-    // 7, 6, 3, 2, 5, 4, 1, 0
-    __m512i perm_lo = _mm512_permutexvar_epi64(vperm_lo_idx, v_7to0);
-    //  13, 12, 9, 8, 15, 14, 11, 10,
-    __m512i perm_hi = _mm512_permutexvar_epi64(vperm_hi_idx, v_15to8);
-    __m512i v_X = _mm512_mask_blend_epi64(0b0001111, perm_hi, perm_lo);
-    __m512i v_Y = _mm512_mask_blend_epi64(0b11110000, perm_hi, perm_lo);
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT2(X, &v_X, &v_Y);
 
-    // __m512i v_W_op = _mm512_set_epi64(W_op[3], W_op[3], W_op[2], W_op[2],
-    //                                   W_op[1], W_op[1], W_op[0], W_op[0]);
-    // __m512i v_W_precon =
-    //     _mm512_set_epi64(W_precon[3], W_precon[3], W_precon[2], W_precon[2],
-    //                      W_precon[1], W_precon[1], W_precon[0], W_precon[0]);
-    __m256i v_W_op_256 =
-        _mm256_loadu_si256(reinterpret_cast<const __m256i*>(W_op));
-    __m256i v_W_precon_256 =
-        _mm256_loadu_si256(reinterpret_cast<const __m256i*>(W_precon));
-    // 3, 2, 1, 0, 3, 2, 1, 0
-    __m512i v_W_op = _mm512_broadcast_i64x4(v_W_op_256);
-    __m512i v_W_precon = _mm512_broadcast_i64x4(v_W_precon_256);
-    v_W_op = _mm512_permutexvar_epi64(vperm_w_idx, v_W_op);
-    v_W_precon = _mm512_permutexvar_epi64(vperm_w_idx, v_W_precon);
+    __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
+    __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
     __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
@@ -156,24 +90,7 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
     v_Y = _mm512_add_epi64(v_tx, sub);
 
-    // Peform reverse permutation
-    // v_X (13, 12, 9, 8, 5, 4, 1, 0) => (15, 14, 13, 12, 11, 10, 9, 8)
-    // v_Y (15, 14, 11, 10, 7, 6, 3, 2) => (7, 6, 5, 4, 3, 2, 1, 0)
-
-    // v_Y => (10, 11, 14, 15, 2, 3, 6, 7)
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
-    // 0, 1, 4, 5, 2, 3, 6, 7
-    perm_lo = _mm512_mask_blend_epi64(0b11110000, v_X, v_Y);
-    // 10, 11, 14, 15, 8, 9, 12, 13
-    perm_hi = _mm512_mask_blend_epi64(0b00001111, v_X, v_Y);
-    // 15, 14, 13, 12, 11, 10, 9, 8
-    v_X = _mm512_permutexvar_epi64(vperm_lo_idx, perm_lo);
-    // 7, 6, 5, 4, 3, 2, 1, 0
-    v_Y = _mm512_permutexvar_epi64(v_Y_out_idx, perm_hi);
-
-    v_X_pt = reinterpret_cast<__m512i*>(X);
-    _mm512_storeu_si512(v_X_pt++, v_X);
-    _mm512_storeu_si512(v_X_pt, v_Y);
+    WriteInterleavedT2(v_X, v_Y, v_X_pt);
 
     W_op += 4;
     W_precon += 4;
@@ -187,38 +104,17 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 
-  const __m512i vperm2_idx = _mm512_set_epi64(3, 2, 1, 0, 7, 6, 5, 4);
-  const __m512i vperm_w_idx = _mm512_set_epi64(1, 1, 1, 1, 0, 0, 0, 0);
-
   // 2 | m guaranteed by n >= 16
   for (size_t i = m / 2; i > 0; --i) {
     uint64_t* X = elements + j1;
-
-    // __m512i v_X =
-    //     _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2], X[1], X[0]);
-    // __m512i v_Y =
-    //     _mm512_set_epi64(X[15], X[14], X[13], X[12], X[7], X[6], X[5], X[4]);
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
-    __m512i v_7to0 = _mm512_loadu_si512(v_X_pt++);
-    __m512i v_15to8 = _mm512_loadu_si512(v_X_pt);
-    __m512i perm_hi = _mm512_permutexvar_epi64(vperm2_idx, v_15to8);
-    __m512i v_X = _mm512_mask_blend_epi64(0b0001111, perm_hi, v_7to0);
-    __m512i v_Y = _mm512_mask_blend_epi64(0b11110000, perm_hi, v_7to0);
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
 
-    // v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1], W_op[0],
-    //                           W_op[0], W_op[0], W_op[0]);
-    // __m512i v_W_precon =
-    //     _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
-    //                      W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
-    __m128i v_W_op_128 =
-        _mm_loadu_si128(reinterpret_cast<const __m128i*>(W_op));
-    __m128i v_W_precon_128 =
-        _mm_loadu_si128(reinterpret_cast<const __m128i*>(W_precon));
-    __m512i v_W_op = _mm512_broadcast_i64x2(v_W_op_128);
-    v_W_op = _mm512_permutexvar_epi64(vperm_w_idx, v_W_op);
-    __m512i v_W_precon = _mm512_broadcast_i64x2(v_W_precon_128);
-    v_W_precon = _mm512_permutexvar_epi64(vperm_w_idx, v_W_precon);
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT4(X, &v_X, &v_Y);
+
+    __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
+    __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
     __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
     __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
@@ -229,17 +125,7 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
     v_Y = _mm512_add_epi64(v_tx, sub);
 
-    // Reverse permutation
-    // v_X (11, 10, 9, 8, 3, 2, 1, 0) => (15, 14, 13, 12, 11, 10, 9, 8)
-    // v_Y (15, 14, 13, 12, 7, 6, 5, 4) => (7, 6, 5, 4, 3, 2, 1, 0)
-
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, v_Y);
-    perm_hi = _mm512_mask_blend_epi64(0b00001111, v_X, v_Y);
-    v_X = _mm512_mask_blend_epi64(0b11110000, v_X, v_Y);
-    v_Y = _mm512_permutexvar_epi64(vperm2_idx, perm_hi);
-    v_X_pt = reinterpret_cast<__m512i*>(X);
-    _mm512_storeu_si512(v_X_pt++, v_X);
-    _mm512_storeu_si512(v_X_pt, v_Y);
+    WriteInterleavedT4(v_X, v_Y, v_X_pt);
 
     j1 += 16;
     W_op += 2;
