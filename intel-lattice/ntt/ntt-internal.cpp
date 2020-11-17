@@ -17,16 +17,15 @@
 #include "ntt/ntt-internal.hpp"
 
 #include <omp.h>
-#include <memory>
 
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
 #include <utility>
 
 #include "logging/logging.hpp"
-#include "ntt/ntt-internal.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
