@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "logging/logging.hpp"
+#include "ntt/ntt-avx512-util.hpp"
 #include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
@@ -29,6 +30,114 @@
 
 namespace intel {
 namespace lattice {
+
+template <int BitShift>
+void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
+  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
+  size_t j1 = 0;
+
+  // 8 | m guaranteed by n >= 16
+  for (size_t i = m / 8; i > 0; --i) {
+    uint64_t* X = elements + j1;
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
+
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT1(X, &v_X, &v_Y);
+
+    LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8,
+                         ExtractValues(v_twice_mod)[0]);
+    LATTICE_CHECK_BOUNDS(ExtractValues(v_Y).data(), 8,
+                         ExtractValues(v_twice_mod)[0]);
+
+    __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
+    __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
+
+    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+
+    // No need for modulus reduction, since inputs are in [0,p)
+    // v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+    v_X = _mm512_add_epi64(v_X, v_Y);
+
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+    WriteInterleavedT1(v_X, v_Y, v_X_pt);
+
+    j1 += 16;
+  }
+}
+
+template <int BitShift>
+void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
+           const uint64_t* W_op, const uint64_t* W_precon) {
+  // 4 | m guaranteed by n >= 16
+  for (size_t i = m / 4; i > 0; --i) {
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
+
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT2(X, &v_X, &v_Y);
+
+    __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
+    __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
+
+    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+
+    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+    WriteInterleavedT2(v_X, v_Y, v_X_pt);
+    X += 16;
+
+    W_op += 4;
+    W_precon += 4;
+  }
+}
+
+template <int BitShift>
+void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
+  uint64_t* X = elements;
+
+  // 2 | m guaranteed by n >= 16
+  for (size_t i = m / 2; i > 0; --i) {
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
+
+    __m512i v_X;
+    __m512i v_Y;
+    LoadInterleavedT4(X, &v_X, &v_Y);
+
+    __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
+    __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
+
+    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
+    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
+
+    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+
+    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
+    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
+    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
+    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+
+    WriteInterleavedT4(v_X, v_Y, v_X_pt);
+    X += 16;
+
+    W_op += 2;
+    W_precon += 2;
+  }
+}
 
 template <int BitShift>
 void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
@@ -68,172 +177,6 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       _mm512_storeu_si512(v_Y_pt++, v_Y);
     }
     j1 += (t << 1);
-  }
-}
-
-template <int BitShift>
-void InvT1(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
-  const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
-  const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
-
-  // 8 | m guaranteed by n >= 16
-  for (size_t i = m / 8; i > 0; --i) {
-    uint64_t* Y = X + 1;
-
-    __m512i v_X =
-        _mm512_set_epi64(X[14], X[12], X[10], X[8], X[6], X[4], X[2], X[0]);
-
-    __m512i v_Y =
-        _mm512_set_epi64(Y[14], Y[12], Y[10], Y[8], Y[6], Y[4], Y[2], Y[0]);
-
-    LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8,
-                         ExtractValues(v_twice_mod)[0]);
-    LATTICE_CHECK_BOUNDS(ExtractValues(v_Y).data(), 8,
-                         ExtractValues(v_twice_mod)[0]);
-
-    __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
-    __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
-
-    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
-    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-
-    // No need for modulus reduction, since inputs are in [0,p)
-    // v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
-    v_X = _mm512_add_epi64(v_X, v_Y);
-
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
-    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
-
-    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-  }
-}
-
-template <int BitShift>
-void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
-           const uint64_t* W_op, const uint64_t* W_precon) {
-  // 4 | m guaranteed by n >= 16
-  for (size_t i = m / 4; i > 0; --i) {
-    uint64_t* Y = X + 2;
-
-    __m512i v_X =
-        _mm512_set_epi64(X[13], X[12], X[9], X[8], X[5], X[4], X[1], X[0]);
-    __m512i v_Y =
-        _mm512_set_epi64(Y[13], Y[12], Y[9], Y[8], Y[5], Y[4], Y[1], Y[0]);
-
-    __m512i v_W_op = _mm512_set_epi64(W_op[3], W_op[3], W_op[2], W_op[2],
-                                      W_op[1], W_op[1], W_op[0], W_op[0]);
-    __m512i v_W_precon =
-        _mm512_set_epi64(W_precon[3], W_precon[3], W_precon[2], W_precon[2],
-                         W_precon[1], W_precon[1], W_precon[0], W_precon[0]);
-
-    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
-    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-
-    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
-
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
-    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
-
-    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-
-    W_op += 4;
-    W_precon += 4;
-  }
-}
-
-template <int BitShift>
-void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
-           uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
-  uint64_t* X = elements;
-
-  // 2 | m guaranteed by n >= 16
-  for (size_t i = m / 2; i > 0; --i) {
-    uint64_t* Y = X + 4;
-
-    __m512i v_X =
-        _mm512_set_epi64(X[11], X[10], X[9], X[8], X[3], X[2], X[1], X[0]);
-    __m512i v_Y =
-        _mm512_set_epi64(Y[11], Y[10], Y[9], Y[8], Y[3], Y[2], Y[1], Y[0]);
-
-    __m512i v_W_op = _mm512_set_epi64(W_op[1], W_op[1], W_op[1], W_op[1],
-                                      W_op[0], W_op[0], W_op[0], W_op[0]);
-    __m512i v_W_precon =
-        _mm512_set_epi64(W_precon[1], W_precon[1], W_precon[1], W_precon[1],
-                         W_precon[0], W_precon[0], W_precon[0], W_precon[0]);
-
-    __m512i tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
-    __m512i v_ty = _mm512_sub_epi64(tmp_ty, v_Y);
-
-    v_X = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
-
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_ty);
-    __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, v_W_op);
-    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
-
-    uint64_t* X_out = reinterpret_cast<uint64_t*>(&v_X);
-    uint64_t* Y_out = reinterpret_cast<uint64_t*>(&v_Y);
-
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *X_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-    *X++ = *Y_out++;
-
-    W_op += 2;
-    W_precon += 2;
   }
 }
 
