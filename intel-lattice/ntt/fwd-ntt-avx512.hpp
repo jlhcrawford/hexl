@@ -59,7 +59,9 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
   size_t j1 = 0;
 
-  // 8 | m guaranteed by n >= 16
+// 8 | m guaranteed by n >= 16
+#pragma GCC unroll 8
+#pragma clang loop unroll_count(8)
   for (size_t i = m / 8; i > 0; --i) {
     uint64_t* X = elements + j1;
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
@@ -82,7 +84,9 @@ template <int BitShift>
 void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
-  // 4 | m guaranteed by n >= 16
+// 4 | m guaranteed by n >= 16
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
   for (size_t i = m / 4; i > 0; --i) {
     uint64_t* X = elements + j1;
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
@@ -111,7 +115,9 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 
-  // 2 | m guaranteed by n >= 16
+// 2 | m guaranteed by n >= 16
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
   for (size_t i = m / 2; i > 0; --i) {
     uint64_t* X = elements + j1;
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
@@ -140,6 +146,8 @@ void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            const uint64_t* W_precon) {
   size_t j1 = 0;
 
+#pragma GCC unroll 4
+#pragma clang loop unroll_count(4)
   for (size_t i = 0; i < m; i++) {
     uint64_t* X = elements + j1;
     uint64_t* Y = X + t;
