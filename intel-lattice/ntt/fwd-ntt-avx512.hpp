@@ -31,6 +31,27 @@
 namespace intel {
 namespace lattice {
 
+// The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in [0, 4p).
+// See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
+// X', Y' = X + WY, X - WY (mod p).
+template <int BitShift, bool InputLessThanMod = false>
+inline void FwdButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
+                         __m512i modulus, __m512i twice_modulus) {
+  __m512i v_tx;
+  if (InputLessThanMod) {
+    v_tx = *X;
+  } else {
+    v_tx = _mm512_il_small_mod_epu64(*X, twice_modulus);
+  }
+  __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(W_precon, *Y);
+  __m512i tmp1 = _mm512_mullo_epi64(*Y, W_op);
+  __m512i tmp2 = _mm512_mullo_epi64(v_Q, modulus);
+  v_Q = _mm512_sub_epi64(tmp1, tmp2);
+  *X = _mm512_add_epi64(v_tx, v_Q);
+  __m512i sub = _mm512_sub_epi64(twice_modulus, v_Q);
+  *Y = _mm512_add_epi64(v_tx, sub);
+}
+
 template <int BitShift>
 void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
@@ -46,19 +67,11 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_X;
     __m512i v_Y;
     LoadInterleavedT1(X, &v_X, &v_Y);
-
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-    __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-    __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Q = _mm512_sub_epi64(tmp1, tmp2);
-    v_X = _mm512_add_epi64(v_tx, v_Q);
-    __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-    v_Y = _mm512_add_epi64(v_tx, sub);
-
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+                           v_twice_mod);
     WriteInterleavedT1(v_X, v_Y, v_X_pt);
 
     j1 += 16;
@@ -81,14 +94,8 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
-    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-    __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-    __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Q = _mm512_sub_epi64(tmp1, tmp2);
-    v_X = _mm512_add_epi64(v_tx, v_Q);
-    __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-    v_Y = _mm512_add_epi64(v_tx, sub);
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+                           v_twice_mod);
 
     WriteInterleavedT2(v_X, v_Y, v_X_pt);
 
@@ -116,14 +123,8 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
-    __m512i v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
-    __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-    __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-    __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-    v_Q = _mm512_sub_epi64(tmp1, tmp2);
-    v_X = _mm512_add_epi64(v_tx, v_Q);
-    __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-    v_Y = _mm512_add_epi64(v_tx, sub);
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+                           v_twice_mod);
 
     WriteInterleavedT4(v_X, v_Y, v_X_pt);
 
@@ -154,30 +155,8 @@ void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-      // tx = X >= twice_mod ? X - twice_mod : X
-      __m512i v_tx;
-      if (InputLessThanMod) {
-        v_tx = v_X;
-      } else {
-        v_tx = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
-      }
-
-      // multiply_uint64_hw64(Wprime, *Y, &Q);
-      __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(v_W_precon, v_Y);
-
-      // Q = *Y * W - Q * modulus;
-      // Use 64-bit multiply low, even when BitShift ==
-      // s_ifma_shift_bits
-      __m512i tmp1 = _mm512_mullo_epi64(v_Y, v_W_op);
-      __m512i tmp2 = _mm512_mullo_epi64(v_Q, v_modulus);
-      v_Q = _mm512_sub_epi64(tmp1, tmp2);
-
-      // *X++ = tx + Q;
-      v_X = _mm512_add_epi64(v_tx, v_Q);
-
-      // *Y++ = tx + (two_times_modulus - Q);
-      __m512i sub = _mm512_sub_epi64(v_twice_mod, v_Q);
-      v_Y = _mm512_add_epi64(v_tx, sub);
+      FwdButterfly<BitShift, InputLessThanMod>(&v_X, &v_Y, v_W_op, v_W_precon,
+                                               v_modulus, v_twice_mod);
 
       _mm512_storeu_si512(v_X_pt++, v_X);
       _mm512_storeu_si512(v_Y_pt++, v_Y);
