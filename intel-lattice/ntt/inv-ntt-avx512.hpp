@@ -37,14 +37,16 @@ namespace lattice {
 template <int BitShift, bool InputLessThanMod = false>
 inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
                          __m512i modulus, __m512i twice_modulus) {
-  __m512i tmp_ty = _mm512_add_epi64(*X, twice_modulus);
-  __m512i v_ty = _mm512_sub_epi64(tmp_ty, *Y);
+  __m512i D = _mm512_sub_epi64(*Y, twice_modulus);
+  __m512i v_ty = _mm512_sub_epi64(*X, D);
 
   if (InputLessThanMod) {
     // No need for modulus reduction, since inputs are in [0,p)
     *X = _mm512_add_epi64(*X, *Y);
   } else {
-    *X = _mm512_il_small_add_mod_epi64(*X, *Y, twice_modulus);
+    *X = _mm512_add_epi64(*X, D);
+    __mmask8 sign_bits = _mm512_movepi64_mask(*X);
+    *X = _mm512_mask_add_epi64(*X, sign_bits, *X, twice_modulus);
   }
 
   __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(W_precon, v_ty);
