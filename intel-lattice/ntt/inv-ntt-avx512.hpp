@@ -50,8 +50,8 @@ inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
   }
 
   __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(W_precon, v_ty);
-  __m512i tmp_y1 = _mm512_mullo_epi64(v_ty, W_op);
-  __m512i tmp_y2 = _mm512_mullo_epi64(v_Q, modulus);
+  __m512i tmp_y1 = _mm512_il_mullo_epi<BitShift>(v_ty, W_op);
+  __m512i tmp_y2 = _mm512_il_mullo_epi<BitShift>(v_Q, modulus);
   *Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
 }
 
