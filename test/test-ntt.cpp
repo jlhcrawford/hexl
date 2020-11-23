@@ -181,18 +181,17 @@ INSTANTIATE_TEST_SUITE_P(
                                   12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
                                   23, 24, 25, 26, 27, 28, 29, 30, 31, 32})));
 
-class NTTZerosTest
+class FwdNTTZerosTest
     : public ::testing::TestWithParam<std::tuple<uint64_t, uint64_t>> {
  protected:
   void SetUp() {}
-
   void TearDown() {}
 
  public:
 };
 
 // Parameters = (degree, prime_bits)
-TEST_P(NTTZerosTest, Zeros) {
+TEST_P(FwdNTTZerosTest, Zeros) {
   uint64_t N = std::get<0>(GetParam());
   uint64_t prime_bits = std::get<1>(GetParam());
   uint64_t prime = GeneratePrimes(1, prime_bits, N)[0];
@@ -207,7 +206,44 @@ TEST_P(NTTZerosTest, Zeros) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    NTTZerosTest, NTTZerosTest,
+    FwdNTTZerosTest, FwdNTTZerosTest,
+    ::testing::Values(
+        std::make_tuple(1 << 1, 30), std::make_tuple(1 << 2, 30),
+        std::make_tuple(1 << 3, 30), std::make_tuple(1 << 4, 35),
+        std::make_tuple(1 << 5, 35), std::make_tuple(1 << 6, 35),
+        std::make_tuple(1 << 7, 40), std::make_tuple(1 << 8, 40),
+        std::make_tuple(1 << 9, 40), std::make_tuple(1 << 10, 45),
+        std::make_tuple(1 << 11, 45), std::make_tuple(1 << 12, 45),
+        std::make_tuple(1 << 13, 50), std::make_tuple(1 << 14, 50),
+        std::make_tuple(1 << 15, 50), std::make_tuple(1 << 16, 55),
+        std::make_tuple(1 << 17, 55)));
+
+class InvNTTZerosTest
+    : public ::testing::TestWithParam<std::tuple<uint64_t, uint64_t>> {
+ protected:
+  void SetUp() {}
+  void TearDown() {}
+
+ public:
+};
+
+// Parameters = (degree, prime_bits)
+TEST_P(InvNTTZerosTest, Zeros) {
+  uint64_t N = std::get<0>(GetParam());
+  uint64_t prime_bits = std::get<1>(GetParam());
+  uint64_t prime = GeneratePrimes(1, prime_bits, N)[0];
+
+  std::vector<uint64_t> input(N, 0);
+  std::vector<uint64_t> exp_output(N, 0);
+
+  NTT ntt(N, prime);
+  ntt.ComputeInverse(input.data());
+
+  CheckEqual(input, exp_output);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    InvNTTZerosTest, InvNTTZerosTest,
     ::testing::Values(
         std::make_tuple(1 << 1, 30), std::make_tuple(1 << 2, 30),
         std::make_tuple(1 << 3, 30), std::make_tuple(1 << 4, 35),
@@ -293,7 +329,6 @@ TEST(NTT, FwdNTT_AVX512) {
         N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64RootOfUnityPowers().data(), input.data());
 
-    EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
   }
 }
@@ -323,7 +358,6 @@ TEST(NTT, InvNTT_AVX512) {
         N, prime, ntt_impl.GetInvRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input2.data());
 
-    EXPECT_EQ(input, input2);
     ASSERT_EQ(input, input2);
   }
 }

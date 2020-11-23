@@ -37,22 +37,27 @@ namespace lattice {
 template <int BitShift, bool InputLessThanMod = false>
 inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
                          __m512i modulus, __m512i twice_modulus) {
-  __m512i D = _mm512_sub_epi64(*Y, twice_modulus);
-  __m512i v_ty = _mm512_sub_epi64(*X, D);
+  __m512i Y_minus_2p = _mm512_sub_epi64(*Y, twice_modulus);
+  __m512i T = _mm512_sub_epi64(*X, Y_minus_2p);
 
   if (InputLessThanMod) {
     // No need for modulus reduction, since inputs are in [0,p)
     *X = _mm512_add_epi64(*X, *Y);
   } else {
-    *X = _mm512_add_epi64(*X, D);
+    *X = _mm512_add_epi64(*X, Y_minus_2p);
     __mmask8 sign_bits = _mm512_movepi64_mask(*X);
     *X = _mm512_mask_add_epi64(*X, sign_bits, *X, twice_modulus);
   }
+  __m512i Q = _mm512_il_mulhi_epi<BitShift>(W_precon, T);
+  __m512i W_T = _mm512_il_mullo_epi<BitShift>(W_op, T);
+  __m512i Q_p = _mm512_il_mullo_epi<BitShift>(Q, modulus);
 
-  __m512i v_Q = _mm512_il_mulhi_epi<BitShift>(W_precon, v_ty);
-  __m512i tmp_y1 = _mm512_il_mullo_epi<BitShift>(v_ty, W_op);
-  __m512i tmp_y2 = _mm512_il_mullo_epi<BitShift>(v_Q, modulus);
-  *Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+  *Y = _mm512_sub_epi64(W_T, Q_p);
+
+  if (BitShift == 52) {
+    // Discard high 12 bits; deals with case when W*T < Q*p
+    *Y = _mm512_and_epi64(*Y, _mm512_set1_epi64((1UL << 52) - 1));
+  }
 }
 
 template <int BitShift>
