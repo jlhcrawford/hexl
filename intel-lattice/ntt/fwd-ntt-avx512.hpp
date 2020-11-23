@@ -36,26 +36,25 @@ namespace lattice {
 // X', Y' = X + WY, X - WY (mod p).
 template <int BitShift, bool InputLessThanMod = false>
 inline void FwdButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
-                         __m512i modulus, __m512i twice_modulus) {
+                         __m512i neg_modulus, __m512i twice_modulus) {
   if (!InputLessThanMod) {
     *X = _mm512_il_small_mod_epu64(*X, twice_modulus);
   }
   __m512i Q = _mm512_il_mulhi_epi<BitShift>(W_precon, *Y);
   __m512i W_Y = _mm512_il_mullo_epi<BitShift>(W_op, *Y);
-  __m512i Q_p = _mm512_il_mullo_epi<BitShift>(Q, modulus);
-  __m512i T = _mm512_sub_epi64(W_Y, Q_p);
+  __m512i T = _mm512_il_mullo_add_epi<BitShift>(W_Y, Q, neg_modulus);
+
   // Discard high 12 bits if BitShift == 52; deals with case when W*Y < Q*p
   if (BitShift == 52) {
     T = _mm512_and_epi64(T, _mm512_set1_epi64((1UL << 52) - 1));
   }
-
   __m512i twice_mod_minus_T = _mm512_sub_epi64(twice_modulus, T);
   *Y = _mm512_add_epi64(*X, twice_mod_minus_T);
   *X = _mm512_add_epi64(*X, T);
 }
 
 template <int BitShift>
-void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void FwdT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
@@ -74,7 +73,7 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
     WriteInterleavedT1(v_X, v_Y, v_X_pt);
 
@@ -83,7 +82,7 @@ void FwdT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
-void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void FwdT2(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 // 4 | m guaranteed by n >= 16
@@ -100,7 +99,7 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
     WriteInterleavedT2(v_X, v_Y, v_X_pt);
@@ -113,7 +112,7 @@ void FwdT2(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
-void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void FwdT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   size_t j1 = 0;
 
@@ -131,7 +130,7 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
     WriteInterleavedT4(v_X, v_Y, v_X_pt);
@@ -143,7 +142,7 @@ void FwdT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift, bool InputLessThanMod = false>
-void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void FwdT8(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t t, uint64_t m, const uint64_t* W_op,
            const uint64_t* W_precon) {
   size_t j1 = 0;
@@ -166,7 +165,7 @@ void FwdT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
       FwdButterfly<BitShift, InputLessThanMod>(&v_X, &v_Y, v_W_op, v_W_precon,
-                                               v_modulus, v_twice_mod);
+                                               v_neg_modulus, v_twice_mod);
 
       _mm512_storeu_si512(v_X_pt++, v_X);
       _mm512_storeu_si512(v_Y_pt++, v_Y);
@@ -192,6 +191,7 @@ void ForwardTransformToBitReverseAVX512(
   uint64_t twice_mod = mod << 1;
 
   __m512i v_modulus = _mm512_set1_epi64(mod);
+  __m512i v_neg_modulus = _mm512_set1_epi64(-static_cast<int64_t>(mod));
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
   IVLOG(5, "root_of_unity_powers " << std::vector<uint64_t>(
@@ -207,7 +207,7 @@ void ForwardTransformToBitReverseAVX512(
   if (m < (n >> 3)) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
-    FwdT8<BitShift, true>(elements, v_modulus, v_twice_mod, t, m, W_op,
+    FwdT8<BitShift, true>(elements, v_neg_modulus, v_twice_mod, t, m, W_op,
                           W_precon);
     t >>= 1;
     m <<= 1;
@@ -215,7 +215,7 @@ void ForwardTransformToBitReverseAVX512(
   for (; m < (n >> 3); m <<= 1) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
-    FwdT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+    FwdT8<BitShift>(elements, v_neg_modulus, v_twice_mod, t, m, W_op, W_precon);
     t >>= 1;
   }
 
@@ -224,15 +224,15 @@ void ForwardTransformToBitReverseAVX512(
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
 
-    FwdT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    FwdT4<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
     m <<= 1;
     W_op = &root_of_unity_powers[m];
     W_precon = &precon_root_of_unity_powers[m];
-    FwdT2<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    FwdT2<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
     m <<= 1;
     W_op = &root_of_unity_powers[m];
     W_precon = &precon_root_of_unity_powers[m];
-    FwdT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    FwdT1<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
   }
 
   // n power of two at least 8 => n divisible by 8
