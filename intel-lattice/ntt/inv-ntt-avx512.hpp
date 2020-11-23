@@ -259,29 +259,41 @@ void InverseTransformFromBitReverseAVX512(
   __m512i* v_X_pt = reinterpret_cast<__m512i*>(X);
   __m512i* v_Y_pt = reinterpret_cast<__m512i*>(Y);
 
+  const __m512i two_pow52_min1 = _mm512_set1_epi64((1UL << 52) - 1);
+
+  // Merge final InvNTT loop with modulus reduction baked-in
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t j = n / 16; j > 0; --j) {
     __m512i v_X = _mm512_loadu_si512(v_X_pt);
     __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-    __m512i v_tx = _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+    // Slightly different from regular InvButterfly because different W is used
+    // for X and Y
 
-    // ty = *X + twice_mod - *Y
-    __m512i v_tmp_ty = _mm512_add_epi64(v_X, v_twice_mod);
-    __m512i v_ty = _mm512_sub_epi64(v_tmp_ty, v_Y);
+    __m512i Y_minus_2p = _mm512_sub_epi64(v_Y, v_twice_mod);
+    __m512i X_plus_Y_mod2p =
+        _mm512_il_small_add_mod_epi64(v_X, v_Y, v_twice_mod);
+    // T = *X + twice_mod - *Y
+    __m512i T = _mm512_sub_epi64(v_X, Y_minus_2p);
 
-    __m512i v_Q1 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_prime, v_tx);
-    // *X++ = inv_N * tx - Q * modulus;
-    __m512i tmp_x1 = _mm512_mullo_epi64(v_inv_n, v_tx);
-    __m512i tmp_x2 = _mm512_mullo_epi64(v_Q1, v_modulus);
-    v_X = _mm512_sub_epi64(tmp_x1, tmp_x2);
+    __m512i Q1 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_prime, X_plus_Y_mod2p);
+    // X = inv_N * X_plus_Y_mod2p - Q1 * modulus;
+    __m512i inv_N_tx = _mm512_il_mullo_epi<BitShift>(v_inv_n, X_plus_Y_mod2p);
+    v_X = _mm512_il_mullo_add_epi<BitShift>(inv_N_tx, Q1, v_neg_modulus);
+    if (BitShift == 52) {
+      // Discard high 12 bits; deals with case when W*T < Q1*p
+      v_X = _mm512_and_epi64(v_X, two_pow52_min1);
+    }
 
-    __m512i v_Q2 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_w_prime, v_ty);
-    // *Y++ = inv_N_W * ty - Q * modulus;
-    __m512i tmp_y1 = _mm512_mullo_epi64(v_inv_n_w, v_ty);
-    __m512i tmp_y2 = _mm512_mullo_epi64(v_Q2, v_modulus);
-    v_Y = _mm512_sub_epi64(tmp_y1, tmp_y2);
+    __m512i Q2 = _mm512_il_mulhi_epi<BitShift>(v_inv_n_w_prime, T);
+    // Y = inv_N_W * T - Q2 * modulus;
+    __m512i inv_N_W_T = _mm512_il_mullo_epi<BitShift>(v_inv_n_w, T);
+    v_Y = _mm512_il_mullo_add_epi<BitShift>(inv_N_W_T, Q2, v_neg_modulus);
+    if (BitShift == 52) {
+      // Discard high 12 bits; deals with case when W*T < Q2*p
+      v_Y = _mm512_and_epi64(v_Y, two_pow52_min1);
+    }
 
     // Modulus reduction from [0,2p), to [0,p)
     v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);

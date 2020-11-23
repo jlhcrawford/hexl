@@ -205,8 +205,8 @@ inline __m512i _mm512_il_mullo_add_epi(__m512i x, __m512i y, __m512i z);
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i _mm512_il_mullo_add_epi<52>(__m512i x, __m512i y, __m512i z) {
-  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, MaximumValue(52));
   LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
+  LATTICE_CHECK_BOUNDS(ExtractValues(z).data(), 8, MaximumValue(52));
   return _mm512_madd52lo_epu64(x, y, z);
 }
 #endif
@@ -238,12 +238,12 @@ inline __m512i _mm512_il_small_mod_epu64(__m512i x, __m512i p) {
 inline __m512i _mm512_il_small_add_mod_epi64(__m512i x, __m512i y, __m512i p) {
   LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, ExtractValues(p)[0]);
   LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, ExtractValues(p)[0]);
-  // return _mm512_il_small_mod_epu64(_mm512_add_epi64(x, y), p);
+  return _mm512_il_small_mod_epu64(_mm512_add_epi64(x, y), p);
 
-  __m512i v_diff = _mm512_sub_epi64(y, p);
-  x = _mm512_add_epi64(x, v_diff);
-  __mmask8 sign_bits = _mm512_movepi64_mask(x);
-  return _mm512_mask_add_epi64(x, sign_bits, x, p);
+  // __m512i v_diff = _mm512_sub_epi64(y, p);
+  // x = _mm512_add_epi64(x, v_diff);
+  // __mmask8 sign_bits = _mm512_movepi64_mask(x);
+  // return _mm512_mask_add_epi64(x, sign_bits, x, p);
 }
 
 inline __mmask8 _mm512_il_cmp_epu64_mask(__m512i a, __m512i b, CMPINT cmp) {
