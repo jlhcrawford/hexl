@@ -196,6 +196,27 @@ inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
 }
 #endif
 
+// Multiply packed unsigned BitShift-bit integers in each 64-bit element of y
+// and z to form a 2*BitShift-bit intermediate result. The low BitShift bits of
+// the result are added to x, then the result is returned.
+template <int BitShift>
+inline __m512i _mm512_il_mullo_add_epi(__m512i x, __m512i y, __m512i z);
+
+#ifdef LATTICE_HAS_AVX512IFMA
+template <>
+inline __m512i _mm512_il_mullo_add_epi<52>(__m512i x, __m512i y, __m512i z) {
+  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, MaximumValue(52));
+  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
+  return _mm512_madd52lo_epu64(x, y, z);
+}
+#endif
+
+template <>
+inline __m512i _mm512_il_mullo_add_epi<64>(__m512i x, __m512i y, __m512i z) {
+  __m512i prod = _mm512_mullo_epi64(y, z);
+  return _mm512_add_epi64(x, prod);
+}
+
 // Returns x mod p; assumes 0 < x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)

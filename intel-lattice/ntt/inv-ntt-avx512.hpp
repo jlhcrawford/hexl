@@ -36,7 +36,7 @@ namespace lattice {
 // X', Y' = X + Y (mod p), W(X - Y) (mod p).
 template <int BitShift, bool InputLessThanMod = false>
 inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
-                         __m512i modulus, __m512i twice_modulus) {
+                         __m512i neg_modulus, __m512i twice_modulus) {
   __m512i Y_minus_2p = _mm512_sub_epi64(*Y, twice_modulus);
   __m512i T = _mm512_sub_epi64(*X, Y_minus_2p);
 
@@ -49,10 +49,8 @@ inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
     *X = _mm512_mask_add_epi64(*X, sign_bits, *X, twice_modulus);
   }
   __m512i Q = _mm512_il_mulhi_epi<BitShift>(W_precon, T);
-  __m512i W_T = _mm512_il_mullo_epi<BitShift>(W_op, T);
-  __m512i Q_p = _mm512_il_mullo_epi<BitShift>(Q, modulus);
-
-  *Y = _mm512_sub_epi64(W_T, Q_p);
+  __m512i Q_p = _mm512_il_mullo_epi<BitShift>(Q, neg_modulus);
+  *Y = _mm512_il_mullo_add_epi<BitShift>(Q_p, W_op, T);
 
   if (BitShift == 52) {
     // Discard high 12 bits; deals with case when W*T < Q*p
@@ -61,7 +59,7 @@ inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
 }
 
 template <int BitShift>
-void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void InvT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
   const __m512i* v_W_precon_pt = reinterpret_cast<const __m512i*>(W_precon);
@@ -81,7 +79,7 @@ void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    InvButterfly<BitShift, true>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    InvButterfly<BitShift, true>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                                  v_twice_mod);
     WriteInterleavedT1(v_X, v_Y, v_X_pt);
 
@@ -90,7 +88,7 @@ void InvT1(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
-void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
+void InvT2(uint64_t* X, __m512i v_neg_modulus, __m512i v_twice_mod, uint64_t m,
            const uint64_t* W_op, const uint64_t* W_precon) {
 // 4 | m guaranteed by n >= 16
 #pragma GCC unroll 4
@@ -105,7 +103,7 @@ void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
-    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
     WriteInterleavedT2(v_X, v_Y, v_X_pt);
@@ -117,7 +115,7 @@ void InvT2(uint64_t* X, __m512i v_modulus, __m512i v_twice_mod, uint64_t m,
 }
 
 template <int BitShift>
-void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void InvT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   uint64_t* X = elements;
 
@@ -134,7 +132,7 @@ void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
-    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
     WriteInterleavedT4(v_X, v_Y, v_X_pt);
@@ -146,7 +144,7 @@ void InvT4(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
 }
 
 template <int BitShift>
-void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
+void InvT8(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t t, uint64_t m, const uint64_t* W_op,
            const uint64_t* W_precon) {
   size_t j1 = 0;
@@ -168,7 +166,7 @@ void InvT8(uint64_t* elements, __m512i v_modulus, __m512i v_twice_mod,
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-      InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_modulus,
+      InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                              v_twice_mod);
 
       _mm512_storeu_si512(v_X_pt++, v_X);
@@ -193,6 +191,7 @@ void InverseTransformFromBitReverseAVX512(
 
   uint64_t twice_mod = mod << 1;
   __m512i v_modulus = _mm512_set1_epi64(mod);
+  __m512i v_neg_modulus = _mm512_set1_epi64(-static_cast<int64_t>(mod));
   __m512i v_twice_mod = _mm512_set1_epi64(twice_mod);
 
   size_t t = 1;
@@ -204,7 +203,7 @@ void InverseTransformFromBitReverseAVX512(
     // t = 1
     const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
     const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-    InvT1<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    InvT1<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
     t <<= 1;
     root_index += m;
     m >>= 1;
@@ -212,7 +211,7 @@ void InverseTransformFromBitReverseAVX512(
     // t = 2
     W_op = &inv_root_of_unity_powers[root_index];
     W_precon = &precon_inv_root_of_unity_powers[root_index];
-    InvT2<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    InvT2<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
     t <<= 1;
     root_index += m;
     m >>= 1;
@@ -220,7 +219,7 @@ void InverseTransformFromBitReverseAVX512(
     // t = 4
     W_op = &inv_root_of_unity_powers[root_index];
     W_precon = &precon_inv_root_of_unity_powers[root_index];
-    InvT4<BitShift>(elements, v_modulus, v_twice_mod, m, W_op, W_precon);
+    InvT4<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
     t <<= 1;
     root_index += m;
     m >>= 1;
@@ -230,7 +229,7 @@ void InverseTransformFromBitReverseAVX512(
   for (; m > 1; m >>= 1) {
     const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
     const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-    InvT8<BitShift>(elements, v_modulus, v_twice_mod, t, m, W_op, W_precon);
+    InvT8<BitShift>(elements, v_neg_modulus, v_twice_mod, t, m, W_op, W_precon);
     t <<= 1;
     root_index += m;
   }
