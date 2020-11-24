@@ -53,7 +53,8 @@ inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
   *Y = _mm512_il_mullo_add_epi<BitShift>(Q_p, W_op, T);
 
   if (BitShift == 52) {
-    // Discard high 12 bits; deals with case when W*T < Q*p
+    // Discard high 12 bits; deals with case when W*T < Q*p in the low BitShift
+    // bits.
     *Y = _mm512_and_epi64(*Y, _mm512_set1_epi64((1UL << 52) - 1));
   }
 }
@@ -282,7 +283,8 @@ void InverseTransformFromBitReverseAVX512(
     __m512i inv_N_tx = _mm512_il_mullo_epi<BitShift>(v_inv_n, X_plus_Y_mod2p);
     v_X = _mm512_il_mullo_add_epi<BitShift>(inv_N_tx, Q1, v_neg_modulus);
     if (BitShift == 52) {
-      // Discard high 12 bits; deals with case when W*T < Q1*p
+      // Discard high 12 bits; deals with case when W*T < Q1*p in the low
+      // BitShift bits.
       v_X = _mm512_and_epi64(v_X, two_pow52_min1);
     }
 
@@ -291,7 +293,8 @@ void InverseTransformFromBitReverseAVX512(
     __m512i inv_N_W_T = _mm512_il_mullo_epi<BitShift>(v_inv_n_w, T);
     v_Y = _mm512_il_mullo_add_epi<BitShift>(inv_N_W_T, Q2, v_neg_modulus);
     if (BitShift == 52) {
-      // Discard high 12 bits; deals with case when W*T < Q2*p
+      // Discard high 12 bits; deals with case when W*T < Q2*p in the low
+      // BitShift bits.
       v_Y = _mm512_and_epi64(v_Y, two_pow52_min1);
     }
 

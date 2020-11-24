@@ -86,6 +86,37 @@ BENCHMARK(BM_FwdNTT_AVX512IFMA)
     ->Args({4096, 49})
     ->Args({8192, 49})
     ->Args({16384, 49});
+
+static void BM_FwdNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = 4096;
+  size_t prime_bits = 49;
+  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
+
+  NTT::NTTImpl ntt_impl(ntt_size, prime);
+
+  __m512i X = _mm512_set1_epi64(prime - 3);
+  __m512i Y = _mm512_set1_epi64(prime / 2);
+
+  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const std::vector<uint64_t> precon_root_of_unity =
+      ntt_impl.GetPrecon52InvRootOfUnityPowers();
+
+  __m512i W = _mm512_set1_epi64(root_of_unity[1]);
+  __m512i Wprecon = _mm512_set1_epi64(precon_root_of_unity[1]);
+  __m512i neg_p = _mm512_set1_epi64(-static_cast<int64_t>(prime));
+  __m512i twice_p = _mm512_set1_epi64(prime + prime);
+
+  for (auto _ : state) {
+    for (size_t i = 0; i < 1000000; ++i) {
+      benchmark::DoNotOptimize(i);
+      FwdButterfly<52>(&X, &Y, W, Wprecon, neg_p, twice_p);
+    }
+  }
+}
+
+BENCHMARK(BM_FwdNTT_AVX512IFMAButterfly)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(1.0);
 #endif
 
 //=================================================================
@@ -177,6 +208,37 @@ BENCHMARK(BM_InvNTT_AVX512IFMA)
     ->Args({4096})
     ->Args({8192})
     ->Args({16384});
+
+static void BM_InvNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
+  size_t ntt_size = 4096;
+  size_t prime_bits = 49;
+  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
+
+  NTT::NTTImpl ntt_impl(ntt_size, prime);
+
+  __m512i X = _mm512_set1_epi64(prime - 3);
+  __m512i Y = _mm512_set1_epi64(prime / 2);
+
+  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const std::vector<uint64_t> precon_root_of_unity =
+      ntt_impl.GetPrecon52InvRootOfUnityPowers();
+
+  __m512i W = _mm512_set1_epi64(root_of_unity[1]);
+  __m512i Wprecon = _mm512_set1_epi64(precon_root_of_unity[1]);
+  __m512i neg_p = _mm512_set1_epi64(-static_cast<int64_t>(prime));
+  __m512i twice_p = _mm512_set1_epi64(prime + prime);
+
+  for (auto _ : state) {
+    for (size_t i = 0; i < 1000000; ++i) {
+      benchmark::DoNotOptimize(i);
+      InvButterfly<52>(&X, &Y, W, Wprecon, neg_p, twice_p);
+    }
+  }
+}
+
+BENCHMARK(BM_InvNTT_AVX512IFMAButterfly)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(1.0);
 #endif
 
 //=================================================================
