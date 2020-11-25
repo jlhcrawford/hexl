@@ -22,6 +22,7 @@
 #include "eltwise/eltwise-add-mod.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "util/aligned-allocator.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "eltwise/eltwise-add-mod-avx512.hpp"
@@ -37,8 +38,8 @@ static void BM_EltwiseAddModNative(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   uint64_t modulus = 0xffffffffffc0001ULL;
 
-  std::vector<uint64_t> input1(input_size, 1);
-  std::vector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
     EltwiseAddModNative(input1.data(), input2.data(), input_size, modulus);
@@ -60,8 +61,8 @@ static void BM_EltwiseAddModAVX512(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   size_t modulus = 1152921504606877697;
 
-  std::vector<uint64_t> input1(input_size, 1);
-  std::vector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input2(input_size, 2);
 
   for (auto _ : state) {
     EltwiseAddModAVX512(input1.data(), input2.data(), input_size, modulus);

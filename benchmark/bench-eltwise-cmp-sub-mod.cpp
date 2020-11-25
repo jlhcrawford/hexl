@@ -22,6 +22,7 @@
 #include "eltwise/eltwise-cmp-sub-mod-internal.hpp"
 #include "eltwise/eltwise-cmp-sub-mod.hpp"
 #include "logging/logging.hpp"
+#include "util/aligned-allocator.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "eltwise/eltwise-cmp-sub-mod-avx512.hpp"
@@ -44,7 +45,7 @@ static void BM_EltwiseCmpSubModNative(benchmark::State& state) {  //  NOLINT
 
   uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);
-  std::vector<uint64_t> input1(input_size);
+  AlignedVector<uint64_t> input1(input_size);
   for (size_t i = 0; i < input_size; ++i) {
     input1[i] = distrib(gen);
   }
@@ -77,7 +78,7 @@ static void BM_EltwiseCmpSubModAVX512(benchmark::State& state) {  //  NOLINT
 
   uint64_t bound = distrib(gen);
   uint64_t diff = distrib(gen);
-  std::vector<uint64_t> input1(input_size);
+  AlignedVector<uint64_t> input1(input_size);
   for (size_t i = 0; i < input_size; ++i) {
     input1[i] = distrib(gen);
   }
