@@ -21,6 +21,7 @@
 #include "logging/logging.hpp"
 #include "ntt/ntt-internal.hpp"
 #include "ntt/ntt.hpp"
+#include "util/aligned-allocator.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "ntt/fwd-ntt-avx512.hpp"
@@ -39,7 +40,7 @@ static void BM_FwdNTTNative(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 45, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
   for (auto _ : state) {
@@ -63,15 +64,15 @@ BENCHMARK(BM_FwdNTTNative)
 // state[1] is approximately the number of bits in the coefficient modulus
 static void BM_FwdNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
-  size_t prime_bits = state.range(1);
-  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
+  size_t prime = GeneratePrimes(1, 49, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
-  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon52InvRootOfUnityPowers();
+
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
         ntt_size, prime, root_of_unity.data(), precon_root_of_unity.data(),
@@ -82,10 +83,10 @@ static void BM_FwdNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_FwdNTT_AVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024, 49})
-    ->Args({4096, 49})
-    ->Args({8192, 49})
-    ->Args({16384, 49});
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384});
 
 static void BM_FwdNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = 4096;
@@ -97,8 +98,8 @@ static void BM_FwdNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
   __m512i X = _mm512_set1_epi64(prime - 3);
   __m512i Y = _mm512_set1_epi64(prime / 2);
 
-  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon52InvRootOfUnityPowers();
 
   __m512i W = _mm512_set1_epi64(root_of_unity[1]);
@@ -126,14 +127,14 @@ BENCHMARK(BM_FwdNTT_AVX512IFMAButterfly)
 // state[1] is approximately the number of bits in the coefficient modulus
 static void BM_FwdNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
-  size_t prime_bits = state.range(1);
+  size_t prime_bits = 62;
   size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
-  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon64InvRootOfUnityPowers();
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
@@ -145,10 +146,10 @@ static void BM_FwdNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
 BENCHMARK(BM_FwdNTT_AVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024, 62})
-    ->Args({4096, 62})
-    ->Args({8192, 62})
-    ->Args({16384, 62});
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({8192})
+    ->Args({16384});
 #endif
 
 //=================================================================
@@ -158,12 +159,12 @@ static void BM_InvNTTNative(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 45, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
-  const std::vector<uint64_t> root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity =
       ntt_impl.GetInvRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon64InvRootOfUnityPowers();
   for (auto _ : state) {
     InverseTransformFromBitReverse64(ntt_size, prime, root_of_unity.data(),
@@ -187,12 +188,12 @@ static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 49, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
-  const std::vector<uint64_t> root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity =
       ntt_impl.GetInvRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon52InvRootOfUnityPowers();
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
@@ -219,8 +220,8 @@ static void BM_InvNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
   __m512i X = _mm512_set1_epi64(prime - 3);
   __m512i Y = _mm512_set1_epi64(prime / 2);
 
-  const std::vector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity = ntt_impl.GetRootOfUnityPowers();
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon52InvRootOfUnityPowers();
 
   __m512i W = _mm512_set1_epi64(root_of_unity[1]);
@@ -249,12 +250,12 @@ static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
 
-  const std::vector<uint64_t> root_of_unity =
+  const AlignedVector<uint64_t> root_of_unity =
       ntt_impl.GetInvRootOfUnityPowers();
-  const std::vector<uint64_t> precon_root_of_unity =
+  const AlignedVector<uint64_t> precon_root_of_unity =
       ntt_impl.GetPrecon64InvRootOfUnityPowers();
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
@@ -277,7 +278,7 @@ static void BM_FwdNTTInPlace(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
   NTT ntt(ntt_size, prime);
 
   for (auto _ : state) {
@@ -298,8 +299,8 @@ static void BM_FwdNTTCopy(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
 
-  std::vector<uint64_t> input(ntt_size, 1);
-  std::vector<uint64_t> output(ntt_size, 1);
+  AlignedVector<uint64_t> input(ntt_size, 1);
+  AlignedVector<uint64_t> output(ntt_size, 1);
   NTT ntt(ntt_size, prime);
 
   for (auto _ : state) {

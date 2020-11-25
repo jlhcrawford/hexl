@@ -27,6 +27,7 @@
 
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "util/aligned-allocator.hpp"
 #include "util/check.hpp"
 #include "util/cpu-features.hpp"
 
@@ -89,8 +90,8 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     return;
   }
 
-  std::vector<uint64_t> root_of_unity_powers(m_degree);
-  std::vector<uint64_t> inv_root_of_unity_powers(m_degree);
+  AlignedVector<uint64_t> root_of_unity_powers(m_degree);
+  AlignedVector<uint64_t> inv_root_of_unity_powers(m_degree);
 
   // 64-bit  precon
   root_of_unity_powers[0] = 1;
@@ -109,7 +110,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   }
 
   // Reordering inv_root_of_powers
-  std::vector<uint64_t> temp(m_degree);
+  AlignedVector<uint64_t> temp(m_degree);
   temp[0] = inv_root_of_unity_powers[0];
   idx = 1;
 
@@ -122,7 +123,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   inv_root_of_unity_powers = temp;
 
   // 64-bit preconditioned root of unity powers
-  std::vector<uint64_t> precon64_root_of_unity_powers;
+  AlignedVector<uint64_t> precon64_root_of_unity_powers;
   precon64_root_of_unity_powers.reserve(m_degree);
   for (uint64_t root_of_unity : root_of_unity_powers) {
     MultiplyFactor mf(root_of_unity, 64, m_p);
@@ -133,7 +134,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
       std::move(precon64_root_of_unity_powers);
 
   // 52-bit preconditioned root of unity powers
-  std::vector<uint64_t> precon52_root_of_unity_powers;
+  AlignedVector<uint64_t> precon52_root_of_unity_powers;
   precon52_root_of_unity_powers.reserve(m_degree);
   for (uint64_t root_of_unity : root_of_unity_powers) {
     MultiplyFactor mf(root_of_unity, 52, m_p);
@@ -147,7 +148,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
       std::move(root_of_unity_powers);
 
   // 64-bit preconditioned inverse root of unity powers
-  std::vector<uint64_t> precon64_inv_root_of_unity_powers;
+  AlignedVector<uint64_t> precon64_inv_root_of_unity_powers;
   precon64_inv_root_of_unity_powers.reserve(m_degree);
   for (uint64_t inv_root_of_unity : inv_root_of_unity_powers) {
     MultiplyFactor mf(inv_root_of_unity, 64, m_p);
@@ -158,7 +159,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
       std::move(precon64_inv_root_of_unity_powers);
 
   // 52-bit preconditioned inverse root of unity powers
-  std::vector<uint64_t> precon52_inv_root_of_unity_powers;
+  AlignedVector<uint64_t> precon52_inv_root_of_unity_powers;
   precon52_inv_root_of_unity_powers.reserve(m_degree);
   for (uint64_t inv_root_of_unity : inv_root_of_unity_powers) {
     MultiplyFactor mf(inv_root_of_unity, 52, m_p);
