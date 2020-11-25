@@ -22,6 +22,7 @@
 #include "eltwise/eltwise-fma.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
+#include "util/aligned-allocator.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "eltwise/eltwise-fma-avx512.hpp"
@@ -37,9 +38,9 @@ static void BM_EltwiseFMANative(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   uint64_t modulus = 0xffffffffffc0001ULL;
 
-  std::vector<uint64_t> op1(input_size, 1);
+  AlignedVector<uint64_t> op1(input_size, 1);
   uint64_t op2 = 1;
-  std::vector<uint64_t> op3(input_size, 2);
+  AlignedVector<uint64_t> op3(input_size, 2);
 
   for (auto _ : state) {
     EltwiseFMAMod(op1.data(), op2, op3.data(), op1.data(), op1.size(), modulus);
@@ -61,9 +62,9 @@ static void BM_EltwiseFMAAVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input1(input_size, 1);
   uint64_t input2 = 3;
-  std::vector<uint64_t> input3(input_size, 2);
+  AlignedVector<uint64_t> input3(input_size, 2);
 
   for (auto _ : state) {
     EltwiseFMAModAVX512<64>(input1.data(), input2, input3.data(), input1.data(),
@@ -87,9 +88,9 @@ static void BM_EltwiseFMAAVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   size_t modulus = 100;
 
-  std::vector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input1(input_size, 1);
   uint64_t input2 = 3;
-  std::vector<uint64_t> input3(input_size, 2);
+  AlignedVector<uint64_t> input3(input_size, 2);
 
   for (auto _ : state) {
     EltwiseFMAModAVX512<52>(input1.data(), input2, input3.data(), input1.data(),
