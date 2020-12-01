@@ -58,6 +58,12 @@ inline void CheckEqual(const __m512i a, const __m512i b) {
   CheckEqual(as, bs);
 }
 
+inline void AssertEqual(const __m512i a, const __m512i b) {
+  std::vector<uint64_t> as = ExtractValues(a);
+  std::vector<uint64_t> bs = ExtractValues(b);
+  AssertEqual(as, bs);
+}
+
 // Returns true iff a == b
 // Logs an error if a != b
 inline bool Equals(__m512i a, __m512i b) {
