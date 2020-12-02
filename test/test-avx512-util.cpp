@@ -218,7 +218,7 @@ TEST(AVX512, _mm512_il_small_mod_epu64) {
 TEST(AVX512, _mm512_il_barrett_reduce64) {
   // Small
   {
-    __m512i a = _mm512_set_epi64(0, 2, 4, 6, 8, 10, 11, 12);
+    __m512i a = _mm512_set_epi64(12, 11, 10, 8, 6, 4, 2, 0);
 
     std::vector<uint64_t> mods{1, 2, 3, 4, 5, 6, 7, 8};
     std::vector<uint64_t> barrs(mods.size());
@@ -226,16 +226,15 @@ TEST(AVX512, _mm512_il_barrett_reduce64) {
       barrs[i] = MultiplyFactor(1, 64, mods[i]).BarrettFactor();
     }
 
-    __m512i vmods = _mm512_set_epi64(mods[0], mods[1], mods[2], mods[3],
-                                     mods[4], mods[5], mods[6], mods[7]);
-    __m512i vbarrs = _mm512_set_epi64(barrs[0], barrs[1], barrs[2], barrs[3],
-                                      barrs[4], barrs[5], barrs[6], barrs[7]);
+    __m512i vmods = _mm512_set_epi64(mods[7], mods[6], mods[5], mods[4],
+                                     mods[3], mods[2], mods[1], mods[0]);
+    __m512i vbarrs = _mm512_set_epi64(barrs[7], barrs[6], barrs[5], barrs[4],
+                                      barrs[3], barrs[2], barrs[1], barrs[0]);
 
-    __m512i expected_out = _mm512_set_epi64(0, 0, 1, 2, 3, 4, 4, 4);
+    __m512i expected_out = _mm512_set_epi64(4, 4, 4, 3, 2, 1, 0, 0);
 
     __m512i c = _mm512_il_barrett_reduce64(a, vmods, vbarrs);
-
-    CheckEqual(c, expected_out);
+    AssertEqual(c, expected_out);
   }
 
   // Random
