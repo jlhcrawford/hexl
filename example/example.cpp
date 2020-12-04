@@ -14,11 +14,8 @@
 // limitations under the License.
 //*****************************************************************************
 
-#include <omp.h>
-
 #include <cstdint>
 #include <iostream>
-#include <thread>
 #include <vector>
 
 #include "intel-lattice/intel-lattice.hpp"

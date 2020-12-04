@@ -189,8 +189,6 @@ inline __m512i _mm512_il_mullo_epi<64>(__m512i x, __m512i y) {
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i _mm512_il_mullo_epi<52>(__m512i x, __m512i y) {
-  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 8, MaximumValue(52));
-  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
   __m512i zero = _mm512_set1_epi64(0);
   return _mm512_madd52lo_epu64(zero, x, y);
 }
@@ -205,8 +203,6 @@ inline __m512i _mm512_il_mullo_add_epi(__m512i x, __m512i y, __m512i z);
 #ifdef LATTICE_HAS_AVX512IFMA
 template <>
 inline __m512i _mm512_il_mullo_add_epi<52>(__m512i x, __m512i y, __m512i z) {
-  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 8, MaximumValue(52));
-  LATTICE_CHECK_BOUNDS(ExtractValues(z).data(), 8, MaximumValue(52));
   return _mm512_madd52lo_epu64(x, y, z);
 }
 #endif

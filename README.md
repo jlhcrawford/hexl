@@ -9,15 +9,15 @@ Intel lattice implements the following functions:
    - 2) An AVX512-DQ-accelerated implementation
    - 3) An AVX512-IFMA-accelerated implementation for `p` < 50 bits
 
-- Element-wise vector-vector modular multiplication, with the following implementations;
-  - 1) A default implementation in native C++
-  - 2) An AVX512-DQ accelerated implementation
-  - 3) An AVX512-IFMA-accelerated implementation for `p`  < 50 bits
-
 -  The inverse negacyclic number-theoretic transform (NTT), with the following implementations:
    - 1) A default implementation in native C++
    - 2) An AVX512-IFMA-accelerated implementation for `p` > 50 bits bits
    - 3) An AVX512-DQ-accelerated implementation for `p` < 50 bits
+
+- Element-wise vector-vector modular multiplication, with the following implementations;
+  - 1) A default implementation in native C++
+  - 2) An AVX512-DQ accelerated implementation
+  - 3) An AVX512-IFMA-accelerated implementation for `p`  < 50 bits
 
 In each case, the library will automatically choose the best implementation for the given CPU AVX512 feature set.
 
@@ -25,6 +25,8 @@ The functions are currently optimized for performance on Intel ICX servers. Perf
 
 For additional functionality, see the public headers, located in `include/intel-lattice`
 
+# Thread-safety
+Intel-lattice is single-threaded and thread-safe.
 
 # Build
 
