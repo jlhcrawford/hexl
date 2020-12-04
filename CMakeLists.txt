@@ -69,8 +69,6 @@ option(LATTICE_SHARED_LIB "Generate a shared library" OFF)
 option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
 option(ENABLE_THREAD_SANITIZER "Compiles and links with Thread Sanitizer" OFF)
 option(ENABLE_UB_SANITIZER "Compiles and links with Undefined Behavior Sanitizer" OFF)
-# OpenMP
-option( ENABLE_OpenMP "Enables OpenMP" ON)
 
 message(STATUS "CMAKE_BUILD_TYPE:         ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_C_COMPILER:         ${CMAKE_C_COMPILER}")
@@ -83,7 +81,6 @@ message(STATUS "LATTICE_SHARED_LIB:       ${LATTICE_SHARED_LIB}")
 message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
 message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
 message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
-message(STATUS "ENABLE_OpenMP:            ${ENABLE_OpenMP}")
 
 if (LATTICE_DEBUG)
   add_definitions(-DLATTICE_DEBUG)
@@ -152,14 +149,6 @@ if(ENABLE_ADDRESS_SANITIZER OR ENABLE_THREAD_SANITIZER OR ENABLE_UB_SANITIZER)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g -fno-omit-frame-pointer")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -g -fno-omit-frame-pointer")
-endif()
-
-if(ENABLE_OpenMP)
-    find_package (OpenMP REQUIRED)
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/intel-lattice)

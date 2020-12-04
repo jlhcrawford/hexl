@@ -18,11 +18,7 @@
 
 #include <stdint.h>
 
-#include <mutex>
-#include <tuple>
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
@@ -49,48 +45,28 @@ class NTT::NTTImpl {
 
   uint64_t GetBitShift() const { return m_bit_shift; }
 
+  AlignedVector<uint64_t>& GetPrecon64RootOfUnityPowers() {
+    return m_precon64_root_of_unity_powers;
+  }
+
   uint64_t* GetPrecon64RootOfUnityPowersPtr() {
-    auto it = GetStaticPrecon64RootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPrecon64RootOfUnityPowers().end(),
-                  "Could not find 64-bit pre-conditioned root of unity power");
-    return it->second.data();
+    return GetPrecon64RootOfUnityPowers().data();
+  }
+
+  AlignedVector<uint64_t>& GetPrecon52RootOfUnityPowers() {
+    return m_precon52_root_of_unity_powers;
   }
 
   uint64_t* GetPrecon52RootOfUnityPowersPtr() {
-    auto it = GetStaticPrecon52RootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPrecon52RootOfUnityPowers().end(),
-                  "Could not find 52-bit pre-conditioned root of unity power");
-    return it->second.data();
+    return GetPrecon52RootOfUnityPowers().data();
   }
 
-  uint64_t* GetRootOfUnityPowersPtr() {
-    auto it = GetStaticRootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
-                  "Could not find root of unity power");
-    return it->second.data();
-  }
-
-  AlignedVector<uint64_t> GetPrecon64RootOfUnityPowers() {
-    auto it = GetStaticPrecon64RootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPrecon64RootOfUnityPowers().end(),
-                  "Could not find 64-bit pre-conditioned root of unity power");
-    return it->second;
-  }
-
-  AlignedVector<uint64_t> GetPrecon52RootOfUnityPowers() {
-    auto it = GetStaticPrecon52RootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticPrecon52RootOfUnityPowers().end(),
-                  "Could not find pre-conditioned root of unity power");
-    return it->second;
-  }
+  uint64_t* GetRootOfUnityPowersPtr() { return GetRootOfUnityPowers().data(); }
 
   // Returns the vector of pre-computed root of unity powers for the modulus
   // and root of unity.
-  AlignedVector<uint64_t> GetRootOfUnityPowers() {
-    auto it = GetStaticRootOfUnityPowers().find(m_key);
-    LATTICE_CHECK(it != GetStaticRootOfUnityPowers().end(),
-                  "Could not find root of unity power");
-    return it->second;
+  AlignedVector<uint64_t>& GetRootOfUnityPowers() {
+    return m_root_of_unity_powers;
   }
 
   // Returns the root of unity at index i.
@@ -98,130 +74,34 @@ class NTT::NTTImpl {
 
   // Returns the vector of 64-bit pre-conditioned pre-computed root of unity
   // powers for the modulus and root of unity.
-  AlignedVector<uint64_t> GetPrecon64InvRootOfUnityPowers() {
-    auto it = GetStaticPrecon64InvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(
-        it != GetStaticPrecon64InvRootOfUnityPowers().end(),
-        "Could not find 64-bit pre-conditioned inverse root of unity power");
-    return it->second;
+  AlignedVector<uint64_t>& GetPrecon64InvRootOfUnityPowers() {
+    return m_precon64_inv_root_of_unity_powers;
+  }
+
+  uint64_t* GetPrecon64InvRootOfUnityPowersPtr() {
+    return GetPrecon64InvRootOfUnityPowers().data();
   }
 
   // Returns the vector of 52-bit pre-conditioned pre-computed root of unity
   // powers for the modulus and root of unity.
-  AlignedVector<uint64_t> GetPrecon52InvRootOfUnityPowers() {
-    auto it = GetStaticPrecon52InvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(
-        it != GetStaticPrecon52InvRootOfUnityPowers().end(),
-        "Could not find 52-bit pre-conditioned inverse root of unity power");
-    return it->second;
-  }
-
-  uint64_t* GetPrecon64InvRootOfUnityPowersPtr() {
-    auto it = GetStaticPrecon64InvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(
-        it != GetStaticPrecon64InvRootOfUnityPowers().end(),
-        "Could not find 64-bit pre-conditioned inverse root of unity power");
-    return it->second.data();
+  AlignedVector<uint64_t>& GetPrecon52InvRootOfUnityPowers() {
+    return m_precon52_inv_root_of_unity_powers;
   }
 
   uint64_t* GetPrecon52InvRootOfUnityPowersPtr() {
-    auto it = GetStaticPrecon52InvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(
-        it != GetStaticPrecon52InvRootOfUnityPowers().end(),
-        "Could not find 52-bit pre-conditioned inverse root of unity power");
-    return it->second.data();
+    return GetPrecon52InvRootOfUnityPowers().data();
   }
 
-  AlignedVector<uint64_t> GetInvRootOfUnityPowers() {
-    auto it = GetStaticInvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(it != GetStaticInvRootOfUnityPowers().end(),
-                  "Could not find inversed root of unity power");
-    return it->second;
+  AlignedVector<uint64_t>& GetInvRootOfUnityPowers() {
+    return m_inv_root_of_unity_powers;
   }
 
   uint64_t* GetInvRootOfUnityPowersPtr() {
-    auto it = GetStaticInvRootOfUnityPowers().find(m_key_inv);
-    LATTICE_CHECK(it != GetStaticInvRootOfUnityPowers().end(),
-                  "Could not find inversed root of unity power");
-    return it->second.data();
+    return GetInvRootOfUnityPowers().data();
   }
 
   uint64_t GetInvRootOfUnityPower(size_t i) {
     return GetInvRootOfUnityPowers()[i];
-  }
-
-  // Returns the map of pre-computed root of unity powers
-  // Access via s_root_of_unity_powers[<degree, prime modulus, root of
-  // unity>]
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticRootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_root_of_unity_powers;
-
-    return s_root_of_unity_powers;
-  }
-
-  // Returns the map of pre-computed pre-conditioned root of unity powers.
-  // Access via s_precon_root_of_unity_powers[<degree, prime modulus, root of
-  // unity>]
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticPrecon64RootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_precon64_root_of_unity_powers;
-
-    return s_precon64_root_of_unity_powers;
-  }
-
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticPrecon52RootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_precon52_root_of_unity_powers;
-
-    return s_precon52_root_of_unity_powers;
-  }
-
-  // Returns map of pre-computed inverse root of unity powers.
-  // Access via s_inv_root_of_unity_powers[<degree, prime modulus, root of
-  // unity>]
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticInvRootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_inv_root_of_unity_powers;
-    return s_inv_root_of_unity_powers;
-  }
-
-  // Returns map of pre-computed 64-bit pre-conditioned inverse root of unity
-  // powers. Access via s_precon_inv_root_of_unity_powers[<degree, prime
-  // modulus, root of unity>]
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticPrecon64InvRootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_precon64_inv_root_of_unity_powers;
-
-    return s_precon64_inv_root_of_unity_powers;
-  }
-
-  // Returns map of pre-computed 52-bit pre-conditioned inverse root of unity
-  // powers. Access via s_precon_inv_root_of_unity_powers[<degree, prime
-  // modulus, root of unity>]
-  static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                            AlignedVector<uint64_t>, hash_tuple>&
-  GetStaticPrecon52InvRootOfUnityPowers() {
-    static std::unordered_map<std::tuple<uint64_t, uint64_t, uint64_t>,
-                              AlignedVector<uint64_t>, hash_tuple>
-        s_precon52_inv_root_of_unity_powers;
-
-    return s_precon52_inv_root_of_unity_powers;
   }
 
   void ComputeForward(uint64_t* elements);
@@ -248,7 +128,6 @@ class NTT::NTTImpl {
   static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
 
  private:
-  std::mutex mtx;
   void ComputeRootOfUnityPowers();
   uint64_t m_degree;  // N: size of NTT transform, should be power of 2
   uint64_t m_p;       // prime modulus
@@ -260,11 +139,13 @@ class NTT::NTTImpl {
   uint64_t m_winv;  // Inverse of minimal root of unity
   uint64_t m_w;     // A 2N'th root of unity
 
-  // Key for pre-computed root of unity maps <m_degree, m_p, m_w>
-  std::tuple<uint64_t, uint64_t, uint64_t> m_key;
+  AlignedVector<uint64_t> m_precon52_root_of_unity_powers;
+  AlignedVector<uint64_t> m_precon64_root_of_unity_powers;
+  AlignedVector<uint64_t> m_root_of_unity_powers;
 
-  // Key for pre-computed inverse root of unity maps <m_degree, m_p, m_winv>
-  std::tuple<uint64_t, uint64_t, uint64_t> m_key_inv;
+  AlignedVector<uint64_t> m_precon52_inv_root_of_unity_powers;
+  AlignedVector<uint64_t> m_precon64_inv_root_of_unity_powers;
+  AlignedVector<uint64_t> m_inv_root_of_unity_powers;
 };
 
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,

@@ -32,7 +32,7 @@ namespace lattice {
 
 // Returns
 // *out1 =  _mm512_set_epi64(arg[15], arg[13], arg[11], arg[9],
-//                           arg[7], arg[5], arg[3], arg[1], arg[0]);
+//                           arg[7], arg[5], arg[3], arg[1]);
 // *out2 =  _mm512_set_epi64(arg[14], arg[12], arg[10], arg[8],
 //                           arg[6], arg[4], arg[2], arg[0])
 inline void LoadInterleavedT1(const uint64_t* arg, __m512i* out1,
@@ -140,7 +140,7 @@ inline void WriteInterleavedT2(__m512i arg1, __m512i arg2, __m512i* out) {
 // *out1 =  _mm512_set_epi64(arg[11], arg[10], arg[9], arg[8],
 //                           arg[3], arg[2], arg[1], arg[0]);
 // *out2 =  _mm512_set_epi64(arg[15], arg[14], arg[13], arg[12],
-//                           arg[7], arg[6], arg[4], arg[5]);
+//                           arg[7], arg[6], arg[5], arg[4]);
 inline void LoadInterleavedT4(const uint64_t* arg, __m512i* out1,
                               __m512i* out2) {
   const __m512i* arg_512 = reinterpret_cast<const __m512i*>(arg);

@@ -16,13 +16,8 @@
 
 #include "ntt/ntt-internal.hpp"
 
-#include <omp.h>
-
 #include <iostream>
 #include <memory>
-#include <mutex>
-#include <thread>
-#include <unordered_map>
 #include <utility>
 
 #include "logging/logging.hpp"
@@ -38,18 +33,6 @@
 
 namespace intel {
 namespace lattice {
-
-template <typename T>
-std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
-  out << "{";
-  size_t last = v.size() - 1;
-  for (size_t i = 0; i < v.size(); ++i) {
-    out << v[i];
-    if (i != last) out << ", ";
-  }
-  out << "}";
-  return out;
-}
 
 NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p, uint64_t root_of_unity)
     : m_degree(degree), m_p(p), m_w(root_of_unity) {
@@ -67,8 +50,6 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p, uint64_t root_of_unity)
 
   m_degree_bits = Log2(m_degree);
   m_winv = InverseUIntMod(m_w, m_p);
-  m_key = std::make_tuple(m_degree, m_p, m_w);
-  m_key_inv = std::make_tuple(m_degree, m_p, m_winv);
   ComputeRootOfUnityPowers();
 }
 
@@ -78,18 +59,6 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p)
 NTT::NTTImpl::~NTTImpl() = default;
 
 void NTT::NTTImpl::ComputeRootOfUnityPowers() {
-  std::lock_guard<std::mutex> lock(mtx);
-
-  auto it = NTT::NTTImpl::GetStaticRootOfUnityPowers().find(m_key);
-  if (it != NTT::NTTImpl::GetStaticRootOfUnityPowers().end()) {
-    return;
-  }
-
-  auto it_inv = NTT::NTTImpl::GetStaticInvRootOfUnityPowers().find(m_key_inv);
-  if (it_inv != NTT::NTTImpl::GetStaticInvRootOfUnityPowers().end()) {
-    return;
-  }
-
   AlignedVector<uint64_t> root_of_unity_powers(m_degree);
   AlignedVector<uint64_t> inv_root_of_unity_powers(m_degree);
 
@@ -130,7 +99,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     precon64_root_of_unity_powers.push_back(mf.BarrettFactor());
   }
 
-  NTT::NTTImpl::GetStaticPrecon64RootOfUnityPowers()[m_key] =
+  NTT::NTTImpl::GetPrecon64RootOfUnityPowers() =
       std::move(precon64_root_of_unity_powers);
 
   // 52-bit preconditioned root of unity powers
@@ -141,11 +110,10 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     precon64_root_of_unity_powers.push_back(mf.BarrettFactor());
   }
 
-  NTT::NTTImpl::GetStaticPrecon52RootOfUnityPowers()[m_key] =
+  NTT::NTTImpl::GetPrecon52RootOfUnityPowers() =
       std::move(precon64_root_of_unity_powers);
 
-  NTT::NTTImpl::GetStaticRootOfUnityPowers()[m_key] =
-      std::move(root_of_unity_powers);
+  NTT::NTTImpl::GetRootOfUnityPowers() = std::move(root_of_unity_powers);
 
   // 64-bit preconditioned inverse root of unity powers
   AlignedVector<uint64_t> precon64_inv_root_of_unity_powers;
@@ -155,7 +123,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     precon64_inv_root_of_unity_powers.push_back(mf.BarrettFactor());
   }
 
-  NTT::NTTImpl::GetStaticPrecon64InvRootOfUnityPowers()[m_key_inv] =
+  NTT::NTTImpl::GetPrecon64InvRootOfUnityPowers() =
       std::move(precon64_inv_root_of_unity_powers);
 
   // 52-bit preconditioned inverse root of unity powers
@@ -166,11 +134,10 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
     precon52_inv_root_of_unity_powers.push_back(mf.BarrettFactor());
   }
 
-  NTT::NTTImpl::GetStaticPrecon52InvRootOfUnityPowers()[m_key_inv] =
+  NTT::NTTImpl::GetPrecon52InvRootOfUnityPowers() =
       std::move(precon52_inv_root_of_unity_powers);
 
-  NTT::NTTImpl::GetStaticInvRootOfUnityPowers()[m_key_inv] =
-      std::move(inv_root_of_unity_powers);
+  NTT::NTTImpl::GetInvRootOfUnityPowers() = std::move(inv_root_of_unity_powers);
 }
 
 void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
