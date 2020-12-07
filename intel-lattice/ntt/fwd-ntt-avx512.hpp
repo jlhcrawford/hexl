@@ -70,13 +70,13 @@ void FwdT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
 
     __m512i v_X;
     __m512i v_Y;
-    LoadInterleavedT1(X, &v_X, &v_Y);
+    LoadFwdInterleavedT1(X, &v_X, &v_Y);
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
     FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
-    WriteInterleavedT1(v_X, v_Y, v_X_pt);
+    WriteFwdInterleavedT1(v_X, v_Y, v_X_pt);
 
     j1 += 16;
   }
@@ -95,7 +95,7 @@ void FwdT2(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
 
     __m512i v_X;
     __m512i v_Y;
-    LoadInterleavedT2(X, &v_X, &v_Y);
+    LoadFwdInterleavedT2(X, &v_X, &v_Y);
 
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
@@ -103,7 +103,8 @@ void FwdT2(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
-    WriteInterleavedT2(v_X, v_Y, v_X_pt);
+    _mm512_storeu_si512(v_X_pt++, v_X);
+    _mm512_storeu_si512(v_X_pt, v_Y);
 
     W_op += 4;
     W_precon += 4;
@@ -126,7 +127,7 @@ void FwdT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
 
     __m512i v_X;
     __m512i v_Y;
-    LoadInterleavedT4(X, &v_X, &v_Y);
+    LoadFwdInterleavedT4(X, &v_X, &v_Y);
 
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
@@ -134,7 +135,8 @@ void FwdT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
                            v_twice_mod);
 
-    WriteInterleavedT4(v_X, v_Y, v_X_pt);
+    _mm512_storeu_si512(v_X_pt++, v_X);
+    _mm512_storeu_si512(v_X_pt, v_Y);
 
     j1 += 16;
     W_op += 2;
