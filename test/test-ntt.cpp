@@ -304,6 +304,120 @@ INSTANTIATE_TEST_SUITE_P(NTTPrimesTest, NTTPrimesTest,
 #endif
 
 #ifdef LATTICE_HAS_AVX512DQ
+TEST(NTT, LoadFwdInterleavedT1) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadFwdInterleavedT1(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(14, 6, 12, 4, 10, 2, 8, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 7, 13, 5, 11, 3, 9, 1);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, LoadInvInterleavedT1) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadInvInterleavedT1(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(14, 12, 10, 8, 6, 4, 2, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 13, 11, 9, 7, 5, 3, 1);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, LoadFwdInterleavedT2) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadFwdInterleavedT2(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(13, 12, 5, 4, 9, 8, 1, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 14, 7, 6, 11, 10, 3, 2);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, LoadInvInterleavedT2) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadInvInterleavedT2(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(14, 6, 12, 4, 10, 2, 8, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 7, 13, 5, 11, 3, 9, 1);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, LoadFwdInterleavedT4) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadFwdInterleavedT4(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(11, 10, 9, 8, 3, 2, 1, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 14, 13, 12, 7, 6, 5, 4);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, LoadInvInterleavedT4) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i out1;
+  __m512i out2;
+
+  LoadInvInterleavedT4(arg.data(), &out1, &out2);
+
+  __m512i exp1 = _mm512_set_epi64(13, 12, 5, 4, 9, 8, 1, 0);
+  __m512i exp2 = _mm512_set_epi64(15, 14, 7, 6, 11, 10, 3, 2);
+  CheckEqual(ExtractValues(out1), ExtractValues(exp1));
+  CheckEqual(ExtractValues(out2), ExtractValues(exp2));
+}
+
+TEST(NTT, WriteFwdInterleavedT1) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i arg1 = _mm512_set_epi64(15, 14, 13, 12, 11, 10, 9, 8);
+  __m512i arg2 = _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0);
+
+  std::vector<uint64_t> out(16, 0);
+  std::vector<uint64_t> exp{8,  0, 9,  1, 10, 2, 11, 3,
+                            12, 4, 13, 5, 14, 6, 15, 7};
+
+  WriteFwdInterleavedT1(arg1, arg2, reinterpret_cast<__m512i*>(&out[0]));
+
+  CheckEqual(exp, out);
+}
+
+TEST(NTT, WriteInvInterleavedT4) {
+  std::vector<uint64_t> arg{0, 1, 2,  3,  4,  5,  6,  7,
+                            8, 9, 10, 11, 12, 13, 14, 15};
+  __m512i arg1 = _mm512_set_epi64(15, 14, 13, 12, 11, 10, 9, 8);
+  __m512i arg2 = _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0);
+
+  std::vector<uint64_t> out(16, 0);
+  std::vector<uint64_t> exp{8,  9,  10, 11, 0, 1, 2, 3,
+                            12, 13, 14, 15, 4, 5, 6, 7};
+
+  WriteInvInterleavedT4(arg1, arg2, reinterpret_cast<__m512i*>(&out[0]));
+
+  CheckEqual(exp, out);
+}
+
 // Checks AVX512 and native forward NTT implementations match
 TEST(NTT, FwdNTT_AVX512) {
   uint64_t N = 512;
