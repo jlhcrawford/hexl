@@ -184,7 +184,8 @@ template <int BitShift>
 void InverseTransformFromBitReverseAVX512(
     const uint64_t n, const uint64_t mod,
     const uint64_t* inv_root_of_unity_powers,
-    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements) {
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK_BOUNDS(precon_inv_root_of_unity_powers, n,
                        MaximumValue(BitShift));
@@ -301,9 +302,11 @@ void InverseTransformFromBitReverseAVX512(
       v_Y = _mm512_and_epi64(v_Y, two_pow52_min1);
     }
 
-    // Modulus reduction from [0,2p), to [0,p)
-    v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
-    v_Y = _mm512_il_small_mod_epu64(v_Y, v_modulus);
+    if (full_reduce) {
+      // Modulus reduction from [0,2p), to [0,p)
+      v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
+      v_Y = _mm512_il_small_mod_epu64(v_Y, v_modulus);
+    }
 
     _mm512_storeu_si512(v_X_pt++, v_X);
     _mm512_storeu_si512(v_Y_pt++, v_Y);

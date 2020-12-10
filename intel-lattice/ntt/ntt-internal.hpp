@@ -104,11 +104,13 @@ class NTT::NTTImpl {
     return GetInvRootOfUnityPowers()[i];
   }
 
-  void ComputeForward(uint64_t* elements);
-  void ComputeForward(const uint64_t* elements, uint64_t* result);
+  void ComputeForward(uint64_t* elements, bool full_reduce = true);
+  void ComputeForward(const uint64_t* elements, uint64_t* result,
+                      bool full_reduce = true);
 
-  void ComputeInverse(uint64_t* elements);
-  void ComputeInverse(const uint64_t* elements, uint64_t* result);
+  void ComputeInverse(uint64_t* elements, bool full_reduce = true);
+  void ComputeInverse(const uint64_t* elements, uint64_t* result,
+                      bool full_reduce = true);
 
   static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
 
@@ -151,7 +153,7 @@ class NTT::NTTImpl {
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
                                     const uint64_t* root_of_unity_powers,
                                     const uint64_t* precon_root_of_unity_powers,
-                                    uint64_t* elements);
+                                    uint64_t* elements, bool full_reduce);
 
 // Reference NTT which is written for clarity rather than performance
 // Use for debugging
@@ -166,7 +168,8 @@ void ReferenceForwardTransformToBitReverse(uint64_t n, uint64_t mod,
 
 void InverseTransformFromBitReverse64(
     uint64_t n, uint64_t mod, const uint64_t* inv_root_of_unity_powers,
-    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements);
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce);
 
 bool CheckArguments(uint64_t degree, uint64_t p);
 

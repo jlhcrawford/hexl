@@ -46,7 +46,7 @@ static void BM_FwdNTTNative(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverse64(
         ntt_size, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data());
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data(), true);
   }
 }
 
@@ -64,7 +64,9 @@ BENCHMARK(BM_FwdNTTNative)
 // state[1] is approximately the number of bits in the coefficient modulus
 static void BM_FwdNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
-  size_t prime = GeneratePrimes(1, 49, ntt_size)[0];
+  size_t prime_bits = 49;
+  bool full_reduce = state.range(1);
+  size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
 
   AlignedVector<uint64_t> input(ntt_size, 1);
   NTT::NTTImpl ntt_impl(ntt_size, prime);
@@ -76,17 +78,21 @@ static void BM_FwdNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
         ntt_size, prime, root_of_unity.data(), precon_root_of_unity.data(),
-        input.data());
+        input.data(), full_reduce);
   }
 }
 
 BENCHMARK(BM_FwdNTT_AVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024})
-    ->Args({4096})
-    ->Args({8192})
-    ->Args({16384});
+    ->Args({1024, true})
+    ->Args({1024, false})
+    ->Args({4096, true})
+    ->Args({4096, false})
+    ->Args({8192, true})
+    ->Args({8192, false})
+    ->Args({16384, true})
+    ->Args({16384, false});
 
 static void BM_FwdNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = 4096;
@@ -117,7 +123,16 @@ static void BM_FwdNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
 
 BENCHMARK(BM_FwdNTT_AVX512IFMAButterfly)
     ->Unit(benchmark::kMicrosecond)
-    ->MinTime(1.0);
+    ->MinTime(1.0)
+    ->Args({1024, true})
+    ->Args({1024, false})
+    ->Args({4096, true})
+    ->Args({4096, false})
+    ->Args({8192, true})
+    ->Args({8192, false})
+    ->Args({16384, true})
+    ->Args({16384, false});
+
 #endif
 
 //=================================================================
@@ -128,6 +143,7 @@ BENCHMARK(BM_FwdNTT_AVX512IFMAButterfly)
 static void BM_FwdNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
   size_t prime_bits = 62;
+  bool full_reduce = state.range(1);
   size_t prime = GeneratePrimes(1, prime_bits, ntt_size)[0];
 
   AlignedVector<uint64_t> input(ntt_size, 1);
@@ -139,17 +155,21 @@ static void BM_FwdNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
         ntt_size, prime, root_of_unity.data(), precon_root_of_unity.data(),
-        input.data());
+        input.data(), full_reduce);
   }
 }
 
 BENCHMARK(BM_FwdNTT_AVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024})
-    ->Args({4096})
-    ->Args({8192})
-    ->Args({16384});
+    ->Args({1024, true})
+    ->Args({1024, false})
+    ->Args({4096, true})
+    ->Args({4096, false})
+    ->Args({8192, true})
+    ->Args({8192, false})
+    ->Args({16384, true})
+    ->Args({16384, false});
 #endif
 
 //=================================================================
@@ -168,7 +188,8 @@ static void BM_InvNTTNative(benchmark::State& state) {  //  NOLINT
       ntt_impl.GetPrecon64InvRootOfUnityPowers();
   for (auto _ : state) {
     InverseTransformFromBitReverse64(ntt_size, prime, root_of_unity.data(),
-                                     precon_root_of_unity.data(), input.data());
+                                     precon_root_of_unity.data(), input.data(),
+                                     true);
   }
 }
 
@@ -186,6 +207,7 @@ BENCHMARK(BM_InvNTTNative)
 // state[0] is the degree
 static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
+  bool full_reduce = state.range(1);
   size_t prime = GeneratePrimes(1, 49, ntt_size)[0];
 
   AlignedVector<uint64_t> input(ntt_size, 1);
@@ -198,17 +220,21 @@ static void BM_InvNTT_AVX512IFMA(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
         ntt_size, prime, root_of_unity.data(), precon_root_of_unity.data(),
-        input.data());
+        input.data(), full_reduce);
   }
 }
 
 BENCHMARK(BM_InvNTT_AVX512IFMA)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024})
-    ->Args({4096})
-    ->Args({8192})
-    ->Args({16384});
+    ->Args({1024, true})
+    ->Args({1024, false})
+    ->Args({4096, true})
+    ->Args({4096, false})
+    ->Args({8192, true})
+    ->Args({8192, false})
+    ->Args({16384, true})
+    ->Args({16384, false});
 
 static void BM_InvNTT_AVX512IFMAButterfly(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = 4096;
@@ -248,6 +274,7 @@ BENCHMARK(BM_InvNTT_AVX512IFMAButterfly)
 // state[0] is the degree
 static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   size_t ntt_size = state.range(0);
+  bool full_reduce = state.range(1);
   size_t prime = GeneratePrimes(1, 62, ntt_size)[0];
 
   AlignedVector<uint64_t> input(ntt_size, 1);
@@ -260,17 +287,21 @@ static void BM_InvNTT_AVX512DQ(benchmark::State& state) {  //  NOLINT
   for (auto _ : state) {
     InverseTransformFromBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
         ntt_size, prime, root_of_unity.data(), precon_root_of_unity.data(),
-        input.data());
+        input.data(), full_reduce);
   }
 }
 
 BENCHMARK(BM_InvNTT_AVX512DQ)
     ->Unit(benchmark::kMicrosecond)
     ->MinTime(5.0)
-    ->Args({1024})
-    ->Args({4096})
-    ->Args({8192})
-    ->Args({16384});
+    ->Args({1024, true})
+    ->Args({1024, false})
+    ->Args({4096, true})
+    ->Args({4096, false})
+    ->Args({8192, true})
+    ->Args({8192, false})
+    ->Args({16384, true})
+    ->Args({16384, false});
 #endif
 
 // state[0] is the degree
@@ -304,7 +335,7 @@ static void BM_FwdNTTCopy(benchmark::State& state) {  //  NOLINT
   NTT ntt(ntt_size, prime);
 
   for (auto _ : state) {
-    ntt.ComputeForward(input.data(), output.data());
+    ntt.ComputeForward(input.data(), output.data(), true);
   }
 }
 

@@ -140,7 +140,7 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   NTT::NTTImpl::GetInvRootOfUnityPowers() = std::move(inv_root_of_unity_powers);
 }
 
-void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
+void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
@@ -154,9 +154,15 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
         GetPrecon52RootOfUnityPowersPtr();
 
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
-    ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
-        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-        elements);
+    if (full_reduce) {
+      ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
+          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+          elements, true);
+    } else {
+      ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
+          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+          elements, false);
+    }
     return;
   }
 #endif
@@ -168,9 +174,15 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
     const uint64_t* precon_root_of_unity_powers =
         GetPrecon64RootOfUnityPowersPtr();
 
-    ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-        elements);
+    if (full_reduce) {
+      ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
+          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+          elements, true);
+    } else {
+      ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
+          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+          elements, false);
+    }
     return;
   }
 #endif
@@ -181,17 +193,19 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements) {
       GetPrecon64RootOfUnityPowersPtr();
 
   ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers,
-                                 precon_root_of_unity_powers, elements);
+                                 precon_root_of_unity_powers, elements,
+                                 full_reduce);
 }
 
-void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result) {
+void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result,
+                                  bool full_reduce) {
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
-  ComputeForward(result);
+  ComputeForward(result, full_reduce);
 }
 
-void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
+void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
@@ -206,7 +220,7 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
         GetPrecon52InvRootOfUnityPowersPtr();
     InverseTransformFromBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
-        precon_inv_root_of_unity_powers, elements);
+        precon_inv_root_of_unity_powers, elements, full_reduce);
     return;
   }
 #endif
@@ -220,7 +234,7 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
 
     InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
-        precon_inv_root_of_unity_powers, elements);
+        precon_inv_root_of_unity_powers, elements, full_reduce);
     return;
   }
 #endif
@@ -230,14 +244,16 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements) {
   const uint64_t* precon_inv_root_of_unity_powers =
       GetPrecon64InvRootOfUnityPowersPtr();
   InverseTransformFromBitReverse64(m_degree, m_p, inv_root_of_unity_powers,
-                                   precon_inv_root_of_unity_powers, elements);
+                                   precon_inv_root_of_unity_powers, elements,
+                                   full_reduce);
 }
 
-void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result) {
+void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result,
+                                  bool full_reduce) {
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
-  ComputeInverse(result);
+  ComputeInverse(result, full_reduce);
 }
 
 // NTT API
@@ -251,20 +267,22 @@ NTT::NTT(uint64_t degree, uint64_t p, uint64_t root_of_unity)
 
 NTT::~NTT() = default;
 
-void NTT::ComputeForward(uint64_t* elements) {
-  m_impl->ComputeForward(elements);
+void NTT::ComputeForward(uint64_t* elements, bool full_reduce) {
+  m_impl->ComputeForward(elements, full_reduce);
 }
 
-void NTT::ComputeForward(const uint64_t* elements, uint64_t* result) {
-  m_impl->ComputeForward(elements, result);
+void NTT::ComputeForward(const uint64_t* elements, uint64_t* result,
+                         bool full_reduce) {
+  m_impl->ComputeForward(elements, result, full_reduce);
 }
 
-void NTT::ComputeInverse(uint64_t* elements) {
-  m_impl->ComputeInverse(elements);
+void NTT::ComputeInverse(uint64_t* elements, bool full_reduce) {
+  m_impl->ComputeInverse(elements, full_reduce);
 }
 
-void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result) {
-  m_impl->ComputeInverse(elements, result);
+void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result,
+                         bool full_reduce) {
+  m_impl->ComputeInverse(elements, result, full_reduce);
 }
 
 // Free functions
@@ -272,7 +290,7 @@ void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result) {
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
                                     const uint64_t* root_of_unity_powers,
                                     const uint64_t* precon_root_of_unity_powers,
-                                    uint64_t* elements) {
+                                    uint64_t* elements, bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
   uint64_t twice_mod = mod << 1;
@@ -316,15 +334,17 @@ void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
     }
     t >>= 1;
   }
-  for (size_t i = 0; i < n; ++i) {
-    if (elements[i] >= twice_mod) {
-      elements[i] -= twice_mod;
+  if (full_reduce) {
+    for (size_t i = 0; i < n; ++i) {
+      if (elements[i] >= twice_mod) {
+        elements[i] -= twice_mod;
+      }
+      if (elements[i] >= mod) {
+        elements[i] -= mod;
+      }
+      LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in NTT "
+                                           << elements[i] << " >= " << mod);
     }
-    if (elements[i] >= mod) {
-      elements[i] -= mod;
-    }
-    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in NTT "
-                                         << elements[i] << " >= " << mod);
   }
 }
 
@@ -357,7 +377,8 @@ void ReferenceForwardTransformToBitReverse(uint64_t n, uint64_t mod,
 
 void InverseTransformFromBitReverse64(
     uint64_t n, uint64_t mod, const uint64_t* inv_root_of_unity_powers,
-    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements) {
+    const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
 
   uint64_t twice_mod = mod << 1;
@@ -417,13 +438,15 @@ void InverseTransformFromBitReverse64(
     *Y++ = MultiplyUIntModLazy<64>(ty, inv_n_w, mod);
   }
 
-  // Reduce from [0, 2p) to [0,p)
-  for (size_t i = 0; i < n; ++i) {
-    if (elements[i] >= mod) {
-      elements[i] -= mod;
+  if (full_reduce) {
+    // Reduce from [0, 2p) to [0,p)
+    for (size_t i = 0; i < n; ++i) {
+      if (elements[i] >= mod) {
+        elements[i] -= mod;
+      }
+      LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in InvNTT"
+                                           << elements[i] << " >= " << mod);
     }
-    LATTICE_CHECK(elements[i] < mod, "Incorrect modulus reduction in InvNTT"
-                                         << elements[i] << " >= " << mod);
   }
 }
 

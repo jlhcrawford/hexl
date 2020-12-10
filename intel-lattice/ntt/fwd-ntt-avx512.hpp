@@ -180,7 +180,8 @@ void FwdT8(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
 template <int BitShift>
 void ForwardTransformToBitReverseAVX512(
     const uint64_t n, const uint64_t mod, const uint64_t* root_of_unity_powers,
-    const uint64_t* precon_root_of_unity_powers, uint64_t* elements) {
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK_BOUNDS(precon_root_of_unity_powers, n, MaximumValue(BitShift),
                        "precon_root_of_unity_powers too large");
@@ -238,21 +239,23 @@ void ForwardTransformToBitReverseAVX512(
     FwdT1<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
   }
 
-  // n power of two at least 8 => n divisible by 8
-  LATTICE_CHECK(n % 8 == 0, "n " << n << " not a power of 2");
-  __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
-  for (size_t i = 0; i < n; i += 8) {
-    __m512i v_X = _mm512_loadu_si512(v_X_pt);
+  if (full_reduce) {
+    // n power of two at least 8 => n divisible by 8
+    LATTICE_CHECK(n % 8 == 0, "n " << n << " not a power of 2");
+    __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
+    for (size_t i = 0; i < n; i += 8) {
+      __m512i v_X = _mm512_loadu_si512(v_X_pt);
 
-    // Reduce from [0, 4p) to [0, p)
-    v_X = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
-    v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
+      // Reduce from [0, 4p) to [0, p)
+      v_X = _mm512_il_small_mod_epu64(v_X, v_twice_mod);
+      v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
 
-    LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8, mod);
+      LATTICE_CHECK_BOUNDS(ExtractValues(v_X).data(), 8, mod);
 
-    _mm512_storeu_si512(v_X_pt, v_X);
+      _mm512_storeu_si512(v_X_pt, v_X);
 
-    ++v_X_pt;
+      ++v_X_pt;
+    }
   }
 }
 
