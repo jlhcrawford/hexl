@@ -25,6 +25,11 @@ namespace lattice {
 void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
                              uint64_t n, const uint64_t modulus);
 
+// Algorithm 1 from https://hal.archives-ouvertes.fr/hal-01215845/document
+void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
+                                 const uint64_t* operand2, uint64_t n,
+                                 const uint64_t modulus);
+
 // From Function 18, page 19 of https://arxiv.org/pdf/1407.3383.pdf
 // See also Algorithm 2/3 of
 // https://hal.archives-ouvertes.fr/hal-02552673/document

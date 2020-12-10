@@ -69,7 +69,34 @@ TEST(EltwiseMult, avx512_int2) {
 
   CheckEqual(op1, exp_out);
 }
+//*********************************//
+TEST(EltwiseMultOofP, avx512_small) {
+  std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
+  std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
 
+  uint64_t modulus = 769;
+  EltwiseMultModAVX512IntOofP(result, op1.data(), op2.data(), op1.size(),
+                              modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, avx512_int2) {
+  uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModAVX512IntOofP(result, op1.data(), op2.data(), op1.size(),
+                              modulus);
+
+  CheckEqual(result, exp_out);
+}
+//*********************************//
 #endif
 
 TEST(EltwiseMult, native2_big) {
@@ -164,7 +191,62 @@ TEST(EltwiseMult, 9) {
 
   CheckEqual(op1, exp_out);
 }
+//*************************************//
 
+TEST(EltwiseMultOofP, 4) {
+  std::vector<uint64_t> op1{2, 4, 3, 2};
+  std::vector<uint64_t> op2{2, 1, 2, 0};
+  std::vector<uint64_t> result{0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{4, 4, 6, 0};
+
+  uint64_t modulus = 769;
+
+  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                     modulus);
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, 6) {
+  std::vector<uint64_t> op1{0, 1, 2, 3, 4, 5};
+  std::vector<uint64_t> op2{2, 4, 6, 8, 10, 12};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{0, 4, 12, 24, 40, 60};
+
+  uint64_t modulus = 769;
+
+  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                     modulus);
+  CheckEqual(result, exp_out);
+}
+
+#ifdef LATTICE_DEBUG
+TEST(EltwiseMultOofP, 8_bounds) {
+  std::vector<uint64_t> op1{0, 1, 2, 3, 4, 5, 6, 7};
+  std::vector<uint64_t> op2{0, 1, 2, 3, 4, 5, 6, 770};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+
+  uint64_t modulus = 769;
+
+  EXPECT_ANY_THROW(EltwiseMultModOofP(result.data(), op1.data(), op2.data(),
+                                      op1.size(), modulus));
+}
+#endif
+
+TEST(EltwiseMultOofP, 9) {
+  uint64_t modulus = GeneratePrimes(1, 51, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> op2{modulus - 4, 8, 7, 6, 5, 4, 3, 2, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{12, 8, 14, 18, 20, 20, 18, 14, 8};
+
+  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                     modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+//*************************************//
 #ifdef LATTICE_HAS_AVX512DQ
 TEST(EltwiseMultBig, 9) {
   uint64_t modulus = 1125891450734593;
@@ -182,6 +264,25 @@ TEST(EltwiseMultBig, 9) {
   EltwiseMultModAVX512Int(op1.data(), op2.data(), op1.size(), modulus);
 
   CheckEqual(op1, exp_out);
+}
+TEST(EltwiseMultBigOofP, 9) {
+  uint64_t modulus = 1125891450734593;
+
+  std::vector<uint64_t> op1{706712574074152, 943467560561867, 1115920708919443,
+                            515713505356094, 525633777116309, 910766532971356,
+                            757086506562426, 799841520990167};
+  std::vector<uint64_t> op2{515910833966633, 96924929169117,  537587376997453,
+                            41829060600750,  205864998008014, 463185427411646,
+                            965818279134294, 1075778049568657};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{
+      231838787758587, 618753612121218, 1116345967490421, 409735411065439,
+      25680427818594,  950138933882289, 554128714280822,  1465109636753};
+
+  EltwiseMultModAVX512IntOofP(result, op1.data(), op2.data(), op1.size(),
+                              modulus);
+
+  CheckEqual(result, exp_out);
 }
 #endif
 

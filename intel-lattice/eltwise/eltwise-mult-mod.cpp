@@ -91,5 +91,28 @@ void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
   EltwiseMultModNative(operand1, operand2, n, modulus);
 }
 
+void EltwiseMultModOofP(uint64_t* result, uint64_t* operand1,
+                        const uint64_t* operand2, const uint64_t n,
+                        const uint64_t modulus) {
+#ifdef LATTICE_HAS_AVX512DQ
+  if (has_avx512_dq) {
+    if (modulus < (1UL << 50)) {
+      EltwiseMultModAVX512FloatOofP(result, operand1, operand2, n, modulus);
+      result = operand1;
+      return;
+    } else {
+      EltwiseMultModAVX512IntOofP(result, operand1, operand2, n, modulus);
+      result = operand1;
+      return;
+    }
+  }
+#endif
+
+  IVLOG(3, "Calling EltwiseMultModNative");
+  EltwiseMultModNative(operand1, operand2, n, modulus);
+  for (int i = 0; i < static_cast<int>(n); i++) {
+    result[i] = operand1[i];
+  }
+}
 }  // namespace lattice
 }  // namespace intel
