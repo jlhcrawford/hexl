@@ -66,3 +66,16 @@ and make sure all unit-test pass and the pre-commit checks pass.
 ## Repository layout
 Public headers reside in the `intel-lattice/include` folder.
 Private headers, e.g. those containing AVX512 code should not be put in this folder.
+
+## Integration with Intel-SEAL and Intel-PALISADE
+The following table shows the current status of Intel-lattice integration with Intel-SEAL and Intel-PALISADE.
+
+| Function         | Intel-SEAL         | Intel-PALISADE
+| ---------------- | ------------------ | --------------
+| EltwiseAddMod    | :x:                | :x:
+| EltwiseCmpAdd    | :x:                | :heavy_check_mark:
+| EltwiseCmpSubMod | :x:                | :heavy_check_mark:
+| EltwiseFMA       | :x:                | :heavy_check_mark:
+| EltwiseMultMod   | :x:                | :heavy_check_mark:
+| FwdNTT           | :heavy_check_mark: | :heavy_check_mark:
+| InvNTT           | :heavy_check_mark: | :heavy_check_mark:
