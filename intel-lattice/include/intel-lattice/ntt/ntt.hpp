@@ -47,24 +47,34 @@ class NTT {
   NTT(uint64_t degree, uint64_t p, uint64_t root_of_unity);
 
   // Compute in-place NTT.
-  // Results are bit-reversed.
-  void ComputeForward(uint64_t* elements);
+  // Results are bit-reversed
+  // @param full_reduce If true, results are in [0,p); otherwise, outputs are in
+  // [0,4*p)
+  void ComputeForward(uint64_t* elements, bool full_reduce = true);
 
   // Compute NTT
   // Results are bit-reversed
   // @param elements Data on which to compute the NTT
   // @param result Stores the result
-  void ComputeForward(const uint64_t* elements, uint64_t* result);
+  // @param full_reduce If true, results are in [0,p); otherwise, outputs are in
+  // [0,4*p)
+  void ComputeForward(const uint64_t* elements, uint64_t* result,
+                      bool full_reduce = true);
 
   // Compute in-place inverse NTT.
-  // Results are bit-reversed.
-  void ComputeInverse(uint64_t* elements);
+  // Results are bit-reversed
+  // @param full_reduce If true, results are in [0,p); otherwise, outputs are in
+  // [0,2*p)
+  void ComputeInverse(uint64_t* elements, bool full_reduce = true);
 
   // Compute inverse NTT
   // Results are bit-reversed
   // @param elements Data on which to compute the NTT
   // @param result Stores the result
-  void ComputeInverse(const uint64_t* elements, uint64_t* result);
+  // @param full_reduce If true, results are in [0,p); otherwise, outputs are in
+  // [0,2*p)
+  void ComputeInverse(const uint64_t* elements, uint64_t* result,
+                      bool full_reduce = true);
 
   class NTTImpl;
 

@@ -27,14 +27,16 @@ template void
 ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_ifma_shift_bits>(
     const uint64_t degree, const uint64_t mod,
     const uint64_t* root_of_unity_powers,
-    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce);
 #endif
 
 template void
 ForwardTransformToBitReverseAVX512<NTT::NTTImpl::s_default_shift_bits>(
     const uint64_t degree, const uint64_t mod,
     const uint64_t* root_of_unity_powers,
-    const uint64_t* precon_root_of_unity_powers, uint64_t* elements);
+    const uint64_t* precon_root_of_unity_powers, uint64_t* elements,
+    bool full_reduce);
 
 }  // namespace lattice
 }  // namespace intel
