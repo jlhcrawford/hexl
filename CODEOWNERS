@@ -1,5 +1,2 @@
 # Default codeowner for all files
-* @fboemer @sejunkim
-
-# Override default codeowner for specific files
-.gitlab-ci.yml @fboemer @gseifu
+* @fboemer @sejunkim @gseifu
