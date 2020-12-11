@@ -702,16 +702,13 @@ void EltwiseMultModAVX512FloatOofP(uint64_t* result, uint64_t* operand1,
                        "pre-mult value in operand1 exceeds bound " << modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus,
                        "Value in operand2 exceeds bound " << modulus);
-  // TODO(gseifu): EltwiseMultModNative
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
-    EltwiseMultModNative(operand1, operand2, n_mod_8, modulus);
+    EltwiseMultModNativeOofP(result, operand1, operand2, n_mod_8, modulus);
     operand1 += n_mod_8;
     operand2 += n_mod_8;
+    result += n_mod_8;
     n -= n_mod_8;
-    for (int i = 0; i < static_cast<int>(n); i++) {
-      result[i] = operand1[i];
-    }
   }
   __m512d p = _mm512_set1_pd(static_cast<double>(modulus));
 
@@ -764,16 +761,13 @@ void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
   LATTICE_CHECK_BOUNDS(operand2, n, modulus,
                        "Value in operand2 exceeds bound " << modulus);
   LATTICE_CHECK(modulus != 0, "Require modulus != 0");
-  // TODO(gseifu): add NativeOofP
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
-    EltwiseMultModNative(operand1, operand2, n_mod_8, modulus);
+    EltwiseMultModNativeOofP(result, operand1, operand2, n_mod_8, modulus);
     operand1 += n_mod_8;
     operand2 += n_mod_8;
+    result += n_mod_8;
     n -= n_mod_8;
-    for (int i = 0; i < static_cast<int>(n); i++) {
-      result[i] = operand1[i];
-    }
   }
 
   const uint64_t logmod = std::log2l(modulus);

@@ -27,5 +27,9 @@ namespace lattice {
 void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
                           const uint64_t n, const uint64_t modulus);
 
+void EltwiseMultModNativeOofP(uint64_t* rs, uint64_t* operand1,
+                              const uint64_t* operand2, const uint64_t n,
+                              const uint64_t modulus);
+
 }  // namespace lattice
 }  // namespace intel

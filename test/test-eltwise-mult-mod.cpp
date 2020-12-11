@@ -219,6 +219,78 @@ TEST(EltwiseMult, AVX512Big) {
 #endif
 #endif
 // Unit test for OofP methods
+
+TEST(EltwiseMultOofP, native_mult2) {
+  std::vector<uint64_t> op1{1, 2,  3,  4,  5,  6,  7,  8,
+                            9, 10, 11, 12, 13, 14, 15, 16};
+  std::vector<uint64_t> op2{17, 18, 19, 20, 21, 22, 23, 24,
+                            25, 26, 27, 28, 29, 30, 31, 32};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 29, 0, 0, 0};
+  std::vector<uint64_t> exp_out{17, 36, 57, 80, 4,  31, 60, 91,
+                                23, 58, 95, 33, 74, 16, 61, 7};
+  uint64_t modulus = 101;
+
+  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                           modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, native2_big) {
+  uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                           modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, 8big) {
+  uint64_t modulus = GeneratePrimes(1, 48, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 1, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{modulus - 1, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{1, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                           modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, 8big2) {
+  uint64_t p = 281474976749569;
+
+  std::vector<uint64_t> op1{(p - 1) / 2, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{(p + 1) / 2, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{70368744187392, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                           p);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, 8big3) {
+  uint64_t p = 1125891450734593;
+
+  std::vector<uint64_t> op1{1078888294739028, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{1114802337613200, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{13344071208410, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                           p);
+
+  CheckEqual(result, exp_out);
+}
 #ifdef LATTICE_HAS_AVX512DQ
 TEST(EltwiseMultOofP, avx512_small) {
   std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
