@@ -747,13 +747,13 @@ void EltwiseMultModAVX512FloatOofP(uint64_t* result, uint64_t* operand1,
     v_result = _mm512_cvt_roundpd_epu64(
         g, (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));
 
-    _mm512_storeu_si512(vp_operand1, v_result);
+    _mm512_storeu_si512(vp_result, v_result);
 
     ++vp_operand1;
     ++vp_operand2;
     ++vp_result;
   }
-  LATTICE_CHECK_BOUNDS(operand1, n, modulus,
+  LATTICE_CHECK_BOUNDS(vp_result, n, modulus,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
 void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
