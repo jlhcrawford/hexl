@@ -241,8 +241,8 @@ TEST(EltwiseMultOofP, avx512_int2) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512Int(result.data(), op1.data(), op2.data(), op1.size(),
-                          modulus);
+  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                              modulus);
 
   CheckEqual(result, exp_out);
 }
@@ -293,7 +293,7 @@ TEST(EltwiseMultOofP, 9) {
 
   std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
   std::vector<uint64_t> op2{modulus - 4, 8, 7, 6, 5, 4, 3, 2, 1};
-  std::vector<uint64_t> op2{0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 8, 14, 18, 20, 20, 18, 14, 8};
 
   EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
