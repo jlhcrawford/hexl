@@ -443,7 +443,6 @@ void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result, __m512i* vp_operand1,
   }
 }
 
-// TODO(fboemer): More optimal implementation
 template <int BitShift>
 void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result, __m512i* vp_operand1,
                                       const __m512i* vp_operand2,
@@ -457,7 +456,6 @@ void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result, __m512i* vp_operand1,
                                             vbarr_lo, vmodulus);
 }
 
-// Helper function
 template <int BitShift>
 void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
                                         __m512i* vp_operand1,
@@ -484,7 +482,6 @@ void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
   }
 }
 
-// Helper function
 template <int BitShift>
 void EltwiseMultModAVX512IntLoop(__m512i* vp_result, __m512i* vp_operand1,
                                  const __m512i* vp_operand2, __m512i vbarr_lo,
