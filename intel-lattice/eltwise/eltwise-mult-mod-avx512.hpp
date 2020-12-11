@@ -25,7 +25,7 @@ namespace lattice {
 void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
                              uint64_t n, const uint64_t modulus);
 
-void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
+void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
                                  const uint64_t* operand2, uint64_t n,
                                  const uint64_t modulus);
 
@@ -35,7 +35,7 @@ void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
 void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
                                uint64_t n, const uint64_t modulus);
 
-void EltwiseMultModAVX512FloatOofP(uint64_t* result, uint64_t* operand1,
+void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
                                    const uint64_t* operand2, uint64_t n,
                                    const uint64_t modulus);
 

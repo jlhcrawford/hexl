@@ -230,7 +230,7 @@ TEST(EltwiseMultOofP, native_mult2) {
                                 23, 58, 95, 33, 74, 16, 61, 7};
   uint64_t modulus = 101;
 
-  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModNative(result.data(), op1.data(), op2.data(), op1.size(),
                            modulus);
 
   CheckEqual(result, exp_out);
@@ -244,7 +244,7 @@ TEST(EltwiseMultOofP, native2_big) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModNative(result.data(), op1.data(), op2.data(), op1.size(),
                            modulus);
 
   CheckEqual(result, exp_out);
@@ -258,7 +258,7 @@ TEST(EltwiseMultOofP, 8big) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{1, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModNative(result.data(), op1.data(), op2.data(), op1.size(),
                            modulus);
 
   CheckEqual(result, exp_out);
@@ -272,7 +272,7 @@ TEST(EltwiseMultOofP, 8big2) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{70368744187392, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModNative(result.data(), op1.data(), op2.data(), op1.size(),
                            p);
 
   CheckEqual(result, exp_out);
@@ -286,7 +286,7 @@ TEST(EltwiseMultOofP, 8big3) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{13344071208410, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModNativeOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModNative(result.data(), op1.data(), op2.data(), op1.size(),
                            p);
 
   CheckEqual(result, exp_out);
@@ -299,7 +299,7 @@ TEST(EltwiseMultOofP, avx512_small) {
   std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
 
   uint64_t modulus = 769;
-  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModAVX512Int(result.data(), op1.data(), op2.data(), op1.size(),
                               modulus);
 
   CheckEqual(result, exp_out);
@@ -313,7 +313,7 @@ TEST(EltwiseMultOofP, avx512_int2) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
 
-  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModAVX512Int(result.data(), op1.data(), op2.data(), op1.size(),
                               modulus);
 
   CheckEqual(result, exp_out);
@@ -329,7 +329,7 @@ TEST(EltwiseMultOofP, 4) {
 
   uint64_t modulus = 769;
 
-  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultMod(result.data(), op1.data(), op2.data(), op1.size(),
                      modulus);
   CheckEqual(result, exp_out);
 }
@@ -342,7 +342,7 @@ TEST(EltwiseMultOofP, 6) {
 
   uint64_t modulus = 769;
 
-  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultMod(result.data(), op1.data(), op2.data(), op1.size(),
                      modulus);
   CheckEqual(result, exp_out);
 }
@@ -355,7 +355,7 @@ TEST(EltwiseMultOofP, 8_bounds) {
 
   uint64_t modulus = 769;
 
-  EXPECT_ANY_THROW(EltwiseMultModOofP(result.data(), op1.data(), op2.data(),
+  EXPECT_ANY_THROW(EltwiseMultMod(result.data(), op1.data(), op2.data(),
                                       op1.size(), modulus));
 }
 #endif
@@ -368,7 +368,7 @@ TEST(EltwiseMultOofP, 9) {
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 8, 14, 18, 20, 20, 18, 14, 8};
 
-  EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultMod(result.data(), op1.data(), op2.data(), op1.size(),
                      modulus);
 
   CheckEqual(result, exp_out);
@@ -389,7 +389,7 @@ TEST(EltwiseMultBigOofP, 9) {
       231838787758587, 618753612121218, 1116345967490421, 409735411065439,
       25680427818594,  950138933882289, 554128714280822,  1465109636753};
 
-  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
+  EltwiseMultModAVX512Int(result.data(), op1.data(), op2.data(), op1.size(),
                               modulus);
 
   CheckEqual(result, exp_out);

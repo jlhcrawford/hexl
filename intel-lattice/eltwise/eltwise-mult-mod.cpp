@@ -74,7 +74,7 @@ void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
 }
 
 // Algorithm 1 of https://hal.archives-ouvertes.fr/hal-01215845/document
-void EltwiseMultModNativeOofP(uint64_t* rs, uint64_t* operand1,
+void EltwiseMultModNative(uint64_t* rs, uint64_t* operand1,
                               const uint64_t* operand2, const uint64_t n,
                               const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
@@ -137,23 +137,23 @@ void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
   EltwiseMultModNative(operand1, operand2, n, modulus);
 }
 
-void EltwiseMultModOofP(uint64_t* result, uint64_t* operand1,
+void EltwiseMultMod(uint64_t* result, uint64_t* operand1,
                         const uint64_t* operand2, const uint64_t n,
                         const uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     if (modulus < (1UL << 50)) {
-      EltwiseMultModAVX512FloatOofP(result, operand1, operand2, n, modulus);
+      EltwiseMultModAVX512Float(result, operand1, operand2, n, modulus);
       return;
     } else {
-      EltwiseMultModAVX512IntOofP(result, operand1, operand2, n, modulus);
+      EltwiseMultModAVX512Int(result, operand1, operand2, n, modulus);
       return;
     }
   }
 #endif
 
   IVLOG(3, "Calling EltwiseMultModNative");
-  EltwiseMultModNativeOofP(result, operand1, operand2, n, modulus);
+  EltwiseMultModNative(result, operand1, operand2, n, modulus);
 }
 
 }  // namespace lattice
