@@ -26,8 +26,8 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
                              uint64_t n, const uint64_t modulus);
 
 void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
-                                 const uint64_t* operand2, uint64_t n,
-                                 const uint64_t modulus);
+                             const uint64_t* operand2, uint64_t n,
+                             const uint64_t modulus);
 
 // From Function 18, page 19 of https://arxiv.org/pdf/1407.3383.pdf
 // See also Algorithm 2/3 of
@@ -36,8 +36,8 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
                                uint64_t n, const uint64_t modulus);
 
 void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
-                                   const uint64_t* operand2, uint64_t n,
-                                   const uint64_t modulus);
+                               const uint64_t* operand2, uint64_t n,
+                               const uint64_t modulus);
 
 }  // namespace lattice
 }  // namespace intel

@@ -265,10 +265,9 @@ void EltwiseMultModAVX512IntLoop(__m512i* vp_operand1,
 }
 
 template <int BitShift>
-void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result,
-                                         __m512i* vp_operand1,
-                                         const __m512i* vp_operand2,
-                                         __m512i vbarr_lo, __m512i vmodulus) {
+void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result, __m512i* vp_operand1,
+                                     const __m512i* vp_operand2,
+                                     __m512i vbarr_lo, __m512i vmodulus) {
   __m512i* vp_out = vp_result;
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
@@ -446,26 +445,25 @@ void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result,
 
 // TODO(fboemer): More optimal implementation
 template <int BitShift>
-void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result,
-                                          __m512i* vp_operand1,
-                                          const __m512i* vp_operand2,
-                                          __m512i vbarr_lo, __m512i vmodulus) {
-  EltwiseMultModAVX512IntLoop8192<BitShift>(
-      vp_result, vp_operand1, vp_operand2, vbarr_lo, vmodulus);
+void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result, __m512i* vp_operand1,
+                                      const __m512i* vp_operand2,
+                                      __m512i vbarr_lo, __m512i vmodulus) {
+  EltwiseMultModAVX512IntLoop8192<BitShift>(vp_result, vp_operand1, vp_operand2,
+                                            vbarr_lo, vmodulus);
   vp_operand1 += 1024;
   vp_operand2 += 1024;
   vp_result += 1024;
-  EltwiseMultModAVX512IntLoop8192<BitShift>(
-      vp_result, vp_operand1, vp_operand2, vbarr_lo, vmodulus);
+  EltwiseMultModAVX512IntLoop8192<BitShift>(vp_result, vp_operand1, vp_operand2,
+                                            vbarr_lo, vmodulus);
 }
 
 // Helper function
 template <int BitShift>
 void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
-                                            __m512i* vp_operand1,
-                                            const __m512i* vp_operand2,
-                                            __m512i vbarr_lo, __m512i vmodulus,
-                                            uint64_t n) {
+                                        __m512i* vp_operand1,
+                                        const __m512i* vp_operand2,
+                                        __m512i vbarr_lo, __m512i vmodulus,
+                                        uint64_t n) {
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = n / 8; i > 0; --i) {
@@ -489,15 +487,14 @@ void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
 // Helper function
 template <int BitShift>
 void EltwiseMultModAVX512IntLoop(__m512i* vp_result, __m512i* vp_operand1,
-                                     const __m512i* vp_operand2,
-                                     __m512i vbarr_lo, __m512i vmodulus,
-                                     uint64_t n) {
+                                 const __m512i* vp_operand2, __m512i vbarr_lo,
+                                 __m512i vmodulus, uint64_t n) {
   if (n == 8192) {
-    EltwiseMultModAVX512IntLoop8192O<BitShift>(
-        vp_result, vp_operand1, vp_operand2, vbarr_lo, vmodulus);
+    EltwiseMultModAVX512IntLoop8192<BitShift>(vp_result, vp_operand1,
+                                              vp_operand2, vbarr_lo, vmodulus);
   } else if (n == 16384) {
-    EltwiseMultModAVX512IntLoop16384<BitShift>(
-        vp_result, vp_operand1, vp_operand2, vbarr_lo, vmodulus);
+    EltwiseMultModAVX512IntLoop16384<BitShift>(vp_result, vp_operand1,
+                                               vp_operand2, vbarr_lo, vmodulus);
   } else {
     EltwiseMultModAVX512IntLoopDefault<BitShift>(
         vp_result, vp_operand1, vp_operand2, vbarr_lo, vmodulus, n);
@@ -691,8 +688,8 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
 }
 
 void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
-                                   const uint64_t* operand2, uint64_t n,
-                                   const uint64_t modulus) {
+                               const uint64_t* operand2, uint64_t n,
+                               const uint64_t modulus) {
   LATTICE_CHECK((modulus) < MaximumValue(50),
                 "Modulus " << (modulus) << " exceeds bit shift bound "
                            << MaximumValue(50));
@@ -754,8 +751,8 @@ void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
 void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
-                                 const uint64_t* operand2, uint64_t n,
-                                 const uint64_t modulus) {
+                             const uint64_t* operand2, uint64_t n,
+                             const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
                        "pre-mult value in operand1 exceeds bound " << modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus,
@@ -787,62 +784,62 @@ void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
   switch (N) {
     case 50: {
       EltwiseMultModAVX512IntLoop<50>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 51: {
       EltwiseMultModAVX512IntLoop<51>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 52: {
       EltwiseMultModAVX512IntLoop<52>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 53: {
       EltwiseMultModAVX512IntLoop<53>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 54: {
       EltwiseMultModAVX512IntLoop<54>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 55: {
       EltwiseMultModAVX512IntLoop<55>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 56: {
       EltwiseMultModAVX512IntLoop<56>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 57: {
       EltwiseMultModAVX512IntLoop<57>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 58: {
       EltwiseMultModAVX512IntLoop<58>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 59: {
       EltwiseMultModAVX512IntLoop<59>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 60: {
       EltwiseMultModAVX512IntLoop<60>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     case 61: {
       EltwiseMultModAVX512IntLoop<61>(vp_result, vp_operand1, vp_operand2,
-                                          vbarr_lo, vmodulus, n);
+                                      vbarr_lo, vmodulus, n);
       break;
     }
     default: {

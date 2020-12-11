@@ -75,8 +75,8 @@ void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
 
 // Algorithm 1 of https://hal.archives-ouvertes.fr/hal-01215845/document
 void EltwiseMultModNative(uint64_t* rs, uint64_t* operand1,
-                              const uint64_t* operand2, const uint64_t n,
-                              const uint64_t modulus) {
+                          const uint64_t* operand2, const uint64_t n,
+                          const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
   LATTICE_CHECK(modulus != 0, "Require modulus != 0");
@@ -138,8 +138,8 @@ void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
 }
 
 void EltwiseMultMod(uint64_t* result, uint64_t* operand1,
-                        const uint64_t* operand2, const uint64_t n,
-                        const uint64_t modulus) {
+                    const uint64_t* operand2, const uint64_t n,
+                    const uint64_t modulus) {
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     if (modulus < (1UL << 50)) {
