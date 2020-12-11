@@ -709,6 +709,9 @@ void EltwiseMultModAVX512FloatOofP(uint64_t* result, uint64_t* operand1,
     operand1 += n_mod_8;
     operand2 += n_mod_8;
     n -= n_mod_8;
+    for (int i = 0; i < static_cast<int>(n); i++) {
+      result[i] = operand1[i];
+    }
   }
   __m512d p = _mm512_set1_pd(static_cast<double>(modulus));
 
@@ -768,6 +771,9 @@ void EltwiseMultModAVX512IntOofP(uint64_t* result, uint64_t* operand1,
     operand1 += n_mod_8;
     operand2 += n_mod_8;
     n -= n_mod_8;
+    for (int i = 0; i < static_cast<int>(n); i++) {
+      result[i] = operand1[i];
+    }
   }
 
   const uint64_t logmod = std::log2l(modulus);

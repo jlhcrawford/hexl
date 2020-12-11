@@ -98,11 +98,9 @@ void EltwiseMultModOofP(uint64_t* result, uint64_t* operand1,
   if (has_avx512_dq) {
     if (modulus < (1UL << 50)) {
       EltwiseMultModAVX512FloatOofP(result, operand1, operand2, n, modulus);
-      result = operand1;
       return;
     } else {
       EltwiseMultModAVX512IntOofP(result, operand1, operand2, n, modulus);
-      result = operand1;
       return;
     }
   }
