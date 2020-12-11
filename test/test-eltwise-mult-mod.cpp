@@ -69,34 +69,7 @@ TEST(EltwiseMult, avx512_int2) {
 
   CheckEqual(op1, exp_out);
 }
-//*********************************//
-TEST(EltwiseMultOofP, avx512_small) {
-  std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
-  std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
-  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
-  std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
 
-  uint64_t modulus = 769;
-  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
-                              modulus);
-
-  CheckEqual(result, exp_out);
-}
-
-TEST(EltwiseMultOofP, avx512_int2) {
-  uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
-
-  std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
-  std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
-  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
-  std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
-
-  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
-                              modulus);
-
-  CheckEqual(result, exp_out);
-}
-//*********************************//
 #endif
 
 TEST(EltwiseMult, native2_big) {
@@ -191,7 +164,90 @@ TEST(EltwiseMult, 9) {
 
   CheckEqual(op1, exp_out);
 }
-//*************************************//
+
+#ifdef LATTICE_HAS_AVX512DQ
+TEST(EltwiseMultBig, 9) {
+  uint64_t modulus = 1125891450734593;
+
+  std::vector<uint64_t> op1{706712574074152, 943467560561867, 1115920708919443,
+                            515713505356094, 525633777116309, 910766532971356,
+                            757086506562426, 799841520990167};
+  std::vector<uint64_t> op2{515910833966633, 96924929169117,  537587376997453,
+                            41829060600750,  205864998008014, 463185427411646,
+                            965818279134294, 1075778049568657};
+  std::vector<uint64_t> exp_out{
+      231838787758587, 618753612121218, 1116345967490421, 409735411065439,
+      25680427818594,  950138933882289, 554128714280822,  1465109636753};
+
+  EltwiseMultModAVX512Int(op1.data(), op2.data(), op1.size(), modulus);
+
+  CheckEqual(op1, exp_out);
+}
+#endif
+
+// Checks AVX512 and native eltwise mult implementations match
+#ifdef LATTICE_HAS_AVX512DQ
+#ifndef LATTICE_DEBUG
+TEST(EltwiseMult, AVX512Big) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+
+  for (size_t log2N = 13; log2N <= 15; ++log2N) {
+    size_t length = 1 << log2N;
+
+    for (size_t bits = 54; bits <= 60; ++bits) {
+      uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
+      std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
+
+      for (size_t trial = 0; trial < 100; ++trial) {
+        std::vector<uint64_t> op1(length, 0);
+        std::vector<uint64_t> op2(length, 0);
+        for (size_t i = 0; i < length; ++i) {
+          op1[i] = distrib(gen);
+          op2[i] = distrib(gen);
+        }
+        auto op1a = op1;
+
+        EltwiseMultModNative(op1.data(), op2.data(), op1.size(), prime);
+        EltwiseMultModAVX512Int(op1a.data(), op2.data(), op1.size(), prime);
+
+        ASSERT_EQ(op1, op1a);
+      }
+    }
+  }
+}
+#endif
+#endif
+// Unit test for OofP methods
+#ifdef LATTICE_HAS_AVX512DQ
+TEST(EltwiseMultOofP, avx512_small) {
+  std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
+  std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{1, 2, 3, 1, 2, 3, 0, 0, 0};
+
+  uint64_t modulus = 769;
+  EltwiseMultModAVX512IntOofP(result.data(), op1.data(), op2.data(), op1.size(),
+                              modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+TEST(EltwiseMultOofP, avx512_int2) {
+  uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
+
+  std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> op2{modulus - 4, 1, 1, 1, 1, 1, 1, 1};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> exp_out{12, 1, 1, 1, 1, 1, 1, 1};
+
+  EltwiseMultModAVX512Int(result.data(), op1.data(), op2.data(), op1.size(),
+                          modulus);
+
+  CheckEqual(result, exp_out);
+}
+
+#endif
 
 TEST(EltwiseMultOofP, 4) {
   std::vector<uint64_t> op1{2, 4, 3, 2};
@@ -237,7 +293,7 @@ TEST(EltwiseMultOofP, 9) {
 
   std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
   std::vector<uint64_t> op2{modulus - 4, 8, 7, 6, 5, 4, 3, 2, 1};
-  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> op2{0, 0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{12, 8, 14, 18, 20, 20, 18, 14, 8};
 
   EltwiseMultModOofP(result.data(), op1.data(), op2.data(), op1.size(),
@@ -246,25 +302,7 @@ TEST(EltwiseMultOofP, 9) {
   CheckEqual(result, exp_out);
 }
 
-//*************************************//
 #ifdef LATTICE_HAS_AVX512DQ
-TEST(EltwiseMultBig, 9) {
-  uint64_t modulus = 1125891450734593;
-
-  std::vector<uint64_t> op1{706712574074152, 943467560561867, 1115920708919443,
-                            515713505356094, 525633777116309, 910766532971356,
-                            757086506562426, 799841520990167};
-  std::vector<uint64_t> op2{515910833966633, 96924929169117,  537587376997453,
-                            41829060600750,  205864998008014, 463185427411646,
-                            965818279134294, 1075778049568657};
-  std::vector<uint64_t> exp_out{
-      231838787758587, 618753612121218, 1116345967490421, 409735411065439,
-      25680427818594,  950138933882289, 554128714280822,  1465109636753};
-
-  EltwiseMultModAVX512Int(op1.data(), op2.data(), op1.size(), modulus);
-
-  CheckEqual(op1, exp_out);
-}
 TEST(EltwiseMultBigOofP, 9) {
   uint64_t modulus = 1125891450734593;
 
@@ -274,7 +312,7 @@ TEST(EltwiseMultBigOofP, 9) {
   std::vector<uint64_t> op2{515910833966633, 96924929169117,  537587376997453,
                             41829060600750,  205864998008014, 463185427411646,
                             965818279134294, 1075778049568657};
-  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
+  std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
   std::vector<uint64_t> exp_out{
       231838787758587, 618753612121218, 1116345967490421, 409735411065439,
       25680427818594,  950138933882289, 554128714280822,  1465109636753};
@@ -284,40 +322,6 @@ TEST(EltwiseMultBigOofP, 9) {
 
   CheckEqual(result, exp_out);
 }
-#endif
-
-// Checks AVX512 and native eltwise mult implementations match
-#ifdef LATTICE_HAS_AVX512DQ
-#ifndef LATTICE_DEBUG
-TEST(EltwiseMult, AVX512Big) {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-
-  for (size_t log2N = 13; log2N <= 15; ++log2N) {
-    size_t length = 1 << log2N;
-
-    for (size_t bits = 54; bits <= 60; ++bits) {
-      uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
-      std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
-
-      for (size_t trial = 0; trial < 100; ++trial) {
-        std::vector<uint64_t> op1(length, 0);
-        std::vector<uint64_t> op2(length, 0);
-        for (size_t i = 0; i < length; ++i) {
-          op1[i] = distrib(gen);
-          op2[i] = distrib(gen);
-        }
-        auto op1a = op1;
-
-        EltwiseMultModNative(op1.data(), op2.data(), op1.size(), prime);
-        EltwiseMultModAVX512Int(op1a.data(), op2.data(), op1.size(), prime);
-
-        ASSERT_EQ(op1, op1a);
-      }
-    }
-  }
-}
-#endif
 #endif
 
 }  // namespace lattice
