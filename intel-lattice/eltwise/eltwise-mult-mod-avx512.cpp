@@ -746,7 +746,7 @@ void EltwiseMultModAVX512Float(uint64_t* result, const uint64_t* operand1,
     ++vp_operand2;
     ++vp_result;
   }
-  LATTICE_CHECK_BOUNDS(vp_result, n, modulus,
+  LATTICE_CHECK_BOUNDS(result, n, modulus,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
 void EltwiseMultModAVX512Int(uint64_t* result, const uint64_t* operand1,
