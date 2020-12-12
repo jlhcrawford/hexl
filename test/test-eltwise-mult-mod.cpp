@@ -219,7 +219,7 @@ TEST(EltwiseMult, AVX512Big) {
 #endif
 #endif
 
-TEST(EltwiseMultOofP, native_mult2) {
+TEST(EltwiseMultOutOfPlace, native_mult2) {
   std::vector<uint64_t> op1{1, 2,  3,  4,  5,  6,  7,  8,
                             9, 10, 11, 12, 13, 14, 15, 16};
   std::vector<uint64_t> op2{17, 18, 19, 20, 21, 22, 23, 24,
@@ -235,7 +235,7 @@ TEST(EltwiseMultOofP, native_mult2) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, native2_big) {
+TEST(EltwiseMultOutOfPlace, native2_big) {
   uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
 
   std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
@@ -249,7 +249,7 @@ TEST(EltwiseMultOofP, native2_big) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, 8big) {
+TEST(EltwiseMultOutOfPlace, 8big) {
   uint64_t modulus = GeneratePrimes(1, 48, 1024)[0];
 
   std::vector<uint64_t> op1{modulus - 1, 1, 1, 1, 1, 1, 1, 1};
@@ -263,7 +263,7 @@ TEST(EltwiseMultOofP, 8big) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, 8big2) {
+TEST(EltwiseMultOutOfPlace, 8big2) {
   uint64_t p = 281474976749569;
 
   std::vector<uint64_t> op1{(p - 1) / 2, 1, 1, 1, 1, 1, 1, 1};
@@ -276,7 +276,7 @@ TEST(EltwiseMultOofP, 8big2) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, 8big3) {
+TEST(EltwiseMultOutOfPlace, 8big3) {
   uint64_t p = 1125891450734593;
 
   std::vector<uint64_t> op1{1078888294739028, 1, 1, 1, 1, 1, 1, 1};
@@ -289,7 +289,7 @@ TEST(EltwiseMultOofP, 8big3) {
   CheckEqual(result, exp_out);
 }
 #ifdef LATTICE_HAS_AVX512DQ
-TEST(EltwiseMultOofP, avx512_small) {
+TEST(EltwiseMultOutOfPlace, avx512_small) {
   std::vector<uint64_t> op1{1, 2, 3, 1, 1, 1, 0, 1, 0};
   std::vector<uint64_t> op2{1, 1, 1, 1, 2, 3, 1, 0, 0};
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -302,7 +302,7 @@ TEST(EltwiseMultOofP, avx512_small) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, avx512_int2) {
+TEST(EltwiseMultOutOfPlace, avx512_int2) {
   uint64_t modulus = GeneratePrimes(1, 60, 1024)[0];
 
   std::vector<uint64_t> op1{modulus - 3, 1, 1, 1, 1, 1, 1, 1};
@@ -318,7 +318,7 @@ TEST(EltwiseMultOofP, avx512_int2) {
 
 #endif
 
-TEST(EltwiseMultOofP, 4) {
+TEST(EltwiseMultOutOfPlace, 4) {
   std::vector<uint64_t> op1{2, 4, 3, 2};
   std::vector<uint64_t> op2{2, 1, 2, 0};
   std::vector<uint64_t> result{0, 0, 0, 0};
@@ -330,7 +330,7 @@ TEST(EltwiseMultOofP, 4) {
   CheckEqual(result, exp_out);
 }
 
-TEST(EltwiseMultOofP, 6) {
+TEST(EltwiseMultOutOfPlace, 6) {
   std::vector<uint64_t> op1{0, 1, 2, 3, 4, 5};
   std::vector<uint64_t> op2{2, 4, 6, 8, 10, 12};
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0};
@@ -343,7 +343,7 @@ TEST(EltwiseMultOofP, 6) {
 }
 
 #ifdef LATTICE_DEBUG
-TEST(EltwiseMultOofP, 8_bounds) {
+TEST(EltwiseMultOutOfPlace, 8_bounds) {
   std::vector<uint64_t> op1{0, 1, 2, 3, 4, 5, 6, 7};
   std::vector<uint64_t> op2{0, 1, 2, 3, 4, 5, 6, 770};
   std::vector<uint64_t> result{0, 0, 0, 0, 0, 0, 0, 0};
@@ -355,7 +355,7 @@ TEST(EltwiseMultOofP, 8_bounds) {
 }
 #endif
 
-TEST(EltwiseMultOofP, 9) {
+TEST(EltwiseMultOutOfPlace, 9) {
   uint64_t modulus = GeneratePrimes(1, 51, 1024)[0];
 
   std::vector<uint64_t> op1{modulus - 3, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -369,7 +369,7 @@ TEST(EltwiseMultOofP, 9) {
 }
 
 #ifdef LATTICE_HAS_AVX512DQ
-TEST(EltwiseMultBigOofP, 9) {
+TEST(EltwiseMultBigOutOfPlace, 9) {
   uint64_t modulus = 1125891450734593;
 
   std::vector<uint64_t> op1{706712574074152, 943467560561867, 1115920708919443,
@@ -393,7 +393,7 @@ TEST(EltwiseMultBigOofP, 9) {
 // Checks AVX512 and native eltwise mult Out-of-Place implementations match
 #ifdef LATTICE_HAS_AVX512DQ
 #ifndef LATTICE_DEBUG
-TEST(EltwiseMultOofP, AVX512Big) {
+TEST(EltwiseMultOutOfPlace, AVX512Big) {
   std::random_device rd;
   std::mt19937 gen(rd());
 

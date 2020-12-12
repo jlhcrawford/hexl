@@ -444,7 +444,8 @@ void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result, __m512i* vp_operand1,
 }
 
 template <int BitShift>
-void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result, __m512i* vp_operand1,
+void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result,
+                                      const __m512i* vp_operand1,
                                       const __m512i* vp_operand2,
                                       __m512i vbarr_lo, __m512i vmodulus) {
   EltwiseMultModAVX512IntLoop8192<BitShift>(vp_result, vp_operand1, vp_operand2,
@@ -458,7 +459,7 @@ void EltwiseMultModAVX512IntLoop16384(__m512i* vp_result, __m512i* vp_operand1,
 
 template <int BitShift>
 void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
-                                        __m512i* vp_operand1,
+                                        const __m512i* vp_operand1,
                                         const __m512i* vp_operand2,
                                         __m512i vbarr_lo, __m512i vmodulus,
                                         uint64_t n) {
@@ -483,7 +484,7 @@ void EltwiseMultModAVX512IntLoopDefault(__m512i* vp_result,
 }
 
 template <int BitShift>
-void EltwiseMultModAVX512IntLoop(__m512i* vp_result, __m512i* vp_operand1,
+void EltwiseMultModAVX512IntLoop(__m512i* vp_result, const __m512i* vp_operand1,
                                  const __m512i* vp_operand2, __m512i vbarr_lo,
                                  __m512i vmodulus, uint64_t n) {
   if (n == 8192) {
@@ -522,7 +523,7 @@ void EltwiseMultModAVX512Int(uint64_t* operand1, const uint64_t* operand2,
 
   __m512i vbarr_lo = _mm512_set1_epi64(barr_lo);
   __m512i vmodulus = _mm512_set1_epi64(modulus);
-  __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
+  const __m512i* vp_operand1 = reinterpret_cast<const __m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
 
   // For N < 50, we should prefer EltwiseMultModAVX512Float, so we don't
@@ -650,7 +651,7 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
   __m512d u = _mm512_set1_pd(ubar);
   __m512d zero = _mm512_setzero_pd();
 
-  __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
+  const __m512i* vp_operand1 = reinterpret_cast<const __m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
@@ -684,7 +685,7 @@ void EltwiseMultModAVX512Float(uint64_t* operand1, const uint64_t* operand2,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
 
-void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
+void EltwiseMultModAVX512Float(uint64_t* result, const uint64_t* operand1,
                                const uint64_t* operand2, uint64_t n,
                                const uint64_t modulus) {
   LATTICE_CHECK((modulus) < MaximumValue(50),
@@ -712,7 +713,7 @@ void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
   __m512d u = _mm512_set1_pd(ubar);
   __m512d zero = _mm512_setzero_pd();
 
-  __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
+  const __m512i* vp_operand1 = reinterpret_cast<const __m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
   __m512i* vp_result = reinterpret_cast<__m512i*>(result);
 #pragma GCC unroll 4
@@ -747,7 +748,7 @@ void EltwiseMultModAVX512Float(uint64_t* result, uint64_t* operand1,
   LATTICE_CHECK_BOUNDS(vp_result, n, modulus,
                        "post-mult value in operand1 exceeds bound " << modulus);
 }
-void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
+void EltwiseMultModAVX512Int(uint64_t* result, const uint64_t* operand1,
                              const uint64_t* operand2, uint64_t n,
                              const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
@@ -772,7 +773,7 @@ void EltwiseMultModAVX512Int(uint64_t* result, uint64_t* operand1,
 
   __m512i vbarr_lo = _mm512_set1_epi64(barr_lo);
   __m512i vmodulus = _mm512_set1_epi64(modulus);
-  __m512i* vp_operand1 = reinterpret_cast<__m512i*>(operand1);
+  const __m512i* vp_operand1 = reinterpret_cast<const __m512i*>(operand1);
   const __m512i* vp_operand2 = reinterpret_cast<const __m512i*>(operand2);
   __m512i* vp_result = reinterpret_cast<__m512i*>(result);
 
