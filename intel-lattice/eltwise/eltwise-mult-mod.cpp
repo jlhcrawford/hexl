@@ -74,7 +74,7 @@ void EltwiseMultModNative(uint64_t* operand1, const uint64_t* operand2,
 }
 
 // Algorithm 1 of https://hal.archives-ouvertes.fr/hal-01215845/document
-void EltwiseMultModNative(uint64_t* rs, const uint64_t* operand1,
+void EltwiseMultModNative(uint64_t* result, const uint64_t* operand1,
                           const uint64_t* operand2, const uint64_t n,
                           const uint64_t modulus) {
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
@@ -92,7 +92,7 @@ void EltwiseMultModNative(uint64_t* rs, const uint64_t* operand1,
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 0; i < n; ++i) {
-    uint64_t prod_hi, prod_lo, c2_hi, c2_lo, result;
+    uint64_t prod_hi, prod_lo, c2_hi, c2_lo, c4;
 
     // Multiply inputs
     MultiplyUInt64(*operand1, *operand2, &prod_hi, &prod_lo);
@@ -107,15 +107,16 @@ void EltwiseMultModNative(uint64_t* rs, const uint64_t* operand1,
     uint64_t c3 = (c2_lo >> (L - N + 1)) + (c2_hi << (64 - (L - N + 1)));
 
     // C4 = prod_lo - (p * c3)_lo
-    result = prod_lo - c3 * modulus;
+    c4 = prod_lo - c3 * modulus;
 
     // Conditional subtraction
-    *rs = result - (modulus & static_cast<uint64_t>(
-                                  -static_cast<int64_t>(result >= modulus)));
+    *result =
+        c4 -
+        (modulus & static_cast<uint64_t>(-static_cast<int64_t>(c4 >= modulus)));
 
     ++operand1;
     ++operand2;
-    ++rs;
+    ++result;
   }
 }
 

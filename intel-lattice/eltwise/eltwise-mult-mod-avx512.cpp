@@ -269,7 +269,6 @@ void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result,
                                      const __m512i* vp_operand1,
                                      const __m512i* vp_operand2,
                                      __m512i vbarr_lo, __m512i vmodulus) {
-  __m512i* vp_out = vp_result;
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
   for (size_t i = 64; i > 0; --i) {
@@ -425,22 +424,22 @@ void EltwiseMultModAVX512IntLoop8192(__m512i* vp_result,
     vr15 = _mm512_il_small_mod_epu64(vr15, vmodulus);
     vr16 = _mm512_il_small_mod_epu64(vr16, vmodulus);
 
-    _mm512_storeu_si512(vp_out++, vr1);
-    _mm512_storeu_si512(vp_out++, vr2);
-    _mm512_storeu_si512(vp_out++, vr3);
-    _mm512_storeu_si512(vp_out++, vr4);
-    _mm512_storeu_si512(vp_out++, vr5);
-    _mm512_storeu_si512(vp_out++, vr6);
-    _mm512_storeu_si512(vp_out++, vr7);
-    _mm512_storeu_si512(vp_out++, vr8);
-    _mm512_storeu_si512(vp_out++, vr9);
-    _mm512_storeu_si512(vp_out++, vr10);
-    _mm512_storeu_si512(vp_out++, vr11);
-    _mm512_storeu_si512(vp_out++, vr12);
-    _mm512_storeu_si512(vp_out++, vr13);
-    _mm512_storeu_si512(vp_out++, vr14);
-    _mm512_storeu_si512(vp_out++, vr15);
-    _mm512_storeu_si512(vp_out++, vr16);
+    _mm512_storeu_si512(vp_result++, vr1);
+    _mm512_storeu_si512(vp_result++, vr2);
+    _mm512_storeu_si512(vp_result++, vr3);
+    _mm512_storeu_si512(vp_result++, vr4);
+    _mm512_storeu_si512(vp_result++, vr5);
+    _mm512_storeu_si512(vp_result++, vr6);
+    _mm512_storeu_si512(vp_result++, vr7);
+    _mm512_storeu_si512(vp_result++, vr8);
+    _mm512_storeu_si512(vp_result++, vr9);
+    _mm512_storeu_si512(vp_result++, vr10);
+    _mm512_storeu_si512(vp_result++, vr11);
+    _mm512_storeu_si512(vp_result++, vr12);
+    _mm512_storeu_si512(vp_result++, vr13);
+    _mm512_storeu_si512(vp_result++, vr14);
+    _mm512_storeu_si512(vp_result++, vr15);
+    _mm512_storeu_si512(vp_result++, vr16);
   }
 }
 
