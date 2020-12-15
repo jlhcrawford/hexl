@@ -29,15 +29,63 @@ namespace lattice {
 //=================================================================
 
 // state[0] is the degree
+static void BM_EltwiseMultModInPlace(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
+  uint64_t modulus = 123;
+
+  AlignedVector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input2(input_size, 2);
+
+  for (auto _ : state) {
+    EltwiseMultMod(input1.data(), input2.data(), input_size, modulus);
+  }
+}
+
+BENCHMARK(BM_EltwiseMultModInPlace)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(3.0)
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({16384});
+
+//=================================================================
+
+// state[0] is the degree
+static void BM_EltwiseMultMod(benchmark::State& state) {  //  NOLINT
+  size_t input_size = state.range(0);
+  uint64_t modulus = 123;
+
+  AlignedVector<uint64_t> input1(input_size, 1);
+  AlignedVector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> output(input_size, 2);
+
+  for (auto _ : state) {
+    EltwiseMultMod(input1.data(), input2.data(), output.data(), input_size,
+                   modulus);
+  }
+}
+
+BENCHMARK(BM_EltwiseMultMod)
+    ->Unit(benchmark::kMicrosecond)
+    ->MinTime(3.0)
+    ->Args({1024})
+    ->Args({4096})
+    ->Args({16384});
+
+//=================================================================
+
+// state[0] is the degree
 static void BM_EltwiseMultModNative(benchmark::State& state) {  //  NOLINT
   size_t input_size = state.range(0);
   uint64_t modulus = 0xffffffffffc0001ULL;
 
   AlignedVector<uint64_t> input1(input_size, 1);
   AlignedVector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> output(input_size, 2);
 
   for (auto _ : state) {
-    EltwiseMultModNative(input1.data(), input2.data(), input_size, modulus);
+    EltwiseMultModNative(input1.data(), input2.data(), output.data(),
+                         input_size, modulus);
   }
 }
 
@@ -58,10 +106,11 @@ static void BM_EltwiseMultModAVX512Float(benchmark::State& state) {  //  NOLINT
 
   AlignedVector<uint64_t> input1(input_size, 1);
   AlignedVector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> output(input_size, 2);
 
   for (auto _ : state) {
-    EltwiseMultModAVX512Float(input1.data(), input2.data(), input_size,
-                              modulus);
+    EltwiseMultModAVX512Float(input1.data(), input2.data(), output.data(),
+                              input_size, modulus);
   }
 }
 
@@ -83,9 +132,11 @@ static void BM_EltwiseMultModAVX512Int(benchmark::State& state) {  //  NOLINT
 
   AlignedVector<uint64_t> input1(input_size, 1);
   AlignedVector<uint64_t> input2(input_size, 2);
+  AlignedVector<uint64_t> output(input_size, 3);
 
   for (auto _ : state) {
-    EltwiseMultModAVX512Int(input1.data(), input2.data(), input_size, modulus);
+    EltwiseMultModAVX512Int(input1.data(), input2.data(), output.data(),
+                            input_size, modulus);
   }
 }
 
@@ -96,6 +147,8 @@ BENCHMARK(BM_EltwiseMultModAVX512Int)
     ->Args({8192})
     ->Args({16384});
 #endif
+
+//=================================================================
 
 }  // namespace lattice
 }  // namespace intel
