@@ -27,8 +27,11 @@ add_executable(unit-test ${SRC})
 
 target_compile_options(unit-test PRIVATE -Wall -Wextra -march=native)
 
-target_include_directories(unit-test PRIVATE ".")
-target_link_libraries(unit-test PRIVATE libgtest intel_lattice_internal)
+target_include_directories(unit-test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${LATTICE_SRC_ROOT_DIR} # Private headers
+)
+target_link_libraries(unit-test PRIVATE gtest intel_lattice)
 target_link_libraries(unit-test PRIVATE Threads::Threads)
 target_link_libraries(unit-test PRIVATE logging)
 

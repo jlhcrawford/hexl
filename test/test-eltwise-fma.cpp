@@ -14,11 +14,11 @@
 #include <vector>
 
 #include "eltwise/eltwise-fma-internal.hpp"
-#include "eltwise/eltwise-fma.hpp"
 #include "gtest/gtest.h"
+#include "intel-lattice/eltwise/eltwise-fma.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
-#include "test/test-util.hpp"
+#include "test-util.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "eltwise/eltwise-fma-avx512.hpp"

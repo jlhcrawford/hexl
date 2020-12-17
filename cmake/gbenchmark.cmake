@@ -38,12 +38,12 @@ ExternalProject_Add(
   INSTALL_COMMAND ""
 )
 
-add_library(libgbenchmark INTERFACE)
-add_dependencies(libgbenchmark ext_gbenchmark)
+add_library(gbenchmark INTERFACE)
+add_dependencies(gbenchmark ext_gbenchmark)
 
 ExternalProject_Get_Property(ext_gbenchmark SOURCE_DIR BINARY_DIR)
 
-target_link_libraries(libgbenchmark INTERFACE ${GBENCHMARK_BUILD_DIR}/src/libbenchmark.a)
+target_link_libraries(gbenchmark INTERFACE ${GBENCHMARK_BUILD_DIR}/src/libbenchmark.a)
 
-target_include_directories(libgbenchmark SYSTEM
+target_include_directories(gbenchmark SYSTEM
                                     INTERFACE ${GBENCHMARK_SRC_DIR}/include)

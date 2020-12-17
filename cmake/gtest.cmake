@@ -33,10 +33,10 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(ext_gtest SOURCE_DIR BINARY_DIR)
 
-add_library(libgtest INTERFACE)
-add_dependencies(libgtest ext_gtest)
+add_library(gtest INTERFACE)
+add_dependencies(gtest ext_gtest)
 
-target_include_directories(libgtest SYSTEM
+target_include_directories(gtest SYSTEM
                            INTERFACE ${SOURCE_DIR}/googletest/include)
-target_link_libraries(libgtest
+target_link_libraries(gtest
                       INTERFACE ${BINARY_DIR}/lib/libgtest.a)

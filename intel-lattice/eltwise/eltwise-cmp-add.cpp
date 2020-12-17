@@ -9,7 +9,7 @@
 // software or the related documents without Intel's prior written permission.
 // *****************************************************************************
 
-#include "eltwise/eltwise-cmp-add.hpp"
+#include "intel-lattice/eltwise/eltwise-cmp-add.hpp"
 
 #include "eltwise/eltwise-cmp-add-internal.hpp"
 #include "logging/logging.hpp"

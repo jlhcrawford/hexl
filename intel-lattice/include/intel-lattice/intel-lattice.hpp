@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "eltwise/eltwise-cmp-add.hpp"
-#include "eltwise/eltwise-cmp-sub-mod.hpp"
-#include "eltwise/eltwise-fma.hpp"
-#include "eltwise/eltwise-mult-mod.hpp"
-#include "ntt/ntt.hpp"
-#include "util/util.hpp"
+#include "intel-lattice/eltwise/eltwise-cmp-add.hpp"
+#include "intel-lattice/eltwise/eltwise-cmp-sub-mod.hpp"
+#include "intel-lattice/eltwise/eltwise-fma.hpp"
+#include "intel-lattice/eltwise/eltwise-mult-mod.hpp"
+#include "intel-lattice/ntt/ntt.hpp"
+#include "intel-lattice/util/util.hpp"

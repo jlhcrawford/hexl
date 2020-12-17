@@ -16,9 +16,7 @@ add_library(logging STATIC ${SRC})
 set_target_properties(logging PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(logging PUBLIC ${CMAKE_SOURCE_DIR})
-target_link_libraries(logging PUBLIC easylogging libgflags)
-
-set(LOGGING_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(logging PUBLIC easylogging gflags)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/logging
@@ -26,4 +24,4 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
         PATTERN "*.hpp"
         PATTERN "*.h")
 
-install(TARGETS logging LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} )
+install(TARGETS logging LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

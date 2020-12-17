@@ -35,7 +35,7 @@ if(CMAKE_BUILD_TYPE)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
 
 set(CMAKE_CXX_STANDARD 17) # TODO(fboemer): use C++14 or 11?
@@ -57,6 +57,7 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 option(LATTICE_DEBUG "Enable runtime debug checking; will yield much slower code " OFF)
 option(LATTICE_BENCHMARK "Enable benchmarking" ON)
 option(LATTICE_TESTING "Enables unit-tests" ON)
+option(LATTICE_EXPORT "Enables export of intel_lattice target" OFF)
 option(LATTICE_COVERAGE "Enables coverage for unit tests" OFF)
 option(LATTICE_SHARED_LIB "Generate a shared library" OFF)
 # Sanitizers
@@ -70,15 +71,12 @@ message(STATUS "CMAKE_CXX_COMPILER:       ${CMAKE_CXX_COMPILER}")
 message(STATUS "LATTICE_DEBUG:            ${LATTICE_DEBUG}")
 message(STATUS "LATTICE_BENCHMARK:        ${LATTICE_BENCHMARK}")
 message(STATUS "LATTICE_TESTING:          ${LATTICE_TESTING}")
+message(STATUS "LATTICE_EXPORT:           ${LATTICE_EXPORT}")
 message(STATUS "LATTICE_COVERAGE:         ${LATTICE_COVERAGE}")
 message(STATUS "LATTICE_SHARED_LIB:       ${LATTICE_SHARED_LIB}")
 message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
 message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
 message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
-
-if (LATTICE_DEBUG)
-  add_definitions(-DLATTICE_DEBUG)
-endif()
 
 if (LATTICE_COVERAGE)
   if (NOT LATTICE_TESTING)
@@ -89,6 +87,10 @@ if (LATTICE_COVERAGE)
   add_compile_options(-fkeep-inline-functions)
   add_link_options(--coverage)
   # link_libraries(gcov)
+endif()
+
+if (LATTICE_DEBUG)
+  add_definitions(-DLATTICE_DEBUG)
 endif()
 
 function(check_flag FLAG OUTPUT_FLAG)
@@ -154,8 +156,7 @@ set(LATTICE_INC_ROOT_DIR ${LATTICE_SRC_ROOT_DIR}/include)
 # ------------------------------------------------------------------------------
 
 if(NOT CMAKE_INSTALL_PREFIX)
-  message("CMAKE_INSTALL_PREFIX not defined")
-  set(CMAKE_INSTALL_PREFIX_CACHE ${CMAKE_CURRENT_BINARY_DIR})
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 if(LINUX)
@@ -166,8 +167,6 @@ else()
   set(CMAKE_INSTALL_DOCDIR "doc")
   set(CMAKE_INSTALL_LIBDIR "lib")
 endif()
-
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_CACHE})
 
 message(STATUS "CMAKE_INSTALL_LIBDIR:     ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
@@ -221,5 +220,51 @@ if (LATTICE_TESTING)
   add_subdirectory(test)
   add_custom_target(test COMMAND ./test/unit-test DEPENDS unit-test)
 endif()
+
+
+#------------------------------------------------------------------------------
+# Config export...
+#------------------------------------------------------------------------------
+
+if (LATTICE_EXPORT)
+  if (LATTICE_SHARED_LIB OR LATTICE_DEBUG)
+    message(FATAL_ERROR "LATTICE_EXPORT=ON only valid when
+                         LATTICE_SHARED_LIB=OFF and LATTICE_DEBUG=OFF ")
+  endif()
+
+  # Config
+  set(INTEL_LATTICE_TARGET_FILENAME ${CMAKE_CURRENT_BINARY_DIR}/cmake/IntelLatticeTargets.cmake)
+  set(INTEL_LATTICE_CONFIG_IN_FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/cmake/IntelLatticeConfig.cmake.in)
+  set(INTEL_LATTICE_CONFIG_FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/cmake/IntelLatticeConfig.cmake)
+  set(INTEL_LATTICE_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/)
+
+  # Create and install the CMake config and target file
+  install(
+      EXPORT IntelLatticeTargets
+      DESTINATION ${INTEL_LATTICE_CONFIG_INSTALL_DIR}
+  )
+
+  include(CMakePackageConfigHelpers)
+      configure_package_config_file(
+          ${INTEL_LATTICE_CONFIG_IN_FILENAME} ${INTEL_LATTICE_CONFIG_FILENAME}
+          INSTALL_DESTINATION ${INTEL_LATTICE_CONFIG_INSTALL_DIR}
+      )
+
+  install(
+      TARGETS intel_lattice
+      EXPORT IntelLatticeTargets
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      )
+
+  install( FILES ${INTEL_LATTICE_CONFIG_FILENAME}
+           DESTINATION ${INTEL_LATTICE_CONFIG_INSTALL_DIR})
+
+  export(EXPORT IntelLatticeTargets
+         FILE ${INTEL_LATTICE_TARGET_FILENAME})
+
+endif()
+
 
 add_custom_target( check COMMAND pre-commit install && pre-commit run --all-files)

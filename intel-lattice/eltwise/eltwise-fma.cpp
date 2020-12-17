@@ -9,7 +9,7 @@
 // software or the related documents without Intel's prior written permission.
 // *****************************************************************************
 
-#include "eltwise/eltwise-fma.hpp"
+#include "intel-lattice/eltwise/eltwise-fma.hpp"
 
 #include "eltwise/eltwise-fma-internal.hpp"
 #include "logging/logging.hpp"

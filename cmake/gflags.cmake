@@ -33,16 +33,16 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(ext_gflags SOURCE_DIR BINARY_DIR)
 
-add_library(libgflags STATIC IMPORTED)
-add_dependencies(libgflags ext_gflags)
+add_library(gflags STATIC IMPORTED)
+add_dependencies(gflags ext_gflags)
 
 if(NOT IS_DIRECTORY ${BINARY_DIR}/include)
   file(MAKE_DIRECTORY ${BINARY_DIR}/include)
 endif()
 
-set_target_properties(libgflags
+set_target_properties(gflags
                       PROPERTIES IMPORTED_LOCATION
                       ${BINARY_DIR}/lib/libgflags.a)
-set_target_properties(libgflags
+set_target_properties(gflags
                       PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
                       ${BINARY_DIR}/include)

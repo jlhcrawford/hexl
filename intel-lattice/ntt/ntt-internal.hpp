@@ -15,12 +15,12 @@
 
 #include <utility>
 
-#include "ntt/ntt.hpp"
+#include "intel-lattice/ntt/ntt.hpp"
+#include "intel-lattice/util/util.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/aligned-allocator.hpp"
 #include "util/check.hpp"
 #include "util/util-internal.hpp"
-#include "util/util.hpp"
 
 namespace intel {
 namespace lattice {

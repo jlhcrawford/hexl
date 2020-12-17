@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "eltwise/eltwise-cmp-sub-mod-internal.hpp"
-#include "eltwise/eltwise-cmp-sub-mod.hpp"
+#include "intel-lattice/eltwise/eltwise-cmp-sub-mod.hpp"
 #include "logging/logging.hpp"
 #include "util/aligned-allocator.hpp"
 

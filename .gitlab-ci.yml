@@ -7,17 +7,20 @@ variables:
       -DCMAKE_C_COMPILER=clang-10
       -DLATTICE_BENCHMARK=ON
       -DLATTICE_TESTING=ON
-      -DLATTICE_COVERAGE=OFF"
+      -DLATTICE_COVERAGE=OFF
+      -DLATTICE_EXPORT=ON
+      -DCMAKE_INSTALL_PREFIX=../"
   DEBUG_COMPILER_FLAGS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo
-      -DCMAKE_CXX_COMPILER=g++-7
-      -DCMAKE_C_COMPILER=gcc-7
+      -DCMAKE_CXX_COMPILER=g++-8
+      -DCMAKE_C_COMPILER=gcc-8
       -DLATTICE_DEBUG=ON
       -DLATTICE_BENCHMARK=ON
       -DLATTICE_TESTING=ON
-      -DLATTICE_COVERAGE=ON"
+      -DLATTICE_COVERAGE=OFF
+      -DLATTICE_EXPORT=OFF
+      -DCMAKE_INSTALL_PREFIX=../"
   GCOV_BIN: "/usr/bin/gcov-7"
-  DEFAULT_EXAMPLE_FLAGS: "-DINTEL_LATTICE_LIBRARY=${CI_PROJECT_DIR}/build/libintel_lattice.a
-      -DINTEL_LATTICE_HEADER=${CI_PROJECT_DIR}/intel-lattice/include"
+  DEFAULT_EXAMPLE_FLAGS: "-DINTEL_LATTICE_HINT_DIR=${CI_PROJECT_DIR}/lib/cmake/"
 
 stages:
   - format
@@ -57,7 +60,8 @@ default_build:
     - mkdir -p build
     - cd build
     - cmake .. ${DEFAULT_COMPILER_FLAGS}
-    - make -j all
+    - make -j
+    - make -j install
     # Build example
     - cd ../example
     - mkdir -p build
@@ -67,6 +71,8 @@ default_build:
   artifacts:
     paths:
         - build/
+        - lib/
+        - include/
         - example/build
     expire_in: 1 day
 
@@ -78,10 +84,13 @@ debug_build:
     - mkdir -p build
     - cd build
     - cmake .. ${DEBUG_COMPILER_FLAGS}
-    - make -j all
+    - make -j
+    - make -j install
   artifacts:
     paths:
         - build/
+        - lib/
+        - include/
     expire_in: 1 day
 
 default_example:

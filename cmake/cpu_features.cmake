@@ -39,16 +39,16 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(ext_cpu_features SOURCE_DIR BINARY_DIR)
 
-add_library(libcpu_features STATIC IMPORTED)
-add_dependencies(libcpu_features ext_cpu_features)
+add_library(cpu_features STATIC IMPORTED)
+add_dependencies(cpu_features ext_cpu_features)
 
 if(NOT IS_DIRECTORY ${CPU_FEATURES_PREFIX}/include)
   file(MAKE_DIRECTORY ${CPU_FEATURES_PREFIX}/include)
 endif()
 
-set_target_properties(libcpu_features
+set_target_properties(cpu_features
                       PROPERTIES IMPORTED_LOCATION
                       ${BINARY_DIR}/libcpu_features.a)
-set_target_properties(libcpu_features
+set_target_properties(cpu_features
                       PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
                       ${CPU_FEATURES_PREFIX}/include)

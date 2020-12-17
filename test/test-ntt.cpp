@@ -15,11 +15,11 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "intel-lattice/ntt/ntt.hpp"
 #include "logging/logging.hpp"
 #include "ntt/ntt-internal.hpp"
-#include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
-#include "test/test-util.hpp"
+#include "test-util.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ
 #include "ntt/fwd-ntt-avx512.hpp"

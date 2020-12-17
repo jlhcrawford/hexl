@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include "eltwise/eltwise-fma-internal.hpp"
-#include "eltwise/eltwise-fma.hpp"
+#include "intel-lattice/eltwise/eltwise-fma.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
