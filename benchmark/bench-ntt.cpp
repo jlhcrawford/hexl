@@ -13,9 +13,9 @@
 
 #include <vector>
 
+#include "intel-lattice/ntt/ntt.hpp"
 #include "logging/logging.hpp"
 #include "ntt/ntt-internal.hpp"
-#include "ntt/ntt.hpp"
 #include "util/aligned-allocator.hpp"
 
 #ifdef LATTICE_HAS_AVX512DQ

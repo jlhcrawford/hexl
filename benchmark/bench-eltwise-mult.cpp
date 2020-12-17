@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "eltwise/eltwise-mult-mod-internal.hpp"
-#include "eltwise/eltwise-mult-mod.hpp"
+#include "intel-lattice/eltwise/eltwise-mult-mod.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/aligned-allocator.hpp"

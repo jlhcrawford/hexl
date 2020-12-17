@@ -20,9 +20,13 @@ set(SRC main.cpp
 
 add_executable(bench_lattice ${SRC})
 
-target_include_directories(bench_lattice PRIVATE ".")
-target_link_libraries(bench_lattice PRIVATE intel_lattice_internal)
-target_link_libraries(bench_lattice PRIVATE libgbenchmark libgflags Threads::Threads)
+target_include_directories(bench_lattice PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${LATTICE_SRC_ROOT_DIR} # Private headers
+    )
+
+target_link_libraries(bench_lattice PRIVATE intel_lattice)
+target_link_libraries(bench_lattice PRIVATE gbenchmark gflags Threads::Threads)
 target_link_libraries(bench_lattice PRIVATE logging)
 
 target_compile_options(bench_lattice PRIVATE -Wall -Wextra -march=native -O3)

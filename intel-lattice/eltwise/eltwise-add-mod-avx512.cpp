@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include "eltwise/eltwise-add-mod-internal.hpp"
-#include "eltwise/eltwise-add-mod.hpp"
+#include "intel-lattice/eltwise/eltwise-add-mod.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"
 

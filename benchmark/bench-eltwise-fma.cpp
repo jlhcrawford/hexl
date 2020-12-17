@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "eltwise/eltwise-fma-internal.hpp"
-#include "eltwise/eltwise-fma.hpp"
+#include "intel-lattice/eltwise/eltwise-fma.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/aligned-allocator.hpp"

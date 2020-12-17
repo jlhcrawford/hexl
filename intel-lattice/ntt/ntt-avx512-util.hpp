@@ -16,9 +16,9 @@
 #include <functional>
 #include <vector>
 
+#include "intel-lattice/ntt/ntt.hpp"
 #include "logging/logging.hpp"
 #include "ntt/ntt-internal.hpp"
-#include "ntt/ntt.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/avx512-util.hpp"
 

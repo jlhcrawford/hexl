@@ -30,24 +30,20 @@ if (${HAS_AVX512F})
 endif()
 
 if (LATTICE_SHARED_LIB)
-    add_library(intel_lattice_internal SHARED ${SRC})
+    add_library(intel_lattice SHARED ${SRC})
 else()
-     add_library(intel_lattice_internal STATIC ${SRC})
+     add_library(intel_lattice STATIC ${SRC})
 endif()
 
-set_property(TARGET intel_lattice_internal PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET intel_lattice PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories(intel_lattice_internal PUBLIC
-    ${LATTICE_SRC_ROOT_DIR}
-    ${LATTICE_INC_ROOT_DIR}/intel-lattice
-    ${LATTICE_INC_ROOT_DIR})
-
-target_link_libraries(intel_lattice_internal PUBLIC
-    libcpu_features
-    libgflags
-    logging
+target_include_directories(intel_lattice
+    PRIVATE ${LATTICE_SRC_ROOT_DIR}                               # Private headers
+    PUBLIC  $<BUILD_INTERFACE:${LATTICE_INC_ROOT_DIR}>            # Public headers
+    PUBLIC  $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/> # Public headers
     )
-target_compile_options(intel_lattice_internal PRIVATE -Wall -Wextra -Wno-unknown-pragmas -march=native -O3 -fomit-frame-pointer)
+
+target_compile_options(intel_lattice PRIVATE -Wall -Wextra -Wno-unknown-pragmas -march=native -O3 -fomit-frame-pointer)
 
 install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/
@@ -56,38 +52,57 @@ install(DIRECTORY ${LATTICE_INC_ROOT_DIR}/
         PATTERN "*.h")
 
 if (LATTICE_SHARED_LIB)
-    set_target_properties(intel_lattice_internal PROPERTIES OUTPUT_NAME "intel_lattice")
-    install(TARGETS intel_lattice_internal DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    target_link_libraries(intel_lattice PRIVATE
+        cpu_features
+        gflags
+        logging
+    )
 else ()
-    # Create combined library for intel-lattice containing all its dependencies
+    # For static library, we include all the dependencies for intel-lattice in
+    # the libintel_lattice.a.
+    #  For proper export of IntelLatticeConfig.cmake / IntelLatticeTargts.cmake,
+    # we avoid explicitly linking dependencies via target_link_libraries, since
+    # this would add dependencies to the exported intel_lattice target.
+    add_dependencies(intel_lattice cpu_features gflags logging)
+
+    # Manually add cpu_features include directory
+    target_include_directories(intel_lattice
+      PRIVATE $<TARGET_PROPERTY:cpu_features,INTERFACE_INCLUDE_DIRECTORIES>)
+
+    # Manually add logging include directory
+    target_include_directories(intel_lattice
+      PRIVATE $<TARGET_PROPERTY:logging,INTERFACE_INCLUDE_DIRECTORIES>)
+
     if (${LATTICE_DEBUG})
-        set(intel_lattice_lib ${CMAKE_BINARY_DIR}/libintel_lattice_debug.a)
-        add_custom_target(intel_lattice_combined ALL
-            COMMAND ar -x $<TARGET_FILE:intel_lattice_internal>
-            COMMAND ar -x $<TARGET_FILE:libcpu_features>
-            COMMAND ar -x $<TARGET_FILE:libgflags>
+        set_target_properties(intel_lattice PROPERTIES OUTPUT_NAME "intel_lattice_debug")
+        set(intel_lattice_lib_filename ${CMAKE_CURRENT_BINARY_DIR}/libintel_lattice_debug.a)
+        add_custom_command(TARGET intel_lattice POST_BUILD
+            COMMAND ar -x $<TARGET_FILE:intel_lattice>
+            COMMAND ar -x $<TARGET_FILE:cpu_features>
+            COMMAND ar -x $<TARGET_FILE:gflags>
             COMMAND ar -x $<TARGET_FILE:logging>
             COMMAND ar -x $<TARGET_FILE:easylogging>
-            COMMAND ar -qcs ${intel_lattice_lib} *.o
+            COMMAND ar -qcs ${intel_lattice_lib_filename} *.o
             COMMAND rm -f *.o
-            BYPRODUCTS ${intel_lattice_lib}
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            DEPENDS intel_lattice_internal libcpu_features logging easylogging libgflags
+            BYPRODUCTS ${intel_lattice_lib_filename}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            DEPENDS intel_lattice cpu_features logging easylogging gflags
         )
     else()
-        set(intel_lattice_lib ${CMAKE_BINARY_DIR}/libintel_lattice.a)
+        set(intel_lattice_lib_filename ${CMAKE_CURRENT_BINARY_DIR}/libintel_lattice.a)
         # Don't export logging unless we are debugging
-        add_custom_target(intel_lattice_combined ALL
-            COMMAND ar -x $<TARGET_FILE:intel_lattice_internal>
-            COMMAND ar -x $<TARGET_FILE:libcpu_features>
-            # COMMAND ar -x $<TARGET_FILE:libgflags>
+        add_custom_command(TARGET intel_lattice POST_BUILD
+            COMMAND ar -x $<TARGET_FILE:intel_lattice>
+            COMMAND ar -x $<TARGET_FILE:cpu_features>
+            # COMMAND ar -x $<TARGET_FILE:gflags>
             # COMMAND ar -x $<TARGET_FILE:logging>
-            COMMAND ar -qcs ${intel_lattice_lib} *.o
+            COMMAND ar -qcs ${intel_lattice_lib_filename} *.o
             COMMAND rm -f *.o
-            BYPRODUCTS ${intel_lattice_lib}
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            DEPENDS intel_lattice_internal libcpu_features #libgflags logging
+            BYPRODUCTS ${intel_lattice_lib_filename}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            DEPENDS intel_lattice cpu_features #gflags logging
         )
     endif()
-    install(FILES ${intel_lattice_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
+
+install(TARGETS intel_lattice DESTINATION ${CMAKE_INSTALL_LIBDIR})

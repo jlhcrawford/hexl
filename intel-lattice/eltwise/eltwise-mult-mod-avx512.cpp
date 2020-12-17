@@ -17,7 +17,7 @@
 #include <limits>
 
 #include "eltwise/eltwise-mult-mod-internal.hpp"
-#include "eltwise/eltwise-mult-mod.hpp"
+#include "intel-lattice/eltwise/eltwise-mult-mod.hpp"
 #include "number-theory/number-theory.hpp"
 #include "util/avx512-util.hpp"
 #include "util/check.hpp"

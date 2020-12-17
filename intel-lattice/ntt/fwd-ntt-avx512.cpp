@@ -11,8 +11,8 @@
 
 #include "ntt/fwd-ntt-avx512.hpp"
 
+#include "intel-lattice/ntt/ntt.hpp"
 #include "ntt/ntt-internal.hpp"
-#include "ntt/ntt.hpp"
 
 namespace intel {
 namespace lattice {

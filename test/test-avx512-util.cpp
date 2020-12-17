@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "test/test-util.hpp"
+#include "test-util.hpp"
 #include "util/avx512-util.hpp"
 
 namespace intel {
