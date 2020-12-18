@@ -30,7 +30,7 @@ struct AlignedAllocator {
   }
   void deallocate(T* p, std::size_t n) {
     (void)n;  // Avoid unused variable
-    ::delete (p);
+    ::operator delete (p, std::align_val_t{64});
   }
 };
 
