@@ -18,12 +18,14 @@
 namespace intel {
 namespace lattice {
 
-// @brief Computes element-wise: if (cmp(operand1, bound)) operand1 += diff
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Comparison operation
-// @param bound Scalar to compare against
-// @param diff Scalar to increment by
-// @param n Number of elements in operand1
+/// @brief Computes element-wise conditional addition.
+/// @param[in,out] operand1 Vector of elements to compare; stores result
+/// @param[in] cmp Comparison operation
+/// @param[in] bound Scalar to compare against
+/// @param[in] diff Scalar to conditionally add
+/// @param[in] n Number of elements in \p operand1
+/// @details Computes operand1[i] = cmp(operand1[i], bound) ? operand1[i] +
+/// diff : operand1[i] for all \f$i=0, ..., n-1\f$.
 void EltwiseCmpAdd(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                    uint64_t diff, uint64_t n);
 

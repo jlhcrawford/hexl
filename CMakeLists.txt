@@ -16,7 +16,7 @@ include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # set directory where the custom finders live
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 message(STATUS "CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
 
 if(CMAKE_BUILD_TYPE)
@@ -60,6 +60,7 @@ option(LATTICE_TESTING "Enables unit-tests" ON)
 option(LATTICE_EXPORT "Enables export of intel_lattice target" OFF)
 option(LATTICE_COVERAGE "Enables coverage for unit tests" OFF)
 option(LATTICE_SHARED_LIB "Generate a shared library" OFF)
+option(LATTICE_DOCS "Enable documentation building" OFF)
 # Sanitizers
 option(ENABLE_ADDRESS_SANITIZER "Compiles and links with Address Sanitizer" OFF)
 option(ENABLE_THREAD_SANITIZER "Compiles and links with Thread Sanitizer" OFF)
@@ -74,6 +75,7 @@ message(STATUS "LATTICE_TESTING:          ${LATTICE_TESTING}")
 message(STATUS "LATTICE_EXPORT:           ${LATTICE_EXPORT}")
 message(STATUS "LATTICE_COVERAGE:         ${LATTICE_COVERAGE}")
 message(STATUS "LATTICE_SHARED_LIB:       ${LATTICE_SHARED_LIB}")
+message(STATUS "LATTICE_DOCS:             ${LATTICE_DOCS}")
 message(STATUS "ENABLE_ADDRESS_SANITIZER: ${ENABLE_ADDRESS_SANITIZER}")
 message(STATUS "ENABLE_THREAD_SANITIZER:  ${ENABLE_THREAD_SANITIZER}")
 message(STATUS "ENABLE_UB_SANITIZER:      ${ENABLE_UB_SANITIZER}")
@@ -148,7 +150,7 @@ if(ENABLE_ADDRESS_SANITIZER OR ENABLE_THREAD_SANITIZER OR ENABLE_UB_SANITIZER)
 endif()
 
 set(LATTICE_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/intel-lattice)
-set(LATTICE_INC_ROOT_DIR ${LATTICE_SRC_ROOT_DIR}/include)
+set(LATTICE_INC_ROOT_DIR ${LATTICE_SRC_ROOT_DIR}/include) # Public headers
 
 
 # ------------------------------------------------------------------------------
@@ -211,6 +213,7 @@ include(cmake/cpu_features.cmake)
 #------------------------------------------------------------------------------
 add_subdirectory(logging)
 add_subdirectory(intel-lattice)
+
 if (LATTICE_BENCHMARK)
   add_subdirectory(benchmark)
   add_custom_target( bench COMMAND ./benchmark/bench_lattice DEPENDS bench_lattice)
@@ -219,6 +222,10 @@ endif()
 if (LATTICE_TESTING)
   add_subdirectory(test)
   add_custom_target(test COMMAND ./test/unit-test DEPENDS unit-test)
+endif()
+
+if (LATTICE_DOCS)
+  add_subdirectory(docs)
 endif()
 
 

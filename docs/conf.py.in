@@ -1,0 +1,36 @@
+# *****************************************************************************
+# INTEL CONFIDENTIAL
+# Copyright 2020 Intel Corporation
+#
+# This software and the related documents are Intel copyrighted materials, and
+# your use of them is governed by the express license under which they were
+# provided to you ("License"). Unless the License provides otherwise, you may
+# not use, modify, copy, publish, distribute, disclose or transmit this software
+# or the related documents without Intel's prior written permission.
+# ****************************************************************************
+
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'breathe',
+    ]
+
+# General information about the project.
+project = u'Intel Lattice'
+copyright = '2020, Intel Corporation'
+author = 'Intel Corporation'
+
+breathe_projects = {"IntelLattice": "@CMAKE_CURRENT_BINARY_DIR@/xml/"}
+
+# Breathe Configuration
+breathe_default_project = "IntelLattice"
+
+breathe_default_members = ('members', 'undoc-members')
+
+html_theme = 'sphinx_rtd_theme'

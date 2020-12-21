@@ -14,17 +14,21 @@
 namespace intel {
 namespace lattice {
 
+/// \enum CMPINT
+/// \brief Represents binary operations between two boolean values
 enum class CMPINT {
-  EQ = 0,     // Equal
-  LT = 1,     // Less than
-  LE = 2,     // Less than or equal
-  FALSE = 3,  // False
-  NE = 4,     // Not equal
-  NLT = 5,    // Not less than
-  NLE = 6,    // Not less than or equal
-  TRUE = 7    // True
+  EQ = 0,     ///< Equal
+  LT = 1,     ///< Less than
+  LE = 2,     ///< Less than or equal
+  FALSE = 3,  ///< False
+  NE = 4,     ///< Not equal
+  NLT = 5,    ///< Not less than
+  NLE = 6,    ///< Not less than or equal
+  TRUE = 7    ///< True
 };
 
+/// @brief Returns the logical negation of a binary operation
+/// @param[in] cmp The binary operation to negate
 inline CMPINT Not(CMPINT cmp) {
   switch (cmp) {
     case CMPINT::EQ:

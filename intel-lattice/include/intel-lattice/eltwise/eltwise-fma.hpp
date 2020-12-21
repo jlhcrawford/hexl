@@ -16,14 +16,14 @@
 namespace intel {
 namespace lattice {
 
-// @brief Computes fused multiply-add (arg1 * arg2 + arg3) mod modulus
-// element-wise, broadcasting scalars to vectors.
-// @param arg1 Vector to multiply
-// @param arg2 Scalar to multiply
-// @param arg3 Vector to add. Will not add if arg3 == nullptr
-// @param out Stores the output
-// @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reduction
+/// @brief Computes fused multiply-add (\p arg1 * \p arg2 + \p arg3) mod \p
+/// modulus element-wise, broadcasting scalars to vectors.
+/// @param[in] arg1 Vector to multiply
+/// @param[in] arg2 Scalar to multiply
+/// @param[in] arg3 Vector to add. Will not add if \p arg3 == nullptr
+/// @param[out] out Stores the output
+/// @param[in] n Number of elements in each vector
+/// @param[in] modulus Modulus with which to perform modular reduction
 void EltwiseFMAMod(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
                    uint64_t* out, uint64_t n, uint64_t modulus);
 
