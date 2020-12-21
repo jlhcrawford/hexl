@@ -16,14 +16,24 @@
 namespace intel {
 namespace lattice {
 
-// @brief Multiplies two vectors elementwise with modular reduction
-// @param operand1 Vector of elements to multiply; stores result
-// @param operand2 Vector of elements to multiply
-// @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reduction
+/// @brief Multiplies in-place two vectors elementwise with modular reduction
+/// @param[in,out] operand1 Vector of elements to multiply; stores result
+/// @param[in] operand2 Vector of elements to multiply
+/// @param[in] n Number of elements in each vector
+/// @param[in] modulus Modulus with which to perform modular reduction
+/// @details Computes \p operand1[i] = (\p operand1[i] * \p operand2[i]) mod \p
+/// modulus for i=0, ..., \p n - 1
 void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
                     const uint64_t n, const uint64_t modulus);
 
+/// @brief Multiplies two vectors elementwise with modular reduction
+/// @param[in] result Result of element-wise multiplication
+/// @param[in] operand1 Vector of elements to multiply; stores result
+/// @param[in] operand2 Vector of elements to multiply
+/// @param[in] n Number of elements in each vector
+/// @param[in] modulus Modulus with which to perform modular reduction
+/// @details Computes \p result[i] = (\p operand1[i] * \p operand2[i]) mod \p
+/// modulus for i=0, ..., \p n - 1
 void EltwiseMultMod(uint64_t* result, const uint64_t* operand1,
                     const uint64_t* operand2, const uint64_t n,
                     const uint64_t modulus);

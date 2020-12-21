@@ -18,13 +18,15 @@
 namespace intel {
 namespace lattice {
 
-// @brief Computes element-wise:
-// if (cmp(operand1, bound)) operand1 = (operand1 - diff) mod modulus
-// @param operand1 Vector of elements to compare; stores result
-// @param cmp Scalar to compare against
-// @param bound Scalar to subtract by
-// @param modulus Modulus to redce by
-// @param n Number of elements in operand1
+/// @brief Computes element-wise conditional moduluar subtraction.
+/// @param[in,out] operand1 Vector of elements to compare; stores result
+/// @param[in] cmp Comparison function
+/// @param[in] bound Scalar to compare against
+/// @param[in] diff Scalar to subtract by
+/// @param[in] modulus Modulus to reduce by
+/// @param[in] n Number of elements in \p operand1
+/// @details Computes \p operand1[i] = (\p cmp(\p operand1, \p bound)) ? (\p
+/// operand1 - \p diff) mod \p modulus : \p operand1 for all i=0, ..., n-1
 void EltwiseCmpSubMod(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                       uint64_t diff, uint64_t modulus, uint64_t n);
 

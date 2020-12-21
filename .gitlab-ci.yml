@@ -18,6 +18,7 @@ variables:
       -DLATTICE_TESTING=ON
       -DLATTICE_COVERAGE=OFF
       -DLATTICE_EXPORT=OFF
+      -DLATTICE_DOCS=ON
       -DENABLE_ADDRESS_SANITIZER=ON
       -DCMAKE_INSTALL_PREFIX=../"
 
@@ -87,6 +88,7 @@ debug_build:
     - cd build
     - cmake .. ${DEBUG_COMPILER_FLAGS}
     - make -j
+    - make -j docs
     - make -j install
   artifacts:
     paths:

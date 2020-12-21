@@ -1,0 +1,32 @@
+# *****************************************************************************
+# INTEL CONFIDENTIAL
+# Copyright 2020 Intel Corporation
+#
+# This software and the related documents are Intel copyrighted materials, and
+# your use of them is governed by the express license under which they were
+# provided to you ("License"). Unless the License provides otherwise, you may
+# not use, modify, copy, publish, distribute, disclose or transmit this software
+# or the related documents without Intel's prior written permission.
+# *****************************************************************************
+
+PROJECT_NAME           = "Intel Lattice"
+PROJECT_BRIEF          = "AVX512 implementations of modular arithmetic operations used in lattice cryptography."
+
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doxygen
+INPUT                  = @CMAKE_SOURCE_DIR@/intel-lattice/include
+RECURSIVE              = YES
+
+USE_MATHJAX            = YES
+
+GENERATE_XML           = YES
+EXTRACT_ALL            = YES
+SHOW_NAMESPACES        = YES
+GENERATE_LATEX         = YES
+
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_AS_ERROR          = YES
+
+QUIET                  = NO

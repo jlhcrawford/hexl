@@ -56,6 +56,32 @@ make test
 make bench
 ```
 
+# Documentation
+
+Intel-lattice supports documentation via Doxygen and sphinx.
+To build documentation, first install `doxygen` and `graphviz`, e.g.
+```bash
+sudo apt-get install doxygen graphviz
+```
+## Doxygen
+ To build Doxygen documentation, enable the `-DLATTICE_DOCS=ON` command during configuration, and run
+```
+make doxygen
+```
+To view the generated Doxygen documentation, open the generated `docs/doxygen/html/index.html` file in a web browser.
+
+## Sphinx
+To build the sphinx documentation,  install `sphinx` and `breathe`, e.g.
+```bash
+sudo apt-get install python3-sphinx
+pip3 install breathe
+
+Then enable the `-DLATTICE_DOCS=ON` command during configuration, and run
+```bash
+make docs
+```
+To view the generated Sphinx documentation, open the generated `docs/sphinx/html/index.html` file in a web browser.
+
 # Contributing
 Before contributing, please run
 ```bash

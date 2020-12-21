@@ -16,11 +16,13 @@
 namespace intel {
 namespace lattice {
 
-// @brief Adds two vectors elementwise with modular reduction
-// @param operand1 Vector of elements to add; stores result
-// @param operand2 Vector of elements to add
-// @param n Number of elements in each vector
-// @param modulus Modulus with which to perform modular reduction
+/// @brief Adds two vectors elementwise with modular reduction
+/// @param[in,out] operand1 Vector of elements to add; stores result
+/// @param[in] operand2 Vector of elements to add
+/// @param[in] n Number of elements in each vector
+/// @param[in] modulus Modulus with which to perform modular reduction
+/// @details Computes \f$ operand1[i] = (operand1[i] + operand2[i]) \mod modulus
+/// \f$ for \f$ i=0, ..., n-1\f$.
 void EltwiseAddMod(uint64_t* operand1, const uint64_t* operand2,
                    const uint64_t n, const uint64_t modulus);
 
