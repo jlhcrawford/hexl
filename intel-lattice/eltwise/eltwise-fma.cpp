@@ -11,6 +11,8 @@
 
 #include "intel-lattice/eltwise/eltwise-fma.hpp"
 
+#include <algorithm>
+
 #include "eltwise/eltwise-fma-internal.hpp"
 #include "logging/logging.hpp"
 #include "number-theory/number-theory.hpp"
@@ -26,7 +28,15 @@ namespace lattice {
 
 void EltwiseFMAMod(const uint64_t* arg1, uint64_t arg2, const uint64_t* arg3,
                    uint64_t* out, uint64_t n, uint64_t modulus) {
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+  LATTICE_CHECK(arg1 != nullptr, "Require arg1 != nullptr");
+  LATTICE_CHECK(out != nullptr, "Require out != nullptr");
+  LATTICE_CHECK(n != 0, "Require n != 0")
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK_BOUNDS(arg1, n, modulus,
+                       "arg1 value in EltwiseFMAMod exceeds bound " << modulus);
+  LATTICE_CHECK(
+      arg3 == nullptr || (*std::max_element(arg3, arg3 + n) < modulus),
+      "arg3 value in EltwiseFMAMod exceeds bound " << modulus);
 
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && modulus < (1UL << 52)) {

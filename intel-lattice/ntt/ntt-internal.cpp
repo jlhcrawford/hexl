@@ -140,6 +140,7 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
                    << " or " << s_default_shift_bits);
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
 
 #ifdef LATTICE_HAS_AVX512IFMA
   if (has_avx512_ifma && m_bit_shift == s_ifma_shift_bits &&
@@ -194,6 +195,8 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
 
 void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result,
                                   bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(result != nullptr, "result == nullptr");
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
@@ -201,6 +204,8 @@ void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result,
 }
 
 void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+
   LATTICE_CHECK(
       m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
       "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
@@ -245,6 +250,9 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
 
 void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result,
                                   bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(result != nullptr, "result == nullptr");
+
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
@@ -263,20 +271,28 @@ NTT::NTT(uint64_t degree, uint64_t p, uint64_t root_of_unity)
 NTT::~NTT() = default;
 
 void NTT::ComputeForward(uint64_t* elements, bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+
   m_impl->ComputeForward(elements, full_reduce);
 }
 
 void NTT::ComputeForward(const uint64_t* elements, uint64_t* result,
                          bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+
   m_impl->ComputeForward(elements, result, full_reduce);
 }
 
 void NTT::ComputeInverse(uint64_t* elements, bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+
   m_impl->ComputeInverse(elements, full_reduce);
 }
 
 void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result,
                          bool full_reduce) {
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+
   m_impl->ComputeInverse(elements, result, full_reduce);
 }
 
@@ -287,6 +303,10 @@ void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
                                     const uint64_t* precon_root_of_unity_powers,
                                     uint64_t* elements, bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK(root_of_unity_powers != nullptr,
+                "root_of_unity_powers == nullptr");
+  LATTICE_CHECK(precon_root_of_unity_powers != nullptr,
+                "precon_root_of_unity_powers == nullptr");
 
   uint64_t twice_mod = mod << 1;
   size_t t = (n >> 1);
@@ -347,6 +367,9 @@ void ReferenceForwardTransformToBitReverse(uint64_t n, uint64_t mod,
                                            const uint64_t* root_of_unity_powers,
                                            uint64_t* elements) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK(root_of_unity_powers != nullptr,
+                "root_of_unity_powers == nullptr");
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
 
   size_t t = (n >> 1);
   for (size_t m = 1; m < n; m <<= 1) {
@@ -375,6 +398,11 @@ void InverseTransformFromBitReverse64(
     const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
     bool full_reduce) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK(inv_root_of_unity_powers != nullptr,
+                "inv_root_of_unity_powers == nullptr");
+  LATTICE_CHECK(precon_inv_root_of_unity_powers != nullptr,
+                "precon_inv_root_of_unity_powers == nullptr");
+  LATTICE_CHECK(elements != nullptr, "elements == nullptr");
 
   uint64_t twice_mod = mod << 1;
   size_t t = 1;

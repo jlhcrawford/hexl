@@ -29,6 +29,17 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(NTT, null) {
+  uint64_t p = 769;
+  uint64_t N = 8;
+
+  NTT ntt(N, p);
+  EXPECT_ANY_THROW(ntt.ComputeForward(nullptr));
+  EXPECT_ANY_THROW(ntt.ComputeInverse(nullptr));
+}
+#endif
+
 TEST(NTT, Powers) {
   uint64_t modulus = 0xffffffffffc0001ULL;
   {

@@ -21,10 +21,11 @@ __extension__ typedef unsigned __int128 uint128_t;
 #ifdef LATTICE_DEBUG
 #include "logging/logging.hpp"
 
-#define LATTICE_CHECK(cond, expr)                        \
-  if (!(cond)) {                                         \
-    LOG(ERROR) << expr;                                  \
-    throw std::runtime_error("Error. Check log output"); \
+#define LATTICE_CHECK(cond, expr)                                    \
+  if (!(cond)) {                                                     \
+    LOG(ERROR) << expr << " in fuction: " << __FUNCTION__            \
+               << " in file: " __FILE__ << " at line: " << __LINE__; \
+    throw std::runtime_error("Error. Check log output");             \
   }
 
 #define LATTICE_CHECK_BOUNDS3(arg, n, bound)                               \

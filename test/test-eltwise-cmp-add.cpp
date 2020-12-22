@@ -27,6 +27,16 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(EltwiseCmpAdd, null) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
+
+  EXPECT_ANY_THROW(EltwiseCmpAdd(nullptr, CMPINT::EQ, 1, 1, op1.size()));
+  EXPECT_ANY_THROW(EltwiseCmpAdd(op1.data(), CMPINT::EQ, 1, 0, op1.size()));
+  EXPECT_ANY_THROW(EltwiseCmpAdd(op1.data(), CMPINT::EQ, 1, 1, 0));
+}
+#endif
+
 // Parameters = (input, cmp, bound, diff, expected_output)
 class EltwiseCmpAddTest
     : public ::testing::TestWithParam<
@@ -88,7 +98,7 @@ TEST(EltwiseCmpAdd, AVX512) {
     for (size_t trial = 0; trial < 200; ++trial) {
       std::vector<uint64_t> op1(length, 0);
       uint64_t bound = distrib(gen);
-      uint64_t diff = distrib(gen);
+      uint64_t diff = distrib(gen) + 1;
       for (size_t i = 0; i < length; ++i) {
         op1[i] = distrib(gen);
       }

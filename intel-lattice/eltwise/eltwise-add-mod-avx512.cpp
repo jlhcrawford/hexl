@@ -24,7 +24,10 @@ namespace lattice {
 
 void EltwiseAddModAVX512(uint64_t* operand1, const uint64_t* operand2,
                          uint64_t n, const uint64_t modulus) {
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(operand2 != nullptr, "Require operand2 != nullptr");
+  LATTICE_CHECK(n != 0, "Require n != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
   LATTICE_CHECK_BOUNDS(operand1, n, modulus,
                        "pre-add value in operand1 exceeds bound " << modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus,

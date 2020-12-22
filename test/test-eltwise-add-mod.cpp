@@ -27,6 +27,22 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(EltwiseAdd, bad_input) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> op2{1, 3, 5, 7, 9, 2, 4, 6};
+  std::vector<uint64_t> big_input{11, 12, 13, 14, 15, 16, 17, 18};
+  uint64_t modulus = 10;
+
+  EXPECT_ANY_THROW(EltwiseAddMod(nullptr, op2.data(), op1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseAddMod(op1.data(), nullptr, op1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseAddMod(op1.data(), op2.data(), 0, modulus));
+  EXPECT_ANY_THROW(EltwiseAddMod(op1.data(), op2.data(), op1.size(), 1));
+  EXPECT_ANY_THROW(EltwiseAddMod(big_input.data(), op2.data(), op1.size(), 1));
+  EXPECT_ANY_THROW(EltwiseAddMod(op1.data(), big_input.data(), op1.size(), 1));
+}
+#endif
+
 TEST(EltwiseAdd, native_small) {
   std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
   std::vector<uint64_t> op2{1, 3, 5, 7, 9, 2, 4, 6};

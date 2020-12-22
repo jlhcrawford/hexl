@@ -27,6 +27,19 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(EltwiseCmpSubMod, null) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
+
+  EXPECT_ANY_THROW(EltwiseCmpSubMod(nullptr, CMPINT::EQ, 1, 1, 10, op1.size()));
+  EXPECT_ANY_THROW(
+      EltwiseCmpSubMod(op1.data(), CMPINT::EQ, 1, 0, 10, op1.size()));
+  EXPECT_ANY_THROW(
+      EltwiseCmpSubMod(op1.data(), CMPINT::EQ, 1, 0, 0, op1.size()));
+  EXPECT_ANY_THROW(EltwiseCmpSubMod(op1.data(), CMPINT::EQ, 1, 1, 10, 0));
+}
+#endif
+
 // Parameters = (input, cmp, bound, diff, modulus, expected_output)
 class EltwiseCmpSubModTest
     : public ::testing::TestWithParam<
