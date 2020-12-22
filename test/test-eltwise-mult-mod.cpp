@@ -27,6 +27,41 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(EltwiseMultMod, null) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
+  std::vector<uint64_t> op2{1, 2, 3, 4, 5, 6, 7, 8};
+  uint64_t modulus = 769;
+  std::vector<uint64_t> big_input(op1.size(), modulus);
+
+  // In-place
+  EXPECT_ANY_THROW(EltwiseMultMod(nullptr, op2.data(), op1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseMultMod(op1.data(), nullptr, op1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseMultMod(op1.data(), op2.data(), 0, modulus));
+  EXPECT_ANY_THROW(EltwiseMultMod(op1.data(), op2.data(), op1.size(), 0));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(big_input.data(), op2.data(), op1.size(), modulus));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(op1.data(), big_input.data(), op1.size(), modulus));
+
+  // Out-of-place
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(nullptr, op1.data(), op2.data(), op1.size(), modulus));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(op1.data(), nullptr, op2.data(), op1.size(), modulus));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(op1.data(), op1.data(), nullptr, op1.size(), modulus));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(op1.data(), op1.data(), op2.data(), 0, modulus));
+  EXPECT_ANY_THROW(
+      EltwiseMultMod(op1.data(), op1.data(), op2.data(), op1.size(), 1));
+  EXPECT_ANY_THROW(EltwiseMultMod(op1.data(), big_input.data(), op2.data(),
+                                  op1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseMultMod(op1.data(), op1.data(), big_input.data(),
+                                  op1.size(), modulus));
+}
+#endif
+
 TEST(EltwiseMultModInPlace, 4) {
   std::vector<uint64_t> op1{2, 4, 3, 2};
   std::vector<uint64_t> op2{2, 1, 2, 0};

@@ -28,7 +28,10 @@ namespace lattice {
 
 void EltwiseCmpSubMod(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                       uint64_t diff, uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK(n != 0, "Require n != 0");
 
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
@@ -41,7 +44,10 @@ void EltwiseCmpSubMod(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 
 void EltwiseCmpSubModNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                             uint64_t diff, uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK(n != 0, "Require n != 0")
 
   IVLOG(3, "Calling EltwiseCmpSubModNative");
 
@@ -62,7 +68,10 @@ void EltwiseCmpSubModNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 #ifdef LATTICE_HAS_AVX512DQ
 void EltwiseCmpSubModAVX512(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                             uint64_t diff, uint64_t modulus, uint64_t n) {
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK(n != 0, "Require n != 0")
 
   IVLOG(3, "Calling CmpSubModAVX512");
 

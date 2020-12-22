@@ -27,6 +27,32 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_DEBUG
+TEST(EltwiseFMAMod, null) {
+  std::vector<uint64_t> op1{1, 2, 3, 4, 5, 6, 7, 8};
+
+  std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8};
+  uint64_t arg2 = 1;
+  std::vector<uint64_t> arg3{9, 10, 11, 12, 13, 14, 15, 16};
+  std::vector<uint64_t> exp_out{10, 12, 14, 16, 18, 20, 22, 24};
+  uint64_t modulus = 769;
+  std::vector<uint64_t> big_input(op1.size(), modulus);
+
+  EXPECT_ANY_THROW(EltwiseFMAMod(nullptr, arg2, arg3.data(), arg1.data(),
+                                 arg1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseFMAMod(arg1.data(), arg2, arg3.data(), nullptr,
+                                 arg1.size(), modulus));
+  EXPECT_ANY_THROW(
+      EltwiseFMAMod(arg1.data(), arg2, arg3.data(), arg1.data(), 0, modulus));
+  EXPECT_ANY_THROW(EltwiseFMAMod(arg1.data(), arg2, arg3.data(), arg1.data(),
+                                 arg1.size(), 1));
+  EXPECT_ANY_THROW(EltwiseFMAMod(big_input.data(), arg2, arg3.data(),
+                                 arg1.data(), arg1.size(), modulus));
+  EXPECT_ANY_THROW(EltwiseFMAMod(arg1.data(), arg2, big_input.data(),
+                                 arg1.data(), arg1.size(), modulus));
+}
+#endif
+
 TEST(EltwiseFMAMod, small) {
   std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8};
   uint64_t arg2 = 1;
@@ -41,17 +67,6 @@ TEST(EltwiseFMAMod, small) {
 }
 
 TEST(EltwiseFMAMod, native_null) {
-  std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  uint64_t arg2 = 1;
-  std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  uint64_t modulus = 769;
-
-  EltwiseFMAMod(arg1.data(), arg2, nullptr, arg1.data(), arg1.size(), modulus);
-
-  CheckEqual(arg1, exp_out);
-}
-
-TEST(EltwiseFMAMod, null) {
   std::vector<uint64_t> arg1{1, 2, 3, 4, 5, 6, 7, 8, 9};
   uint64_t arg2 = 1;
   std::vector<uint64_t> exp_out{1, 2, 3, 4, 5, 6, 7, 8, 9};

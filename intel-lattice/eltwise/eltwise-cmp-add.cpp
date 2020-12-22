@@ -27,6 +27,9 @@ namespace lattice {
 
 void EltwiseCmpAdd(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                    uint64_t diff, uint64_t n) {
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(n != 0, "Require n != 0");
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     EltwiseCmpAddAVX512(operand1, cmp, bound, diff, n);
@@ -38,6 +41,9 @@ void EltwiseCmpAdd(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 
 void EltwiseCmpAddNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                          uint64_t diff, uint64_t n) {
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(n != 0, "Require n != 0");
   switch (cmp) {
     case CMPINT::EQ: {
       for (size_t i = 0; i < n; ++i) {
@@ -95,6 +101,9 @@ void EltwiseCmpAddNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
 #ifdef LATTICE_HAS_AVX512DQ
 void EltwiseCmpAddAVX512(uint64_t* operand1, CMPINT cmp, uint64_t bound,
                          uint64_t diff, uint64_t n) {
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(diff != 0, "Require diff != 0");
+  LATTICE_CHECK(n != 0, "Require n != 0");
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {
     EltwiseCmpAddNative(operand1, cmp, bound, diff, n_mod_8);

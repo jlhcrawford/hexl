@@ -28,9 +28,13 @@ namespace lattice {
 void EltwiseMultModNative(uint64_t* result, const uint64_t* operand1,
                           const uint64_t* operand2, const uint64_t n,
                           const uint64_t modulus) {
+  LATTICE_CHECK(result != nullptr, "Require result != nullptr");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(operand2 != nullptr, "Require operand2 != nullptr");
+  LATTICE_CHECK(n != 0, "Require n != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
-  LATTICE_CHECK(modulus != 0, "Require modulus != 0");
 
   uint64_t logmod = std::log2l(modulus);
 
@@ -73,12 +77,27 @@ void EltwiseMultModNative(uint64_t* result, const uint64_t* operand1,
 
 void EltwiseMultMod(uint64_t* operand1, const uint64_t* operand2,
                     const uint64_t n, const uint64_t modulus) {
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(operand2 != nullptr, "Require operand2 != nullptr");
+  LATTICE_CHECK(n != 0, "Require n != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK_BOUNDS(operand1, n, modulus);
+  LATTICE_CHECK_BOUNDS(operand2, n, modulus);
+
   EltwiseMultMod(operand1, operand1, operand2, n, modulus);
 }
 
 void EltwiseMultMod(uint64_t* result, const uint64_t* operand1,
                     const uint64_t* operand2, const uint64_t n,
                     const uint64_t modulus) {
+  LATTICE_CHECK(result != nullptr, "Require result != nullptr");
+  LATTICE_CHECK(operand1 != nullptr, "Require operand1 != nullptr");
+  LATTICE_CHECK(operand2 != nullptr, "Require operand2 != nullptr");
+  LATTICE_CHECK(n != 0, "Require n != 0");
+  LATTICE_CHECK(modulus > 1, "Require modulus > 1");
+  LATTICE_CHECK_BOUNDS(operand1, n, modulus);
+  LATTICE_CHECK_BOUNDS(operand2, n, modulus);
+
 #ifdef LATTICE_HAS_AVX512DQ
   if (has_avx512_dq) {
     if (modulus < (1UL << 50)) {
