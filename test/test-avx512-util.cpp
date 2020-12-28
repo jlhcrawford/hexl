@@ -22,6 +22,32 @@
 namespace intel {
 namespace lattice {
 
+#ifdef LATTICE_HAS_AVX512DQ
+
+TEST(AVX512, ExtractValues) {
+  __m512i x = _mm512_set_epi64(1, 2, 3, 4, 5, 6, 7, 8);
+
+  AssertEqual(ExtractValues(x), std::vector<uint64_t>{8, 7, 6, 5, 4, 3, 2, 1});
+}
+
+TEST(AVX512, ExtractIntValues) {
+  __m512i x = _mm512_set_epi64(1, 2, 3, 4, 5, 6, 7, 8);
+  AssertEqual(ExtractIntValues(x),
+              std::vector<int64_t>{8, 7, 6, 5, 4, 3, 2, 1});
+}
+
+TEST(AVX256, ExtractDoubleValues) {
+  __m256d x = _mm256_set_pd(-2.2, -1.1, 0, 1.1);
+  AssertEqual(ExtractValues(x), std::vector<double>{1.1, 0, -1.1, -2.2});
+}
+
+TEST(AVX512, ExtractDoubleValues) {
+  __m512d x = _mm512_set_pd(-4.4, -3.3, -2.2, -1.1, 0, 1.1, 2.2, 3.3);
+  AssertEqual(ExtractValues(x),
+              std::vector<double>{3.3, 2.2, 1.1, 0, -1.1, -2.2, -3.3, -4.4});
+}
+#endif
+
 #ifdef LATTICE_HAS_AVX512IFMA
 TEST(AVX512, _mm512_il_mulhi_epi52) {
   __m512i w = _mm512_set_epi64(90774764920991, 90774764920991, 90774764920991,
@@ -36,56 +62,6 @@ TEST(AVX512, _mm512_il_mulhi_epi52) {
   ASSERT_TRUE(Equals(z, expected));
 }
 #endif
-
-TEST(AVX512, _mm512_il_add_epu64) {
-  {
-    __m512i a = _mm512_set_epi64(0, 1, 2, 3, 4, 5, 6, 7);
-    __m512i b = _mm512_set_epi64(8, 9, 10, 11, 12, 13, 14, 15);
-    __m512i expected_out = _mm512_set_epi64(8, 10, 12, 14, 16, 18, 20, 22);
-    __m512i expected_carry = _mm512_set_epi64(0, 0, 0, 0, 0, 0, 0, 0);
-
-    __m512i c;
-    __m512i carry = _mm512_il_add_epu<64>(a, b, &c);
-
-    CheckEqual(carry, expected_carry);
-    CheckEqual(c, expected_out);
-  }
-
-  // Overflow
-  {
-    __m512i a = _mm512_set_epi64(1UL << 32,         //
-                                 1UL << 63,         //
-                                 (1UL << 63) + 1,   //
-                                 (1UL << 63) + 10,  //
-                                 0,                 //
-                                 0,                 //
-                                 0,                 //
-                                 0);
-    __m512i b = _mm512_set_epi64(1UL << 32,         //
-                                 1UL << 63,         //
-                                 1UL << 63,         //
-                                 (1UL << 63) + 17,  //
-                                 0,                 //
-                                 0,                 //
-                                 0,                 //
-                                 0);
-    __m512i expected_out = _mm512_set_epi64(1UL << 33,  //
-                                            0,          //
-                                            1,          //
-                                            27,         //
-                                            0,          //
-                                            0,          //
-                                            0,          //
-                                            0);
-    __m512i expected_carry = _mm512_set_epi64(0, 1, 1, 1, 0, 0, 0, 0);
-
-    __m512i c;
-    __m512i carry = _mm512_il_add_epu<64>(a, b, &c);
-
-    CheckEqual(carry, expected_carry);
-    CheckEqual(c, expected_out);
-  }
-}
 
 TEST(AVX512, _mm512_il_cmplt_epu64) {
   // Small

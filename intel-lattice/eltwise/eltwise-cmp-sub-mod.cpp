@@ -49,8 +49,6 @@ void EltwiseCmpSubModNative(uint64_t* operand1, CMPINT cmp, uint64_t bound,
   LATTICE_CHECK(modulus > 1, "Require modulus > 1");
   LATTICE_CHECK(n != 0, "Require n != 0")
 
-  IVLOG(3, "Calling EltwiseCmpSubModNative");
-
   LATTICE_CHECK(diff < modulus, "Diff " << diff << " >= modulus " << modulus);
   for (size_t i = 0; i < n; ++i) {
     uint64_t op = operand1[i];
@@ -72,8 +70,6 @@ void EltwiseCmpSubModAVX512(uint64_t* operand1, CMPINT cmp, uint64_t bound,
   LATTICE_CHECK(diff != 0, "Require diff != 0");
   LATTICE_CHECK(modulus > 1, "Require modulus > 1");
   LATTICE_CHECK(n != 0, "Require n != 0")
-
-  IVLOG(3, "Calling CmpSubModAVX512");
 
   uint64_t n_mod_8 = n % 8;
   if (n_mod_8 != 0) {

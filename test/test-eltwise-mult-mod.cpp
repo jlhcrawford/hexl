@@ -280,7 +280,6 @@ TEST(EltwiseMultBigMod, 9) {
 
 // Checks AVX512 and native eltwise mult Out-of-Place implementations match
 #ifdef LATTICE_HAS_AVX512DQ
-#ifndef LATTICE_DEBUG
 TEST(EltwiseMultMod, AVX512Big) {
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -288,11 +287,12 @@ TEST(EltwiseMultMod, AVX512Big) {
   for (size_t log2N = 13; log2N <= 15; ++log2N) {
     size_t length = 1 << log2N;
 
-    for (size_t bits = 54; bits <= 60; ++bits) {
+    for (size_t bits = 50; bits <= 62; ++bits) {
       uint64_t prime = GeneratePrimes(1, bits, 1024)[0];
       std::uniform_int_distribution<uint64_t> distrib(0, prime - 1);
 
-      for (size_t trial = 0; trial < 100; ++trial) {
+      size_t num_trials = 100;
+      for (size_t trial = 0; trial < num_trials; ++trial) {
         std::vector<uint64_t> op1(length, 0);
         std::vector<uint64_t> op2(length, 0);
         std::vector<uint64_t> rs1(length, 0);
@@ -313,7 +313,6 @@ TEST(EltwiseMultMod, AVX512Big) {
     }
   }
 }
-#endif
 #endif
 }  // namespace lattice
 }  // namespace intel
