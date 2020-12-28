@@ -37,8 +37,8 @@ inline void CheckEqual(const std::vector<uint64_t>& x,
 }
 
 // Asserts x == y
-inline void AssertEqual(const std::vector<uint64_t>& x,
-                        const std::vector<uint64_t>& y) {
+template <typename T>
+inline void AssertEqual(const std::vector<T>& x, const std::vector<T>& y) {
   ASSERT_EQ(x.size(), y.size());
   uint64_t N = x.size();
   for (size_t i = 0; i < N; ++i) {

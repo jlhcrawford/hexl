@@ -23,7 +23,7 @@
 namespace intel {
 namespace lattice {
 
-// Returns the unsigned 64-bit integer values in x as a vector
+/// @brief Returns the unsigned 64-bit integer values in x as a vector
 inline std::vector<uint64_t> ExtractValues(__m512i x) {
   __m256i x0 = _mm512_extracti64x4_epi64(x, 0);
   __m256i x1 = _mm512_extracti64x4_epi64(x, 1);
@@ -40,6 +40,7 @@ inline std::vector<uint64_t> ExtractValues(__m512i x) {
   return xs;
 }
 
+/// @brief Returns the signed 64-bit integer values in x as a vector
 inline std::vector<int64_t> ExtractIntValues(__m512i x) {
   __m256i x0 = _mm512_extracti64x4_epi64(x, 0);
   __m256i x1 = _mm512_extracti64x4_epi64(x, 1);
@@ -85,52 +86,6 @@ inline std::vector<double> ExtractValues(__m256d x) {
   }
   return ret;
 }
-
-// Checks all 64-bit values in x are less than bound
-// Returns true
-inline void CheckBounds(__m512i x, uint64_t bound) {
-  (void)x;      // Ignore unused parameter warning
-  (void)bound;  // Ignore unused parameter warning
-  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 512 / 64, bound);
-}
-
-// Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
-// and y to form a 2*BitShift-bit intermediate result.
-// Returns the high BitShift-bit unsigned integer from the intermediate result
-template <int BitShift>
-inline __m256i _mm256_il_mulhi_epi(__m256i x, __m256i y);
-
-template <>
-inline __m256i _mm256_il_mulhi_epi<64>(__m256i x, __m256i y) {
-  // https://stackoverflow.com/questions/28807341/simd-signed-with-unsigned-multiplication-for-64-bit-64-bit-to-128-bit
-  __m256i lomask = _mm256_set1_epi64x(0x00000000ffffffff);
-  __m256i xh =
-      _mm256_shuffle_epi32(x, (_MM_PERM_ENUM)0xB1);  // x0l, x0h, x1l, x1h
-  __m256i yh =
-      _mm256_shuffle_epi32(y, (_MM_PERM_ENUM)0xB1);  // y0l, y0h, y1l, y1h
-  __m256i w0 = _mm256_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
-  __m256i w1 = _mm256_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
-  __m256i w2 = _mm256_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
-  __m256i w3 = _mm256_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
-  __m256i w0h = _mm256_srli_epi64(w0, 32);
-  __m256i s1 = _mm256_add_epi64(w1, w0h);
-  __m256i s1l = _mm256_and_si256(s1, lomask);
-  __m256i s1h = _mm256_srli_epi64(s1, 32);
-  __m256i s2 = _mm256_add_epi64(w2, s1l);
-  __m256i s2h = _mm256_srli_epi64(s2, 32);
-  __m256i hi1 = _mm256_add_epi64(w3, s1h);
-  return _mm256_add_epi64(hi1, s2h);
-}
-
-#ifdef LATTICE_HAS_AVX512IFMA
-template <>
-inline __m256i _mm256_il_mulhi_epi<52>(__m256i x, __m256i y) {
-  LATTICE_CHECK_BOUNDS(ExtractValues(x).data(), 4, MaximumValue(52));
-  LATTICE_CHECK_BOUNDS(ExtractValues(y).data(), 4, MaximumValue(52));
-  __m256i zero = _mm256_set1_epi64x(0);
-  return _mm256_madd52hi_epu64(zero, x, y);
-}
-#endif
 
 // Multiply packed unsigned BitShift-bit integers in each 64-bit element of x
 // and y to form a 2*BitShift-bit intermediate result.
@@ -211,13 +166,6 @@ inline __m512i _mm512_il_mullo_add_epi<64>(__m512i x, __m512i y, __m512i z) {
 // Returns x mod p; assumes 0 < x < 2p
 // x mod p == x >= p ? x - p : x
 //         == min(x - p, x)
-inline __m256i _mm256_il_small_mod_epu64(__m256i x, __m256i p) {
-  return _mm256_min_epu64(x, _mm256_sub_epi64(x, p));
-}
-
-// Returns x mod p; assumes 0 < x < 2p
-// x mod p == x >= p ? x - p : x
-//         == min(x - p, x)
 inline __m512i _mm512_il_small_mod_epu64(__m512i x, __m512i p) {
   return _mm512_min_epu64(x, _mm512_sub_epi64(x, p));
 }
@@ -289,26 +237,6 @@ inline __m512i _mm512_il_cmplt_epu64(__m512i a, __m512i b,
 inline __m512i _mm512_il_cmple_epu64(__m512i a, __m512i b,
                                      uint64_t match_value) {
   return _mm512_il_cmp_epi64(a, b, CMPINT::LE, match_value);
-}
-
-// Computes x + y mod 2^BitShift and stores the result in c.
-// Returns the overflow bit
-template <int BitShift>
-inline __m512i _mm512_il_add_epu(__m512i x, __m512i y, __m512i* c);
-
-template <>
-inline __m512i _mm512_il_add_epu<64>(__m512i x, __m512i y, __m512i* c) {
-  *c = _mm512_add_epi64(x, y);
-  return _mm512_il_cmplt_epu64(*c, x, 1);
-}
-
-template <>
-inline __m512i _mm512_il_add_epu<52>(__m512i x, __m512i y, __m512i* c) {
-  __m512i vtwo_pow_52 = _mm512_set1_epi64(1UL << 52);
-  __m512i sum = _mm512_add_epi64(x, y);
-  __m512i carry = _mm512_il_cmpge_epu64(sum, vtwo_pow_52, 1);
-  *c = _mm512_il_small_mod_epu64(sum, vtwo_pow_52);
-  return carry;
 }
 
 // returns x mod p, computed via Barrett reduction

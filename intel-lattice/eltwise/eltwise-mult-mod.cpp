@@ -36,12 +36,10 @@ void EltwiseMultModNative(uint64_t* result, const uint64_t* operand1,
   LATTICE_CHECK_BOUNDS(operand1, n, modulus);
   LATTICE_CHECK_BOUNDS(operand2, n, modulus);
 
-  uint64_t logmod = std::log2l(modulus);
-
+  const uint64_t logmod = std::log2l(modulus);
   // modulus < 2**N
-  uint64_t N = logmod + 1;
-  uint64_t D = N + N;
-  uint64_t L = D;
+  const uint64_t N = logmod + 1;
+  uint64_t L = 63 + N;  // Ensures L - N + 1 == 64
   uint64_t barr_lo = (uint128_t(1) << L) / modulus;
 
 #pragma GCC unroll 4
@@ -59,7 +57,8 @@ void EltwiseMultModNative(uint64_t* result, const uint64_t* operand1,
     MultiplyUInt64(c1, barr_lo, &c2_hi, &c2_lo);
 
     // C3 = C2 >> (L - N + 1)
-    uint64_t c3 = (c2_lo >> (L - N + 1)) + (c2_hi << (64 - (L - N + 1)));
+    // L - N + 1 == 64, so we only need high 64 bits
+    uint64_t c3 = c2_hi;
 
     // C4 = prod_lo - (p * c3)_lo
     c4 = prod_lo - c3 * modulus;
