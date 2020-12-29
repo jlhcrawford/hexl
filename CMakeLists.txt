@@ -108,15 +108,31 @@ function(check_flag FLAG OUTPUT_FLAG)
 endfunction()
 
 # Check for AVX512 support
-# TODO(fboemer): Support avx512 on macOS?
 if (NOT APPLE)
   check_flag("avx512f" HAS_AVX512F)
   check_flag("avx512dq" HAS_AVX512DQ)
   check_flag("avx512ifma" HAS_AVX512IFMA)
+
+  if (HAS_AVX512IFMA)
+    # Check compiler version
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+      # recommend at least gcc 8.0
+      if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+          message(WARNING "GCC version should be at least 8.0 for best performane on CPUs with AVX512IFMA support.")
+          set(HAS_AVX512IFMA "0")
+      endif()
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        # recommend at least clang 6.0
+      if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.0)
+          message(WARNING "Clang version should be at least 6.0 for best performane on CPUs with AVX512IFMA support.")
+          set(HAS_AVX512IFMA "0")
+      endif()
+    endif()
+  endif()
 endif()
 
 if (HAS_AVX512IFMA)
-message(STATUS "Setting LATTICE_HAS_AVX512IFMA")
+  message(STATUS "Setting LATTICE_HAS_AVX512IFMA")
   add_definitions(-DLATTICE_HAS_AVX512IFMA)
 endif()
 
