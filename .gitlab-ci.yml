@@ -138,7 +138,7 @@ debug_test:
      # Remove unwanted directories
     - /usr/local/bin/lcov --remove cov_total.info '/usr/include/*' '/usr/lib/*' '*/test/*' '*/build/*' '*/benchmark/*' -o cov_filter.info
     # report overall summary to be parsed by gitlab CI
-    # - /usr/local/bin/lcov --list cov_filter.info
+    - /usr/local/bin/lcov --list cov_filter.info
     # Generate coverage html
     - genhtml --branch-coverage cov_filter.info --output-directory coverage
 
