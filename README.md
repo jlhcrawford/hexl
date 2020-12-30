@@ -32,7 +32,12 @@ Intel-lattice is single-threaded and thread-safe.
 
 ## Dependencies
   - CMake >= 3.13
-  - A modern compiler supporting C++17, e.g. clang-10
+  - A modern compiler supporting C++17, e.g.
+    * clang >= 5.0
+    * gcc >= 7.0
+    * For best performance on CPUs with IFMA support, use
+      * clang >= 6.0
+      * gcc >= 8.0
   - Operating system: Currently, we have tested the code on Ubuntu 18.04 and macOS 10.15
 
 To build intel-lattice, call
