@@ -30,13 +30,73 @@ namespace intel {
 namespace lattice {
 
 #ifdef LATTICE_DEBUG
-TEST(NTT, null) {
+TEST(NTT, bad_input) {
   uint64_t p = 769;
   uint64_t N = 8;
+  std::vector<uint64_t> input;
+  std::vector<uint64_t> p_input;
+  std::vector<uint64_t> p_times_2_input;
+  std::vector<uint64_t> p_times_4_input;
 
   NTT ntt(N, p);
+
+  auto init_inputs = [&]() {
+    input = {1, 2, 3, 4, 5, 6, 7, 8};
+    p_input = std::vector<uint64_t>(N, p);
+    p_times_2_input = std::vector<uint64_t>(N, 2 * p);
+    p_times_4_input = std::vector<uint64_t>(N, 4 * p);
+  };
+  init_inputs();
+
+  // Forward transform
+  // Bad input
+  EXPECT_NO_THROW(ntt.ComputeForward(input.data()));
+  init_inputs();
+  EXPECT_NO_THROW(ntt.ComputeForward(p_input.data(), 4, 4));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeForward(p_times_2_input.data(), 2, 1));
+  init_inputs();
+  EXPECT_NO_THROW(ntt.ComputeForward(p_times_2_input.data(), 4, 4));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeForward(p_times_4_input.data(), 4, 4));
+  init_inputs();
   EXPECT_ANY_THROW(ntt.ComputeForward(nullptr));
+  init_inputs();
+
+  // Bad mod factors
+  EXPECT_NO_THROW(ntt.ComputeForward(input.data(), 2, 1));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeForward(input.data(), 123, 1));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeForward(input.data(), 2, 123));
+  init_inputs();
+
+  // Inverse tranform
+
+  // Bad input
+  EXPECT_NO_THROW(ntt.ComputeInverse(input.data()));
+  init_inputs();
   EXPECT_ANY_THROW(ntt.ComputeInverse(nullptr));
+  init_inputs();
+
+  EXPECT_NO_THROW(ntt.ComputeInverse(input.data()));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeInverse(p_input.data(), 1, 1));
+  init_inputs();
+  EXPECT_NO_THROW(ntt.ComputeInverse(p_input.data(), 2, 2));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeInverse(p_times_2_input.data(), 2, 2));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeInverse(nullptr));
+  init_inputs();
+
+  // Bad mod factors
+  EXPECT_NO_THROW(ntt.ComputeInverse(input.data(), 1, 1));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeInverse(input.data(), 123, 1));
+  init_inputs();
+  EXPECT_ANY_THROW(ntt.ComputeInverse(input.data(), 1, 123));
+  init_inputs();
 }
 #endif
 
@@ -121,7 +181,7 @@ TEST_P(NTTAPITest, Fwd) {
   ntt.ComputeForward(input.data());
 
   // Compute lazy
-  ntt.ComputeForward(input2.data(), false);
+  ntt.ComputeForward(input2.data(), 2, 4);
   for (auto& elem : input2) {
     elem = elem % prime;
   }
@@ -139,15 +199,15 @@ TEST_P(NTTAPITest, Fwd) {
   CheckEqual(input, input4);
 
   // Test out-of-place forward
-  ntt.ComputeForward(input4.data(), input5.data(), true);
+  ntt.ComputeForward(input4.data(), input5.data(), 2, 1);
   CheckEqual(input5, input3);
 
   // Test out-of-place inverse
-  ntt.ComputeInverse(input5.data(), input6.data(), true);
+  ntt.ComputeInverse(input5.data(), input6.data(), 1, 1);
   CheckEqual(input6, input4);
 
   // Test out-of-place inverse lazy
-  ntt.ComputeInverse(input5.data(), input7.data(), false);
+  ntt.ComputeInverse(input5.data(), input7.data(), 1, 2);
   for (auto& elem : input7) {
     elem = elem % prime;
   }
@@ -314,13 +374,13 @@ TEST_P(NTTPrimesTest, IFMAPrimes) {
   NTT::NTTImpl ntt_ifma(N, prime);
   ForwardTransformToBitReverseAVX512<52>(
       N, ntt_ifma.GetModulus(), ntt_ifma.GetRootOfUnityPowers().data(),
-      ntt_ifma.GetPrecon52RootOfUnityPowers().data(), input_ifma.data(), true);
+      ntt_ifma.GetPrecon52RootOfUnityPowers().data(), input_ifma.data(), 2, 1);
 
   // Compute lazy
   ForwardTransformToBitReverseAVX512<52>(
       N, ntt_ifma.GetModulus(), ntt_ifma.GetRootOfUnityPowers().data(),
-      ntt_ifma.GetPrecon52RootOfUnityPowers().data(), input_ifma_lazy.data(),
-      false);
+      ntt_ifma.GetPrecon52RootOfUnityPowers().data(), input_ifma_lazy.data(), 2,
+      4);
   for (auto& elem : input_ifma_lazy) {
     elem = elem % prime;
   }
@@ -472,18 +532,17 @@ TEST(NTT, FwdNTT_AVX512) {
     NTT::NTTImpl ntt_impl(N, prime);
     ForwardTransformToBitReverse64(
         N, prime, ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input.data(), true);
+        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input.data(), 2, 1);
 
     ForwardTransformToBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
-        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input_avx.data(), true);
+        ntt_impl.GetPrecon64RootOfUnityPowers().data(), input_avx.data(), 2, 1);
 
     // Compute lazy
-
     ForwardTransformToBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64RootOfUnityPowers().data(), input_avx_lazy.data(),
-        false);
+        2, 4);
     for (auto& elem : input_avx_lazy) {
       elem = elem % prime;
     }
@@ -513,18 +572,18 @@ TEST(NTT, InvNTT_AVX512) {
     NTT::NTTImpl ntt_impl(N, prime);
     InverseTransformFromBitReverse64(
         N, prime, ntt_impl.GetInvRootOfUnityPowers().data(),
-        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data(), true);
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input.data(), 1, 1);
 
     InverseTransformFromBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetInvRootOfUnityPowers().data(),
-        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input_avx.data(),
-        true);
+        ntt_impl.GetPrecon64InvRootOfUnityPowers().data(), input_avx.data(), 1,
+        1);
 
     // Compute lazy
     InverseTransformFromBitReverseAVX512<64>(
         N, ntt_impl.GetModulus(), ntt_impl.GetInvRootOfUnityPowers().data(),
         ntt_impl.GetPrecon64InvRootOfUnityPowers().data(),
-        input_avx_lazy.data(), false);
+        input_avx_lazy.data(), 1, 2);
     for (auto& elem : input_avx_lazy) {
       elem = elem % prime;
     }

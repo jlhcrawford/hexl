@@ -26,10 +26,21 @@
 namespace intel {
 namespace lattice {
 
-// The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y' in [0, 4p).
-// See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
-// X', Y' = X + WY, X - WY (mod p).
-template <int BitShift, bool InputLessThanMod = false>
+/// @brief The Harvey butterfly: assume \p X, \p Y in [0, 4p), and return X', Y'
+/// in [0, 4p) such that X', Y' = X + WY, X - WY (mod p).
+/// @param[in,out] X Input representing 8 64-bit signed integers in SIMD form
+/// @param[in,out] Y Input representing 8 64-bit signed integers in SIMD form
+/// @param[in] W_op Input representing 8 64-bit signed integers in SIMD form
+/// @param[in] W_precon Preconditioned \p W_op for BitShift-bit Barrett
+/// reduction
+/// @param[in] neg_modulus Negative modulus, i.e. (-p) represented as 8 64-bit
+/// signed integers in SIMD form
+/// @param[in] twice_modulus Twice the modulus, i.e. 2*p represented as 8 64-bit
+/// signed integers in SIMD form
+/// @param InputLessThanMod If true, assumes \p X, \p Y < \p p. Otherwise,
+/// assumes \p X, \p Y < 4*\p p
+/// @details See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
+template <int BitShift, bool InputLessThanMod>
 inline void FwdButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
                          __m512i neg_modulus, __m512i twice_modulus) {
   if (!InputLessThanMod) {
@@ -69,8 +80,8 @@ void FwdT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                           v_twice_mod);
+    FwdButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
+                                  v_twice_mod);
     WriteFwdInterleavedT1(v_X, v_Y, v_X_pt);
 
     j1 += 16;
@@ -95,8 +106,8 @@ void FwdT2(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                           v_twice_mod);
+    FwdButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
+                                  v_twice_mod);
 
     _mm512_storeu_si512(v_X_pt++, v_X);
     _mm512_storeu_si512(v_X_pt, v_Y);
@@ -127,8 +138,8 @@ void FwdT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
-    FwdButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                           v_twice_mod);
+    FwdButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
+                                  v_twice_mod);
 
     _mm512_storeu_si512(v_X_pt++, v_X);
     _mm512_storeu_si512(v_X_pt, v_Y);
@@ -139,7 +150,7 @@ void FwdT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
   }
 }
 
-template <int BitShift, bool InputLessThanMod = false>
+template <int BitShift, bool InputLessThanMod>
 void FwdT8(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t t, uint64_t m, const uint64_t* W_op,
            const uint64_t* W_precon) {
@@ -176,16 +187,24 @@ template <int BitShift>
 void ForwardTransformToBitReverseAVX512(
     const uint64_t n, const uint64_t mod, const uint64_t* root_of_unity_powers,
     const uint64_t* precon_root_of_unity_powers, uint64_t* elements,
-    bool full_reduce) {
+    uint64_t input_mod_factor, uint64_t output_mod_factor) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK(mod < MaximumValue(BitShift) / 4,
+                "mod " << mod << " too large for BitShift " << BitShift
+                       << " => maximum value " << MaximumValue(BitShift) / 4);
   LATTICE_CHECK_BOUNDS(precon_root_of_unity_powers, n, MaximumValue(BitShift),
                        "precon_root_of_unity_powers too large");
   LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift),
                        "elements too large");
-  LATTICE_CHECK_BOUNDS(elements, n, mod,
-                       "elements larger than modulus " << mod);
+  LATTICE_CHECK_BOUNDS(elements, n, input_mod_factor * mod,
+                       "elements larger than input_mod_factor * modulus ("
+                           << input_mod_factor << " * " << mod << ")");
   LATTICE_CHECK(n >= 16,
                 "Don't support small transforms. Need n > 16, got n = " << n);
+  LATTICE_CHECK(input_mod_factor == 2 || input_mod_factor == 4,
+                "input_mod_factor must be 2 or 4; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 4,
+                "output_mod_factor must be 1 or 4; got " << output_mod_factor);
 
   uint64_t twice_mod = mod << 1;
 
@@ -206,15 +225,22 @@ void ForwardTransformToBitReverseAVX512(
   if (m < (n >> 3)) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
-    FwdT8<BitShift, true>(elements, v_neg_modulus, v_twice_mod, t, m, W_op,
-                          W_precon);
+    if (input_mod_factor == 2) {
+      FwdT8<BitShift, true>(elements, v_neg_modulus, v_twice_mod, t, m, W_op,
+                            W_precon);
+    } else {
+      FwdT8<BitShift, false>(elements, v_neg_modulus, v_twice_mod, t, m, W_op,
+                             W_precon);
+    }
+
     t >>= 1;
     m <<= 1;
   }
   for (; m < (n >> 3); m <<= 1) {
     const uint64_t* W_op = &root_of_unity_powers[m];
     const uint64_t* W_precon = &precon_root_of_unity_powers[m];
-    FwdT8<BitShift>(elements, v_neg_modulus, v_twice_mod, t, m, W_op, W_precon);
+    FwdT8<BitShift, false>(elements, v_neg_modulus, v_twice_mod, t, m, W_op,
+                           W_precon);
     t >>= 1;
   }
 
@@ -234,7 +260,7 @@ void ForwardTransformToBitReverseAVX512(
     FwdT1<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
   }
 
-  if (full_reduce) {
+  if (output_mod_factor == 1) {
     // n power of two at least 8 => n divisible by 8
     LATTICE_CHECK(n % 8 == 0, "n " << n << " not a power of 2");
     __m512i* v_X_pt = reinterpret_cast<__m512i*>(elements);
