@@ -38,8 +38,6 @@ class NTT::NTTImpl {
 
   uint64_t GetModulus() const { return m_p; }
 
-  uint64_t GetBitShift() const { return m_bit_shift; }
-
   AlignedVector<uint64_t>& GetPrecon64RootOfUnityPowers() {
     return m_precon64_root_of_unity_powers;
   }
@@ -99,13 +97,17 @@ class NTT::NTTImpl {
     return GetInvRootOfUnityPowers()[i];
   }
 
-  void ComputeForward(uint64_t* elements, bool full_reduce = true);
+  void ComputeForward(uint64_t* elements, uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
   void ComputeForward(const uint64_t* elements, uint64_t* result,
-                      bool full_reduce = true);
+                      uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
 
-  void ComputeInverse(uint64_t* elements, bool full_reduce = true);
+  void ComputeInverse(uint64_t* elements, uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
   void ComputeInverse(const uint64_t* elements, uint64_t* result,
-                      bool full_reduce = true);
+                      uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
 
   static const size_t s_max_degree_bits{20};  // Maximum power of 2 in degree
 
@@ -115,14 +117,16 @@ class NTT::NTTImpl {
   // Default bit shift used in Barrett precomputation
   static const size_t s_default_shift_bits{64};
 
-  // Maximum number of bits in modulus to use IFMA acceleration
-  static const size_t s_max_ifma_modulus_bits{50};
-
   // Bit shift used in Barrett precomputation when IFMA acceleration is enabled
   static const size_t s_ifma_shift_bits{52};
 
-  // Maximum modulus size to use IFMA acceleration
-  static const size_t s_max_ifma_modulus{1UL << s_max_ifma_modulus_bits};
+  // Maximum number of bits in modulus to use IFMA acceleration for the forward
+  // transform
+  static const size_t s_max_fwd_ifma_modulus{1UL << (s_ifma_shift_bits - 2)};
+
+  // Maximum number of bits in modulus to use IFMA acceleration for the inverse
+  // transform
+  static const size_t s_max_inv_ifma_modulus{1UL << (s_ifma_shift_bits - 1)};
 
  private:
   void ComputeRootOfUnityPowers();
@@ -130,8 +134,10 @@ class NTT::NTTImpl {
   uint64_t m_p;       // prime modulus
 
   uint64_t m_degree_bits;  // log_2(m_degree)
-  // Bit shift to use in computing Barrett reduction
-  uint64_t m_bit_shift{s_default_shift_bits};
+  // Bit shift to use in computing Barrett reduction for forward transform
+  uint64_t m_fwd_bit_shift{s_default_shift_bits};
+  // Bit shift to use in computing Barrett reduction for inverse transform
+  uint64_t m_inv_bit_shift{s_default_shift_bits};
 
   uint64_t m_winv;  // Inverse of minimal root of unity
   uint64_t m_w;     // A 2N'th root of unity
@@ -148,7 +154,9 @@ class NTT::NTTImpl {
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
                                     const uint64_t* root_of_unity_powers,
                                     const uint64_t* precon_root_of_unity_powers,
-                                    uint64_t* elements, bool full_reduce);
+                                    uint64_t* elements,
+                                    uint64_t input_mod_factor = 1,
+                                    uint64_t output_mod_factor = 1);
 
 // Reference NTT which is written for clarity rather than performance
 // Use for debugging
@@ -164,7 +172,7 @@ void ReferenceForwardTransformToBitReverse(uint64_t n, uint64_t mod,
 void InverseTransformFromBitReverse64(
     uint64_t n, uint64_t mod, const uint64_t* inv_root_of_unity_powers,
     const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
-    bool full_reduce);
+    uint64_t input_mod_factor = 1, uint64_t output_mod_factor = 1);
 
 bool CheckArguments(uint64_t degree, uint64_t p);
 

@@ -37,9 +37,13 @@ NTT::NTTImpl::NTTImpl(uint64_t degree, uint64_t p, uint64_t root_of_unity)
       m_w << " is not a primitive 2*" << degree << "'th root of unity");
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  if (m_p < s_max_ifma_modulus) {
-    IVLOG(3, "Setting m_bit_shift to " << s_ifma_shift_bits);
-    m_bit_shift = s_ifma_shift_bits;
+  if (m_p < s_max_fwd_ifma_modulus) {
+    IVLOG(3, "Setting m_fwd_bit_shift to " << s_ifma_shift_bits);
+    m_fwd_bit_shift = s_ifma_shift_bits;
+  }
+  if (m_p < s_max_inv_ifma_modulus) {
+    IVLOG(3, "Setting m_inv_bit_shift to " << s_ifma_shift_bits);
+    m_inv_bit_shift = s_ifma_shift_bits;
   }
 #endif
 
@@ -102,11 +106,11 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   precon52_root_of_unity_powers.reserve(m_degree);
   for (uint64_t root_of_unity : root_of_unity_powers) {
     MultiplyFactor mf(root_of_unity, 52, m_p);
-    precon64_root_of_unity_powers.push_back(mf.BarrettFactor());
+    precon52_root_of_unity_powers.push_back(mf.BarrettFactor());
   }
 
   NTT::NTTImpl::GetPrecon52RootOfUnityPowers() =
-      std::move(precon64_root_of_unity_powers);
+      std::move(precon52_root_of_unity_powers);
 
   NTT::NTTImpl::GetRootOfUnityPowers() = std::move(root_of_unity_powers);
 
@@ -135,30 +139,27 @@ void NTT::NTTImpl::ComputeRootOfUnityPowers() {
   NTT::NTTImpl::GetInvRootOfUnityPowers() = std::move(inv_root_of_unity_powers);
 }
 
-void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
-  LATTICE_CHECK(
-      m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
-      "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
-                   << " or " << s_default_shift_bits);
+void NTT::NTTImpl::ComputeForward(uint64_t* elements, uint64_t input_mod_factor,
+                                  uint64_t output_mod_factor) {
+  LATTICE_CHECK(m_fwd_bit_shift == s_ifma_shift_bits ||
+                    m_fwd_bit_shift == s_default_shift_bits,
+                "Bit shift " << m_fwd_bit_shift << " should be either "
+                             << s_ifma_shift_bits << " or "
+                             << s_default_shift_bits);
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK_BOUNDS(elements, m_degree, m_p * input_mod_factor);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  if (has_avx512_ifma && m_bit_shift == s_ifma_shift_bits &&
-      (m_p < s_max_ifma_modulus && (m_degree >= 16))) {
+  if (has_avx512_ifma && m_fwd_bit_shift == s_ifma_shift_bits &&
+      (m_p < s_max_fwd_ifma_modulus && (m_degree >= 16))) {
     const uint64_t* root_of_unity_powers = GetRootOfUnityPowersPtr();
     const uint64_t* precon_root_of_unity_powers =
         GetPrecon52RootOfUnityPowersPtr();
 
     IVLOG(3, "Calling 52-bit AVX512-IFMA NTT");
-    if (full_reduce) {
-      ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
-          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-          elements, true);
-    } else {
-      ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
-          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-          elements, false);
-    }
+    ForwardTransformToBitReverseAVX512<s_ifma_shift_bits>(
+        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+        elements, input_mod_factor, output_mod_factor);
     return;
   }
 #endif
@@ -170,15 +171,9 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
     const uint64_t* precon_root_of_unity_powers =
         GetPrecon64RootOfUnityPowersPtr();
 
-    if (full_reduce) {
-      ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-          elements, true);
-    } else {
-      ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
-          m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
-          elements, false);
-    }
+    ForwardTransformToBitReverseAVX512<s_default_shift_bits>(
+        m_degree, m_p, root_of_unity_powers, precon_root_of_unity_powers,
+        elements, input_mod_factor, output_mod_factor);
     return;
   }
 #endif
@@ -190,29 +185,33 @@ void NTT::NTTImpl::ComputeForward(uint64_t* elements, bool full_reduce) {
 
   ForwardTransformToBitReverse64(m_degree, m_p, root_of_unity_powers,
                                  precon_root_of_unity_powers, elements,
-                                 full_reduce);
+                                 input_mod_factor, output_mod_factor);
 }
 
 void NTT::NTTImpl::ComputeForward(const uint64_t* elements, uint64_t* result,
-                                  bool full_reduce) {
+                                  uint64_t input_mod_factor,
+                                  uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
   LATTICE_CHECK(result != nullptr, "result == nullptr");
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
-  ComputeForward(result, full_reduce);
+  ComputeForward(result, input_mod_factor, output_mod_factor);
 }
 
-void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
+void NTT::NTTImpl::ComputeInverse(uint64_t* elements, uint64_t input_mod_factor,
+                                  uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK_BOUNDS(elements, m_degree, m_p * input_mod_factor);
 
-  LATTICE_CHECK(
-      m_bit_shift == s_ifma_shift_bits || m_bit_shift == s_default_shift_bits,
-      "Bit shift " << m_bit_shift << " should be either " << s_ifma_shift_bits
-                   << " or " << s_default_shift_bits);
+  LATTICE_CHECK(m_inv_bit_shift == s_ifma_shift_bits ||
+                    m_inv_bit_shift == s_default_shift_bits,
+                "Bit shift " << m_inv_bit_shift << " should be either "
+                             << s_ifma_shift_bits << " or "
+                             << s_default_shift_bits);
 
 #ifdef LATTICE_HAS_AVX512IFMA
-  if (m_bit_shift == s_ifma_shift_bits && (m_p < s_max_ifma_modulus) &&
+  if (m_inv_bit_shift == s_ifma_shift_bits && (m_p < s_max_inv_ifma_modulus) &&
       (m_degree >= 16)) {
     IVLOG(3, "Calling 52-bit AVX512-IFMA InvNTT");
     const uint64_t* inv_root_of_unity_powers = GetInvRootOfUnityPowersPtr();
@@ -220,7 +219,8 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
         GetPrecon52InvRootOfUnityPowersPtr();
     InverseTransformFromBitReverseAVX512<s_ifma_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
-        precon_inv_root_of_unity_powers, elements, full_reduce);
+        precon_inv_root_of_unity_powers, elements, input_mod_factor,
+        output_mod_factor);
     return;
   }
 #endif
@@ -234,7 +234,8 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
 
     InverseTransformFromBitReverseAVX512<s_default_shift_bits>(
         m_degree, m_p, inv_root_of_unity_powers,
-        precon_inv_root_of_unity_powers, elements, full_reduce);
+        precon_inv_root_of_unity_powers, elements, input_mod_factor,
+        output_mod_factor);
     return;
   }
 #endif
@@ -245,18 +246,19 @@ void NTT::NTTImpl::ComputeInverse(uint64_t* elements, bool full_reduce) {
       GetPrecon64InvRootOfUnityPowersPtr();
   InverseTransformFromBitReverse64(m_degree, m_p, inv_root_of_unity_powers,
                                    precon_inv_root_of_unity_powers, elements,
-                                   full_reduce);
+                                   input_mod_factor, output_mod_factor);
 }
 
 void NTT::NTTImpl::ComputeInverse(const uint64_t* elements, uint64_t* result,
-                                  bool full_reduce) {
+                                  uint64_t input_mod_factor,
+                                  uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
   LATTICE_CHECK(result != nullptr, "result == nullptr");
 
   if (elements != result) {
     std::memcpy(result, elements, m_degree * sizeof(uint64_t));
   }
-  ComputeInverse(result, full_reduce);
+  ComputeInverse(result, input_mod_factor, output_mod_factor);
 }
 
 // NTT API
@@ -270,30 +272,51 @@ NTT::NTT(uint64_t degree, uint64_t p, uint64_t root_of_unity)
 
 NTT::~NTT() = default;
 
-void NTT::ComputeForward(uint64_t* elements, bool full_reduce) {
+void NTT::ComputeForward(uint64_t* elements, uint64_t input_mod_factor,
+                         uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(input_mod_factor == 2 || input_mod_factor == 4,
+                "input_mod_factor must be 2 or 4; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 4,
+                "output_mod_factor must be 1 or 4; got " << output_mod_factor);
 
-  m_impl->ComputeForward(elements, full_reduce);
+  m_impl->ComputeForward(elements, input_mod_factor, output_mod_factor);
 }
 
 void NTT::ComputeForward(const uint64_t* elements, uint64_t* result,
-                         bool full_reduce) {
+                         uint64_t input_mod_factor,
+                         uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(result != nullptr, "result == nullptr");
+  LATTICE_CHECK(input_mod_factor == 2 || input_mod_factor == 4,
+                "input_mod_factor must be 2 or 4; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 4,
+                "output_mod_factor must be 1 or 4; got " << output_mod_factor);
 
-  m_impl->ComputeForward(elements, result, full_reduce);
+  m_impl->ComputeForward(elements, result, input_mod_factor, output_mod_factor);
 }
 
-void NTT::ComputeInverse(uint64_t* elements, bool full_reduce) {
+void NTT::ComputeInverse(uint64_t* elements, uint64_t input_mod_factor,
+                         uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(input_mod_factor == 1 || input_mod_factor == 2,
+                "input_mod_factor must be 1 or 2; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 2,
+                "output_mod_factor must be 1 or 2; got " << output_mod_factor);
 
-  m_impl->ComputeInverse(elements, full_reduce);
+  m_impl->ComputeInverse(elements, input_mod_factor, output_mod_factor);
 }
 
 void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result,
-                         bool full_reduce) {
+                         uint64_t input_mod_factor,
+                         uint64_t output_mod_factor) {
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(input_mod_factor == 1 || input_mod_factor == 2,
+                "input_mod_factor must be 1 or 2; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 2,
+                "output_mod_factor must be 1 or 2; got " << output_mod_factor);
 
-  m_impl->ComputeInverse(elements, result, full_reduce);
+  m_impl->ComputeInverse(elements, result, input_mod_factor, output_mod_factor);
 }
 
 // Free functions
@@ -301,12 +324,19 @@ void NTT::ComputeInverse(const uint64_t* elements, uint64_t* result,
 void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
                                     const uint64_t* root_of_unity_powers,
                                     const uint64_t* precon_root_of_unity_powers,
-                                    uint64_t* elements, bool full_reduce) {
+                                    uint64_t* elements,
+                                    uint64_t input_mod_factor,
+                                    uint64_t output_mod_factor) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK_BOUNDS(elements, n, mod * input_mod_factor);
   LATTICE_CHECK(root_of_unity_powers != nullptr,
                 "root_of_unity_powers == nullptr");
   LATTICE_CHECK(precon_root_of_unity_powers != nullptr,
                 "precon_root_of_unity_powers == nullptr");
+  LATTICE_CHECK(input_mod_factor == 2 || input_mod_factor == 4,
+                "input_mod_factor must be 2 or 4; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 4,
+                "output_mod_factor must be 1 or 4; got " << output_mod_factor);
 
   uint64_t twice_mod = mod << 1;
   size_t t = (n >> 1);
@@ -322,34 +352,32 @@ void ForwardTransformToBitReverse64(uint64_t n, uint64_t mod,
       uint64_t* Y = X + t;
 
       uint64_t tx;
-      uint64_t Q;
+      uint64_t T;
 #pragma GCC unroll 4
 #pragma clang loop unroll_count(4)
       for (size_t j = j1; j < j2; j++) {
         // The Harvey butterfly: assume X, Y in [0, 4p), and return X', Y'
-        // in [0, 4p). See Algorithm 4 of
-        // https://arxiv.org/pdf/1205.2926.pdf
-        // X', Y' = X + WY, X - WY (mod p).
-        LATTICE_CHECK(*X <= (mod * 4), "input X " << (*X) << " too large");
-        LATTICE_CHECK(*Y <= (mod * 4), "input Y " << (*Y) << " too large");
+        // in [0, 4p). Such that X', Y' = X + WY, X - WY (mod p).
+        // See Algorithm 4 of https://arxiv.org/pdf/1205.2926.pdf
+        LATTICE_CHECK(*X < mod * 4, "input X " << (*X) << " too large");
+        LATTICE_CHECK(*Y < mod * 4, "input Y " << (*Y) << " too large");
 
         tx = *X - (twice_mod & static_cast<uint64_t>(
                                    -static_cast<int64_t>(*X >= twice_mod)));
-        Q = MultiplyUIntModLazy<64>(*Y, W_op, W_precon, mod);
+        T = MultiplyUIntModLazy<64>(*Y, W_op, W_precon, mod);
 
-        *X++ = tx + Q;
-        *Y++ = tx + twice_mod - Q;
+        *X++ = tx + T;
+        *Y++ = tx + twice_mod - T;
 
-        LATTICE_CHECK(tx + Q <= (mod * 4),
-                      "ouput X " << (tx + Q) << " too large");
-        LATTICE_CHECK(tx + twice_mod - Q <= (mod * 4),
-                      "output Y " << (tx + twice_mod - Q) << " too large");
+        LATTICE_CHECK(tx + T < mod * 4, "ouput X " << (tx + T) << " too large");
+        LATTICE_CHECK(tx + twice_mod - T < mod * 4,
+                      "output Y " << (tx + twice_mod - T) << " too large");
       }
       j1 += (t << 1);
     }
     t >>= 1;
   }
-  if (full_reduce) {
+  if (output_mod_factor == 1) {
     for (size_t i = 0; i < n; ++i) {
       if (elements[i] >= twice_mod) {
         elements[i] -= twice_mod;
@@ -396,13 +424,17 @@ void ReferenceForwardTransformToBitReverse(uint64_t n, uint64_t mod,
 void InverseTransformFromBitReverse64(
     uint64_t n, uint64_t mod, const uint64_t* inv_root_of_unity_powers,
     const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
-    bool full_reduce) {
+    uint64_t input_mod_factor, uint64_t output_mod_factor) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
   LATTICE_CHECK(inv_root_of_unity_powers != nullptr,
                 "inv_root_of_unity_powers == nullptr");
   LATTICE_CHECK(precon_inv_root_of_unity_powers != nullptr,
                 "precon_inv_root_of_unity_powers == nullptr");
   LATTICE_CHECK(elements != nullptr, "elements == nullptr");
+  LATTICE_CHECK(input_mod_factor == 1 || input_mod_factor == 2,
+                "input_mod_factor must be 1 or 2; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 2,
+                "output_mod_factor must be 1 or 2; got " << output_mod_factor);
 
   uint64_t twice_mod = mod << 1;
   size_t t = 1;
@@ -461,7 +493,7 @@ void InverseTransformFromBitReverse64(
     *Y++ = MultiplyUIntModLazy<64>(ty, inv_n_w, mod);
   }
 
-  if (full_reduce) {
+  if (output_mod_factor == 1) {
     // Reduce from [0, 2p) to [0,p)
     for (size_t i = 0; i < n; ++i) {
       if (elements[i] >= mod) {

@@ -26,10 +26,21 @@
 namespace intel {
 namespace lattice {
 
-// The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in [0, 2p).
-// See Algorithm 3 of https://arxiv.org/pdf/1205.2926.pdf
-// X', Y' = X + Y (mod p), W(X - Y) (mod p).
-template <int BitShift, bool InputLessThanMod = false>
+/// @brief The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in
+/// [0, 2p). such that X', Y' = X + Y (mod p), W(X - Y) (mod p).
+/// @param[in,out] X Input representing 8 64-bit signed integers in SIMD form
+/// @param[in,out] Y Input representing 8 64-bit signed integers in SIMD form
+/// @param[in] W_op Input representing 8 64-bit signed integers in SIMD form
+/// @param[in] W_precon Preconditioned \p W_op for BitShift-bit Barrett
+/// reduction
+/// @param[in] neg_modulus Negative modulus, i.e. (-p) represented as 8 64-bit
+/// signed integers in SIMD form
+/// @param[in] twice_modulus Twice the modulus, i.e. 2*p represented as 8 64-bit
+/// signed integers in SIMD form
+/// @param InputLessThanMod If true, assumes \p X, \p Y < \p p. Otherwise,
+/// assumes \p X, \p Y < 2*\p p
+/// @details See Algorithm 3 of https://arxiv.org/pdf/1205.2926.pdf
+template <int BitShift, bool InputLessThanMod>
 inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
                          __m512i neg_modulus, __m512i twice_modulus) {
   __m512i Y_minus_2p = _mm512_sub_epi64(*Y, twice_modulus);
@@ -54,7 +65,7 @@ inline void InvButterfly(__m512i* X, __m512i* Y, __m512i W_op, __m512i W_precon,
   }
 }
 
-template <int BitShift>
+template <int BitShift, bool InputLessThanMod>
 void InvT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
            uint64_t m, const uint64_t* W_op, const uint64_t* W_precon) {
   const __m512i* v_W_op_pt = reinterpret_cast<const __m512i*>(W_op);
@@ -75,8 +86,8 @@ void InvT1(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     __m512i v_W_op = _mm512_loadu_si512(v_W_op_pt++);
     __m512i v_W_precon = _mm512_loadu_si512(v_W_precon_pt++);
 
-    InvButterfly<BitShift, true>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                                 v_twice_mod);
+    InvButterfly<BitShift, InputLessThanMod>(&v_X, &v_Y, v_W_op, v_W_precon,
+                                             v_neg_modulus, v_twice_mod);
 
     _mm512_storeu_si512(v_X_pt++, v_X);
     _mm512_storeu_si512(v_X_pt, v_Y);
@@ -101,8 +112,8 @@ void InvT2(uint64_t* X, __m512i v_neg_modulus, __m512i v_twice_mod, uint64_t m,
     __m512i v_W_op = LoadWOpT2(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT2(static_cast<const void*>(W_precon));
 
-    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                           v_twice_mod);
+    InvButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
+                                  v_twice_mod);
 
     _mm512_storeu_si512(v_X_pt++, v_X);
     _mm512_storeu_si512(v_X_pt, v_Y);
@@ -131,8 +142,8 @@ void InvT4(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
     __m512i v_W_op = LoadWOpT4(static_cast<const void*>(W_op));
     __m512i v_W_precon = LoadWOpT4(static_cast<const void*>(W_precon));
 
-    InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                           v_twice_mod);
+    InvButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
+                                  v_twice_mod);
 
     WriteInvInterleavedT4(v_X, v_Y, v_X_pt);
     X += 16;
@@ -165,8 +176,8 @@ void InvT8(uint64_t* elements, __m512i v_neg_modulus, __m512i v_twice_mod,
       __m512i v_X = _mm512_loadu_si512(v_X_pt);
       __m512i v_Y = _mm512_loadu_si512(v_Y_pt);
 
-      InvButterfly<BitShift>(&v_X, &v_Y, v_W_op, v_W_precon, v_neg_modulus,
-                             v_twice_mod);
+      InvButterfly<BitShift, false>(&v_X, &v_Y, v_W_op, v_W_precon,
+                                    v_neg_modulus, v_twice_mod);
 
       _mm512_storeu_si512(v_X_pt++, v_X);
       _mm512_storeu_si512(v_Y_pt++, v_Y);
@@ -180,14 +191,22 @@ void InverseTransformFromBitReverseAVX512(
     const uint64_t n, const uint64_t mod,
     const uint64_t* inv_root_of_unity_powers,
     const uint64_t* precon_inv_root_of_unity_powers, uint64_t* elements,
-    bool full_reduce) {
+    uint64_t input_mod_factor, uint64_t output_mod_factor) {
   LATTICE_CHECK(CheckArguments(n, mod), "");
+  LATTICE_CHECK(mod < MaximumValue(BitShift) / 2,
+                "mod " << mod << " too large for BitShift " << BitShift
+                       << " => maximum value " << MaximumValue(BitShift) / 2);
   LATTICE_CHECK_BOUNDS(precon_inv_root_of_unity_powers, n,
                        MaximumValue(BitShift));
   LATTICE_CHECK_BOUNDS(elements, n, MaximumValue(BitShift),
                        "elements too large");
-  LATTICE_CHECK_BOUNDS(elements, n, mod,
-                       "elements larger than modulus " << mod);
+  LATTICE_CHECK_BOUNDS(elements, n, input_mod_factor * mod,
+                       "elements larger than input_mod_factor * modulus ("
+                           << input_mod_factor << " * " << mod << ")");
+  LATTICE_CHECK(input_mod_factor == 1 || input_mod_factor == 2,
+                "input_mod_factor must be 1 or 2; got " << input_mod_factor);
+  LATTICE_CHECK(output_mod_factor == 1 || output_mod_factor == 2,
+                "output_mod_factor must be 1 or 2; got " << output_mod_factor);
 
   uint64_t twice_mod = mod << 1;
   __m512i v_modulus = _mm512_set1_epi64(mod);
@@ -203,7 +222,13 @@ void InverseTransformFromBitReverseAVX512(
     // t = 1
     const uint64_t* W_op = &inv_root_of_unity_powers[root_index];
     const uint64_t* W_precon = &precon_inv_root_of_unity_powers[root_index];
-    InvT1<BitShift>(elements, v_neg_modulus, v_twice_mod, m, W_op, W_precon);
+    if (input_mod_factor == 1) {
+      InvT1<BitShift, true>(elements, v_neg_modulus, v_twice_mod, m, W_op,
+                            W_precon);
+    } else {
+      InvT1<BitShift, false>(elements, v_neg_modulus, v_twice_mod, m, W_op,
+                             W_precon);
+    }
     t <<= 1;
     root_index += m;
     m >>= 1;
@@ -297,7 +322,7 @@ void InverseTransformFromBitReverseAVX512(
       v_Y = _mm512_and_epi64(v_Y, two_pow52_min1);
     }
 
-    if (full_reduce) {
+    if (output_mod_factor == 1) {
       // Modulus reduction from [0,2p), to [0,p)
       v_X = _mm512_il_small_mod_epu64(v_X, v_modulus);
       v_Y = _mm512_il_small_mod_epu64(v_Y, v_modulus);

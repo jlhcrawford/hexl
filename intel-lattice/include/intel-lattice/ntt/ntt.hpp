@@ -53,31 +53,43 @@ class NTT {
 
   /// @brief Computes in-place forward NTT. Results are bit-reversed.
   /// @param[in, out] elements Data on which to compute the NTT
-  /// @param[in] full_reduce If true, results are in \f$ [0,p) \f$; otherwise,
-  /// outputs are in  \f$ [0,4p) \f$.
-  void ComputeForward(uint64_t* elements, bool full_reduce = true);
+  /// @param[in] input_mod_factor Assume input \p elements are in [0,
+  /// input_mod_factor * p). Must be 2 or 4.
+  /// @param[in] output_mod_factor Returns output \p elements in [0,
+  /// output_mod_factor * p). Must be 1 or 4.
+  void ComputeForward(uint64_t* elements, uint64_t input_mod_factor = 2,
+                      uint64_t output_mod_factor = 1);
 
   /// @brief Compute forward NTT. Results are bit-reversed.
   /// @param[in] elements Data on which to compute the NTT
   /// @param[out] result Stores the result
-  /// @param[in] full_reduce If true, results are in \f$ [0,p) \f$; otherwise,
-  /// outputs are in  \f$ [0,4p) \f$
+  /// @param[in] input_mod_factor Assume input \p elements are in [0,
+  /// input_mod_factor * p). Must be 2 or 4.
+  /// @param[in] output_mod_factor Returns output \p elements in [0,
+  /// output_mod_factor * p). Must be 1 or 4.
   void ComputeForward(const uint64_t* elements, uint64_t* result,
-                      bool full_reduce = true);
+                      uint64_t input_mod_factor = 2,
+                      uint64_t output_mod_factor = 1);
 
   /// @brief Compute in-place inverse NTT. Results are bit-reversed.
-  /// @param elements Data on which to compute the NTT
-  /// @param full_reduce If true, results are in \f$ [0,p) \f$.; otherwise,
-  /// outputs are in \f$[0,2p) \f$
-  void ComputeInverse(uint64_t* elements, bool full_reduce = true);
+  /// @param[in,out] elements Data on which to compute the NTT
+  /// @param[in] input_mod_factor Assume input \p elements are in [0,
+  /// input_mod_factor * p). Must be 1 or 2.
+  /// @param[in] output_mod_factor Returns output \p elements in [0,
+  /// output_mod_factor * p). Must be 1 or 2.
+  void ComputeInverse(uint64_t* elements, uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
 
   /// Compute inverse NTT. Results are bit-reversed.
-  /// @param elements Data on which to compute the NTT
-  /// @param result Stores the result
-  /// @param full_reduce If true, results are in \f$ [0,p) \f$; otherwise,
-  /// outputs are in \f$ [0,2p) \f$
+  /// @param[in] elements Data on which to compute the NTT
+  /// @param[out] result Stores the result
+  /// @param[in] input_mod_factor Assume input \p elements are in [0,
+  /// input_mod_factor * p). Must be 1 or 2.
+  /// @param[in] output_mod_factor Returns output \p elements in [0,
+  /// output_mod_factor * p). Must be 1 or 2.
   void ComputeInverse(const uint64_t* elements, uint64_t* result,
-                      bool full_reduce = true);
+                      uint64_t input_mod_factor = 1,
+                      uint64_t output_mod_factor = 1);
 
   class NTTImpl;  /// Class implementing the NTT
 
