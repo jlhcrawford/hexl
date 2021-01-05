@@ -1,6 +1,6 @@
 # *****************************************************************************
 # INTEL CONFIDENTIAL
-# Copyright 2020 Intel Corporation
+# Copyright 2020-2021 Intel Corporation
 #
 # This software and the related documents are Intel copyrighted materials, and
 # your use of them is governed by the express license under which they were
@@ -23,7 +23,7 @@ extensions = [
 
 # General information about the project.
 project = u'Intel Lattice'
-copyright = '2020, Intel Corporation'
+copyright = '2020-2021, Intel Corporation'
 author = 'Intel Corporation'
 
 breathe_projects = {"IntelLattice": "@CMAKE_CURRENT_BINARY_DIR@/xml/"}
