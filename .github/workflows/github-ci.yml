@@ -265,7 +265,7 @@ jobs:
     # Use environment protection (require review)
     environment: intel_workflow
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@master
       - run: pre-commit run --all-files
 
   default-build-icelake:
